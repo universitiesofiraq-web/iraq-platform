@@ -111,9 +111,11 @@
     };
 
     fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
-      role = d && d.user && d.user.role;
+      var usr = d && d.user; role = usr && usr.role;
       if (!role) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
-      if (["uploader", "rep", "admin"].indexOf(role) < 0) { $("gate").textContent = "حسابك طالب. اطلب من مشرف المنصة تفعيل صلاحية الرفع لك."; return; }
+      var sc = (usr.scopes || []), isRep = usr.admin || sc.some(function (x) { return x.level === "rep"; });
+      if (!isRep && ["uploader", "rep", "admin"].indexOf(role) < 0 && !sc.length) { $("gate").textContent = "حسابك طالب. اطلب من ممثل قسمك تفعيل صلاحية الرفع لك."; return; }
+      role = isRep ? "rep" : "uploader";
       $("gate").hidden = true; $("form").hidden = false;
       $("note").textContent = role === "uploader" ? "ملفاتك تظهر بعد موافقة المشرف أو ممثل الكلية." : "ملفاتك تُنشر مباشرة.";
       get("universities").then(function (items) {
