@@ -201,6 +201,66 @@
     activity.append(node("p", "الأنشطة الأكاديمية القادمة غير متاحة من الخدمة الحالية.", "rp-muted"));
   }
 
+  async function showTeamDirectory(teamRequest) {
+    $("team-directory")?.remove();
+    const section = node("section", undefined, "rp-card rp-session");
+    section.id = "team-directory";
+    section.setAttribute("aria-labelledby", "team-title");
+    const heading = node("h2", "دليل الممثلين");
+    heading.id = "team-title";
+    const content = node("div");
+    content.setAttribute("aria-live", "polite");
+    section.append(heading, content);
+    $("dashboard").append(section);
+    content.append(node("p", "جارٍ تحميل الممثلين المتاحين لحسابك…"));
+
+    let team;
+    try {
+      team = (await teamRequest).filter(row => row && row.level === "rep");
+    } catch (error) {
+      if (error.status === 401) {
+        content.replaceChildren(link("أعد تسجيل الدخول", "login.html?next=representatives.html"));
+      } else if (error.status === 403) {
+        content.replaceChildren(node("p", "صلاحية عرض الدليل غير متاحة لحسابك."));
+      } else {
+        showError(content, "تعذّر تحميل دليل الممثلين.", () => showTeamDirectory(service.team().then(items)));
+      }
+      return;
+    }
+
+    const filter = node("input");
+    filter.type = "search";
+    filter.id = "team-filter";
+    filter.className = "rp-action";
+    const label = node("label", "ابحث بالاسم أو النطاق");
+    label.htmlFor = filter.id;
+    const list = node("ul", undefined, "rp-list");
+    const filterTeam = () => {
+      const query = filter.value.trim().toLocaleLowerCase("ar-IQ");
+      const matches = team.filter(row => [row.name, row.node, row.university].some(value =>
+        typeof value === "string" && value.toLocaleLowerCase("ar-IQ").includes(query)
+      ) || !query);
+      list.replaceChildren(...matches.map(row => {
+        const item = node("li");
+        const scope = [row.university, row.node].filter(Boolean).filter((value, index, names) => names.indexOf(value) === index);
+        item.append(node("strong", row.name || "ممثل"), node("p", scope.join(" · ") || "النطاق غير مسمّى", "rp-muted"),
+          node("p", "ممثل مسجّل • إدارة المحتوى ضمن النطاق", "rp-muted"));
+        return item;
+      }));
+      if (!matches.length) list.append(node("li", query ? "لا توجد نتائج مطابقة." : "لا يوجد ممثلون ظاهرون ضمن صلاحيتك."));
+    };
+    filter.addEventListener("input", filterTeam);
+    content.replaceChildren(label, filter, list);
+    filterTeam();
+    const actions = node("ul", undefined, "rp-action-list");
+    actions.append(
+      action("إدارة الفريق الحالية", "admin.html", "تطبّق لوحة الإدارة صلاحيات النطاق الحالية."),
+      action("تعيين ممثل رئيسي أو مساعد", null, "يتطلب سجل الطلبة المؤهلين وصلاحية التعيين الجديدة."),
+      action("تعديل التفويض أو إلغاؤه", null, "يتطلب دعم الصلاحيات التفصيلية من الخدمة الجديدة.")
+    );
+    section.append(actions);
+  }
+
   async function loadSession() {
     scopeController?.abort();
     $("dashboard").hidden = true;
@@ -239,7 +299,9 @@
 
     const selector = $("scope");
     $("scope-picker").hidden = !scopes.length;
-    const team = scopes.length ? await service.team().then(items).catch(() => []) : [];
+    const teamRequest = service.team().then(items);
+    void showTeamDirectory(teamRequest);
+    const team = await teamRequest.catch(() => []);
     selector.replaceChildren(...scopes.map((scope, index) => new Option(scopeName(scope, team), String(index))));
     selector.onchange = () => loadScope(user, scopes[Number(selector.value)], team);
     await loadScope(user, scopes[0], team);
