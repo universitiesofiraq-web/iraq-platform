@@ -46,6 +46,7 @@
       <div class="ad-tabs" role="tablist">
         <button data-tab="users" class="ad-admin-only">الحسابات</button>
         <button data-tab="teams">الفرق المستقلة</button>
+        <button data-tab="reqs" class="ad-admin-only">طلبات التمثيل</button>
         <button data-tab="files">الملفات بانتظار المراجعة</button>
         <button data-tab="reports">البلاغات</button>
         <button data-tab="ann" class="ad-admin-only">التبليغات</button>
@@ -68,6 +69,10 @@
           <select id="tDep"><option value="">— كل الكلية —</option></select>
           <button id="tAdd" type="button">إضافة</button>
         </div>
+      </section>
+
+      <section class="ad-panel" id="p-reqs">
+        <div id="reqs"></div>
       </section>
 
       <section class="ad-panel" id="p-files">
@@ -110,6 +115,7 @@
       document.querySelectorAll(".ad-panel").forEach(function (p) { p.classList.toggle("on", p.id === "p-" + name); });
       if (name === "users") loadUsers();
       if (name === "teams") loadTeams();
+      if (name === "reqs") loadReqs();
       if (name === "files") loadFiles();
       if (name === "reports") loadReports();
       if (name === "ann") loadAnns();
@@ -199,6 +205,24 @@
         if (d.ok) { msg("تمت الإضافة.", true); $("tEmail").value = ""; loadTeams(); } else msg(ERR[d.error] || "تعذّرت الإضافة.");
       });
     };
+
+    /* طلبات التمثيل (مشرف فقط) */
+    function loadReqs() {
+      api("GET", "auth/rep-requests").then(function (d) {
+        var box = $("reqs"); box.innerHTML = "";
+        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
+        if (!d.items.length) box.textContent = "لا توجد طلبات بانتظار القرار.";
+        d.items.forEach(function (q) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", q.name || q.email)); l.appendChild(el("small", q.email + " — يطلب تمثيل: " + (q.node || "") + " — " + (q.created_at || "")));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts");
+          var ok = el("button", "قبول"); ok.onclick = function () { api("POST", "auth/rep-request/decide", { id: q.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم تعيينه ممثلاً." : "تعذّر.", x.ok); loadReqs(); }); };
+          var no = el("button", "رفض"); no.onclick = function () { api("POST", "auth/rep-request/decide", { id: q.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadReqs(); }); };
+          acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
+        });
+      });
+    }
 
     /* الملفات بانتظار المراجعة */
     function loadFiles() {
