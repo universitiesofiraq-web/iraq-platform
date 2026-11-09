@@ -1,4 +1,5 @@
 // netlify/lib/core.mjs — منطق الرفع كاملاً.
+import { checkPdf, pdfRejection } from "./pdfcheck.mjs";
 // لا يستورد Netlify مباشرة: يستقبل المخزن والبيئة في deps، فيمكن اختباره محلياً (tests/upload_api_check.mjs).
 //
 // المسارات (كلها تحت /api/):
@@ -255,6 +256,21 @@ async function finish(req, deps, who, auth) {
   }
   if (size > LIMITS.file) { await dropChunks(deps, id, n); return fail("too_big", 413); }
   if (size < 1) return fail("bad_request", 400);
+  // فحص بنيوي للملف المجمّع قبل تسجيله: لا يُعتمد ملف مزيف أو مبتور (والترويسة وحدها لا تكفي)
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const c = await deps.store.get(chunkKey(id, i), { type: "arrayBuffer" });
+    if (!c) { await dropChunks(deps, id, n); return fail("missing_chunk", 400); }
+    parts.push(new Uint8Array(c));
+  }
+  const whole = new Uint8Array(parts.reduce((t, p) => t + p.length, 0));
+  let off = 0;
+  for (const p of parts) { whole.set(p, off); off += p.length; }
+  const verdict = checkPdf(whole);
+  if (!verdict.ok) {
+    await dropChunks(deps, id, n);
+    return json(pdfRejection(verdict), 400);
+  }
 
   const entry = { id, kind: "file", type, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who, status: await statusFor(auth, courseId) };
   if (showInLatest !== undefined) entry.showInLatest = showInLatest;
