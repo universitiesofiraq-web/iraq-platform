@@ -473,16 +473,15 @@
     if (hu) {
       hu.hidden = false;
       if (MS.lang === "en") {
-        hu.appendChild(document.createTextNode("Site for international students of "));
+        hu.appendChild(document.createTextNode("Materials of "));
         hu.appendChild(MS.el("strong", "", U.nameEn || U.name));
       } else if (MS.lang === "fa") {
-        hu.appendChild(document.createTextNode("سایت برای دانشجویان بین‌المللی "));
+        hu.appendChild(document.createTextNode("منابع درسی "));
         hu.appendChild(MS.el("strong", "", U.nameFa || U.name));
         if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));
       } else {
-        hu.appendChild(document.createTextNode("موقع لطلاب "));
+        hu.appendChild(document.createTextNode("ملفات "));
         hu.appendChild(MS.el("strong", "", U.name));
-        hu.appendChild(document.createTextNode(" الدوليين"));
         if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));
       }
     }
@@ -491,14 +490,14 @@
     if (fu) {
       fu.hidden = false;
       if (MS.lang === "en") {
-        fu.appendChild(document.createTextNode("For international students at "));
+        fu.appendChild(document.createTextNode("For students of "));
         fu.appendChild(MS.el("strong", "", U.nameEn || U.name));
       } else if (MS.lang === "fa") {
-        fu.appendChild(document.createTextNode("برای دانشجویان بین‌المللی "));
+        fu.appendChild(document.createTextNode("برای دانشجویان "));
         fu.appendChild(MS.el("strong", "", U.nameFa || U.name));
         if (U.nameEn) fu.appendChild(MS.el("span", "en uni-en", U.nameEn));
       } else {
-        fu.appendChild(document.createTextNode("للطلاب الدوليين في "));
+        fu.appendChild(document.createTextNode("لطلاب "));
         fu.appendChild(MS.el("strong", "", U.name));
         if (U.nameEn) fu.appendChild(MS.el("span", "en uni-en", U.nameEn));
       }

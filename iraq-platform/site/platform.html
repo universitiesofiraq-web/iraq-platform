@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>المنصة العراقية</title>
-  <meta name="description" content="ملفات المواد الدراسية للطلاب الدوليين في مكان واحد.">
+  <meta name="description" content="ملازم ومحاضرات وأسئلة سنوات سابقة لقسمك، في مكان واحد.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -780,6 +780,7 @@
   document.title=IQ_DEPT.name+" | المنصة العراقية";
   var cta=document.querySelector(".hero-cta");if(!cta)return;
   var a=document.createElement("a");a.className="btn btn-secondary";a.href="catalog.html";a.textContent="تغيير القسم";cta.appendChild(a);
+  if(window.IQ_STAGE){var sg=document.createElement("a");sg.className="btn btn-secondary";sg.href="stage.html?dept="+IQ_DEPT.id;sg.textContent="تغيير المرحلة";cta.appendChild(sg);}
   fetch("/api/catalog/department?id="+IQ_DEPT.id).then(function(r){return r.json()}).then(function(d){
     if(!d||!d.can)return;
     var m=document.createElement("a");m.className="btn btn-secondary";m.href="dept.html?id="+IQ_DEPT.id+"&manage=1";m.textContent="إدارة القسم";cta.appendChild(m);
