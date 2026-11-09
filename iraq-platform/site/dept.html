@@ -96,6 +96,7 @@
       $("crumb").textContent = info.university + " / " + info.college;
       document.title = info.name_ar + " | المنصة العراقية";
       try { localStorage.setItem("iq.dept", JSON.stringify({ id: id, name: info.name_ar + " — " + info.college })); } catch (e) { /* لا شيء */ }
+      fetch("/api/sync", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: { "iq.dept": { t: Date.now(), v: { id: id, name: info.name_ar + " — " + info.college } } } }) }).catch(function () {}); // حفظ في الحساب إن كان مسجّلاً
       $("back").href = "catalog.html?u=" + info.university_id + "&n=" + encodeURIComponent(info.university) + "&c=" + info.college_id + "&cn=" + encodeURIComponent(info.college);
       var tools = $("tools");
       var up = el("a", "رفع ملف"); up.href = "contribute.html"; tools.appendChild(up);
