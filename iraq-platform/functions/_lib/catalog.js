@@ -66,7 +66,7 @@ export async function handleCatalog(req, env) {
       if (part === "departments") {
         const id = num(q.get("college_id"));
         if (!id) return fail("bad_request", 400);
-        return json({ ok: true, items: await all(env, "SELECT id, name_ar, name_en FROM departments WHERE college_id=? ORDER BY name_ar", id) });
+        return json({ ok: true, items: await all(env, "SELECT id, name_ar, name_en FROM departments WHERE college_id=? ORDER BY CASE WHEN name_ar LIKE 'المرحلة %' THEN id ELSE 0 END, name_ar", id) });
       }
       if (part === "subjects") {
         const id = num(q.get("department_id"));
