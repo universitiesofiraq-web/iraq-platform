@@ -16,6 +16,9 @@ export async function ensureScopes(env) {
   await env.DB.prepare(
     "CREATE TABLE IF NOT EXISTS scopes (user_id INTEGER NOT NULL, type TEXT NOT NULL, node_id INTEGER NOT NULL, level TEXT NOT NULL, PRIMARY KEY (user_id, type, node_id))"
   ).run();
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS rep_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type TEXT NOT NULL, node_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL)"
+  ).run();
   ready = true;
 }
 
@@ -126,6 +129,43 @@ export async function handleScopes(req, env, user, p) {
         "INSERT INTO scopes (user_id, type, node_id, level) VALUES (?,?,?,?) ON CONFLICT(user_id, type, node_id) DO UPDATE SET level=excluded.level"
       ).bind(t.id, type, id, level).run();
     }
+    return json({ ok: true });
+  }
+
+  if (p === "/api/auth/rep-request" && req.method === "POST") {
+    if (!user) return fail("unauthorized", 401);
+    let b; try { b = await req.json(); } catch { return fail("bad_request", 400); }
+    const type = String(b.type || "department"), id = Number(b.id);
+    if (!TYPES.includes(type) || !Number.isInteger(id)) return fail("bad_request", 400);
+    if (!(await nodeName(env, type, id))) return fail("not_found", 404);
+    const dup = await env.DB.prepare("SELECT id FROM rep_requests WHERE user_id=? AND type=? AND node_id=? AND status='pending'").bind(user.id, type, id).first();
+    if (dup) return json({ ok: true, duplicate: true });
+    await env.DB.prepare("INSERT INTO rep_requests (user_id, type, node_id, status, created_at) VALUES (?,?,?,'pending',?)").bind(user.id, type, id, new Date().toISOString()).run();
+    return json({ ok: true });
+  }
+
+  if (p === "/api/auth/rep-requests" && req.method === "GET") {
+    if (!user) return fail("unauthorized", 401);
+    const sql = "SELECT r.id, r.type, r.node_id, r.status, r.created_at, u.email, u.name FROM rep_requests r JOIN users u ON u.id=r.user_id";
+    const rows = pol.admin
+      ? ((await env.DB.prepare(sql + " WHERE r.status='pending' ORDER BY r.id").all()).results || [])
+      : ((await env.DB.prepare(sql + " WHERE r.user_id=? ORDER BY r.id DESC LIMIT 50").bind(user.id).all()).results || []);
+    const out = [];
+    for (const r of rows) out.push({ ...r, node: await nodeName(env, r.type, r.node_id) });
+    return json({ ok: true, admin: pol.admin, items: out });
+  }
+
+  if (p === "/api/auth/rep-request/decide" && req.method === "POST") {
+    if (!pol.admin) return fail("forbidden", 403);
+    let b; try { b = await req.json(); } catch { return fail("bad_request", 400); }
+    const id = Number(b.id), action = String(b.action || "");
+    if (!Number.isInteger(id) || !["approve", "reject"].includes(action)) return fail("bad_request", 400);
+    const r = await env.DB.prepare("SELECT * FROM rep_requests WHERE id=? AND status='pending'").bind(id).first();
+    if (!r) return fail("not_found", 404);
+    if (action === "approve") {
+      await env.DB.prepare("INSERT INTO scopes (user_id, type, node_id, level) VALUES (?,?,?,'rep') ON CONFLICT(user_id, type, node_id) DO UPDATE SET level='rep'").bind(r.user_id, r.type, r.node_id).run();
+    }
+    await env.DB.prepare("UPDATE rep_requests SET status=? WHERE id=?").bind(action === "approve" ? "approved" : "rejected", id).run();
     return json({ ok: true });
   }
   return null;
