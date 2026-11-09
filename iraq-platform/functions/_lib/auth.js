@@ -274,7 +274,7 @@ export async function handleAuth(req, env, opts = {}) {
     return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
   }
 
-  if (p === "/api/auth/scopes" || p === "/api/auth/scope") {
+  if (p === "/api/auth/scopes" || p === "/api/auth/scope" || p.startsWith("/api/auth/rep-request")) {
     const r = await handleScopes(req, env, user, p);
     if (r) return r;
   }
