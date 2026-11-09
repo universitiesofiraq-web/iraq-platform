@@ -108,7 +108,8 @@
             };
             row.appendChild(del);
           }
-          if (type !== "subject") row.onclick = function () { stack.push({ type: type, id: it.id, name: it.name_ar }); load(); };
+          if (type === "department") row.onclick = function () { location.href = "dept.html?id=" + it.id; };
+          else if (type !== "subject") row.onclick = function () { stack.push({ type: type, id: it.id, name: it.name_ar }); load(); };
           else row.onclick = function () { location.href = "subject.html?id=" + it.id; };
           row.dataset.t = norm(it.name_ar + " " + (it.name_en || "") + " " + (it.city || ""));
           list.appendChild(row);
