@@ -14,6 +14,8 @@ class Element {
   addEventListener(name, listener) { this[name] = listener; }
   setAttribute(name, value) { this[name] = value; }
   remove() {}
+  get firstElementChild() { return this.children[0]; }
+  reportValidity() { return true; }
 }
 
 const scope = { type: 'department', node_id: 3855, level: 'rep' };
@@ -23,19 +25,25 @@ const defaults = {
   '/api/catalog/subjects?department_id=3855': { items: [{ id: 1, name_ar: 'تشريح' }] },
   '/api/uploads': { items: [{ courseId: 's1', type: 'lecture', title: 'محاضرة القسم' }, { courseId: 's2', type: 'lecture', title: 'محاضرة قسم آخر' }, { courseId: 's1', type: 'quiz', title: 'اختبار' }] },
   '/api/announcements': { items: [{ title: 'تنبيه عام', body: 'تفاصيل التنبيه' }] },
-  '/api/auth/rep-requests': { items: [{ status: 'pending' }, { status: 'approved' }] }
+  '/api/auth/rep-requests': { items: [{ id: 7, status: 'pending', node: 'قسم الطب', name: 'طالب', email: 'private@example.test' }, { status: 'approved' }] },
+  '/api/catalog/universities': { items: [{ id: 9, name_ar: 'جامعة البصرة' }] },
+  '/api/catalog/colleges?university_id=9': { items: [{ id: 550, name_ar: 'كلية الطب' }] },
+  '/api/catalog/departments?college_id=550': { items: [{ id: 3855, name_ar: 'الطب' }] },
+  '/api/auth/rep-request': {},
+  '/api/auth/rep-request/decide': {}
 };
 
 async function load(user, overrides = {}) {
   const elements = new Map();
   const get = id => {
-    if (id === 'team-directory' && !elements.has(id)) return null;
+    if (['team-directory', 'applications'].includes(id) && !elements.has(id)) return null;
     if (!elements.has(id)) elements.set(id, new Element(id));
     return elements.get(id);
   };
   const calls = [];
   const context = {
     AbortController,
+    window: { confirm: () => true },
     document: { getElementById: get, createElement: tag => new Element(tag) },
     Option: class extends Element {
       constructor(label, value) { super('option'); this.textContent = label; this.value = value; }
@@ -70,7 +78,8 @@ test('students, legacy reps and malformed scopes do not gain management tools', 
   ]) {
     const { get, calls } = await load(user);
     assert.equal(get('dashboard').hidden, true);
-    assert.equal(calls.length, 1);
+    assert.ok(calls.every(call => !call.options.method));
+    assert.ok(!calls.some(call => call.url === "/api/auth/scopes"));
     assert.equal(get('session-actions').children[0].href, 'catalog.html');
   }
 });
@@ -84,14 +93,15 @@ test('representative dashboard filters lecture activity to the department and hi
   assert.equal(get('quick-actions').children[1].children[0].href, 'dept.html?id=3855&manage=1');
   assert.equal(get('quick-actions').children[2].children[0].disabled, true);
   assert.equal(get('quick-actions').children[4].children[0].disabled, true);
-  assert.ok(!calls.some(call => call.url === '/api/auth/rep-requests'));
+  assert.ok(calls.some(call => call.url === '/api/auth/rep-requests'));
+  assert.ok(calls.every(call => !call.options.method));
 });
 
 test('administrator gets confirmed pending requests and administration links', async () => {
   const { get, calls } = await load({ role: 'student', admin: true, scopes: [] });
   assert.equal(get('dashboard').hidden, false);
   assert.match(get('activity').textContent, /طلب تمثيل معلّق/);
-  assert.equal(get('quick-actions').children[4].children[0].href, 'admin.html');
+  assert.equal(get('quick-actions').children[4].children[0].href, '#applications');
   assert.ok(calls.some(call => call.url === '/api/auth/rep-requests'));
   assert.ok(calls.every(call => call.options.credentials === 'same-origin'));
 });
@@ -125,4 +135,52 @@ test('directory shows server-provided names and scopes without exposing emails o
   search.value = 'لا يوجد';
   search.input();
   assert.match(directory.textContent, /لا توجد نتائج مطابقة/);
+});
+
+
+test('student application follows the academic hierarchy and sends only the verified legacy payload', async () => {
+  const { get, calls } = await load({ role: 'student', scopes: [] });
+  const applications = get('main').children.at(-1);
+  const form = applications.children.find(element => element.tag === 'form');
+  for (const [index, value] of [[1, '9'], [3, '550'], [5, '3855']]) {
+    form.children[index].value = value;
+    form.children[index].change();
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  await form.submit({ preventDefault() {} });
+  const write = calls.find(call => call.options.method === 'POST');
+  assert.equal(write.url, '/api/auth/rep-request');
+  assert.deepEqual(JSON.parse(write.options.body), { type: 'department', id: 3855 });
+  assert.match(form.textContent, /تأكيد تسجيل الطلب/);
+});
+
+test('admin sees only pending requests and sends a confirmed decision without rendering email', async () => {
+  const { get, calls } = await load({ role: 'admin', scopes: [] });
+  const section = get('main').children.at(-1);
+  assert.doesNotMatch(section.textContent, /private@example|مقبول/);
+  const approve = section.children[2].children[0].children.at(-1).children[0];
+  await approve.click();
+  const write = calls.find(call => call.options.method === 'POST');
+  assert.equal(write.url, '/api/auth/rep-request/decide');
+  assert.deepEqual(JSON.parse(write.options.body), { id: 7, action: 'approve' });
+  assert.match(section.textContent, /سجّل الخادم القرار/);
+});
+
+test('forbidden decision reports the server rejection and restores controls', async () => {
+  const { get } = await load({ role: 'admin', scopes: [] }, { '/api/auth/rep-request/decide': 403 });
+  const section = get('main').children.at(-1);
+  const approve = section.children[2].children[0].children.at(-1).children[0];
+  await approve.click();
+  assert.match(section.textContent, /الخادم رفض الإجراء/);
+  assert.equal(approve.disabled, false);
+});
+
+test('an expired review session leaves the action disabled and prompts for sign-in', async () => {
+  const { get } = await load({ role: 'admin', scopes: [] }, { '/api/auth/rep-request/decide': 401 });
+  const section = get('main').children.at(-1);
+  const approve = section.children[2].children[0].children.at(-1).children[0];
+  await approve.click();
+  assert.match(section.textContent, /انتهت الجلسة/);
+  assert.equal(approve.disabled, true);
+  assert.equal(section.children[1].children[0].href, 'login.html?next=representatives.html');
 });
