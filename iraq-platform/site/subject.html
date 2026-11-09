@@ -107,10 +107,9 @@
       $("meta").textContent = "المرحلة " + s.stage + " — الكورس " + s.term + (s.professor ? " — " + s.professor : "");
       document.title = s.name_ar + " | المنصة العراقية";
       $("up").href = "contribute.html?subject=" + id;
-    });
-    fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
-      var role = d && d.user && d.user.role; canReview = role === "admin" || role === "rep";
-    }).catch(function () {}).then(load);
+      canReview = !!d.can; // الإدارة حسب نطاق المستخدم (ممثل هذا القسم/الكلية/الجامعة أو المشرف العام)
+      load();
+    }).catch(function () { load(); });
   })();
   </script>
 </body>
