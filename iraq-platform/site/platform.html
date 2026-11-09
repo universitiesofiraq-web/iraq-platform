@@ -782,6 +782,12 @@
   fetch("/api/catalog/department?id="+IQ_DEPT.id).then(function(r){return r.json()}).then(function(d){
     if(!d||!d.can)return;
     var m=document.createElement("a");m.className="btn btn-secondary";m.href="dept.html?id="+IQ_DEPT.id+"&manage=1";m.textContent="إدارة القسم";cta.appendChild(m);
+    fetch("/api/auth/me").then(function(r){return r.json()}).then(function(me){
+      if(!me||!me.user)return;
+      var ok=me.user.admin||(me.user.scopes||[]).some(function(x){return x.level==="rep"});
+      if(!ok)return;
+      var a=document.createElement("a");a.className="btn btn-secondary";a.href="admin.html";a.textContent="لوحة المشرف";cta.appendChild(a);
+    }).catch(function(){});
   }).catch(function(){});
 }catch(e){}})();
 </script>
