@@ -37,6 +37,495 @@
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
       <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="platform.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- رأس الصفحة: مسار التنقل + عنوان المحاضرة -->
+  <section class="page-hero band">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسار التنقل">
+        <ol>
+          <li><a href="platform.html">الرئيسية</a></li>
+          <li><a id="crumbSem" href="platform.html#semesters">المواد الدراسية</a></li>
+          <li><a id="crumbCourse" class="en" href="platform.html#semesters">المادة</a></li>
+          <li><span aria-current="page">وضع الدراسة</span></li>
+        </ol>
+      </nav>
+      <div class="c-body" id="studyHead"></div>
+    </div>
+  </section>
+
+  <main class="container study" id="content"></main>
+
+  <section class="container ai-panel" id="aiPanel" hidden></section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a class="brand" href="platform.html">
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
+          <span data-site-title></span>
+        </a>
+        <p class="foot-uni" id="footUni" hidden></p>
+        <p id="footNotice" hidden></p>
+      </div>
+      <nav class="footer-links" aria-label="روابط التذييل">
+        <a href="platform.html#semesters">المواد</a>
+        <a href="platform.html#latest">المحاضرات</a>
+        <a href="platform.html#professors">الأساتذة</a>
+        <a href="platform.html#tools">أدوات الطالب</a>
+        <a href="platform.html#faq">الأسئلة الشائعة</a>
+      </nav>
+    </div>
+    <div class="container footer-bottom" id="footBottom"></div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=p3-23"></script>
+  <script src="js/i18n.js?v=p3-23"></script>
+  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/auth.js?v=p3-23"></script>
+  <script src="js/nav.js?v=p3-23"></script>
+  <script src="js/ai-chat.js?v=p3-23"></script>
+  <script>
+    (function () {
+      var $ = MS.$, el = MS.el;
+      var PASS = 70; // نسبة النجاح لتعليم المحاضرة كمقروءة تلقائياً
+
+      if (MS.dataError()) return;
+      MS.initShared();
+      MS.initHeader();
+      $("footBottom").textContent = "© " + new Date().getFullYear() + " " + SITE.title;
+      document.title = "وضع الدراسة | " + SITE.title;
+
+      var params = new URLSearchParams(location.search);
+      var course = MS.course(params.get("id"));
+      var num = parseInt(params.get("lec"), 10);
+      var lecture = course && course.lectures.filter(function (l) { return l.number === num; })[0];
+      var head = $("studyHead"), root = $("content");
+
+      function showMessage(title, text, href, label) {
+        head.appendChild(el("h1", "course-title", "وضع الدراسة"));
+        var box = el("div", "empty");
+        box.appendChild(el("strong", "", title));
+        box.appendChild(el("p", "", text));
+        if (href) {
+          var a = el("a", "btn btn-secondary btn-sm", label);
+          a.href = href;
+          box.appendChild(a);
+        }
+        root.appendChild(box);
+      }
+
+      if (!course || !lecture || !lecture.study) {
+        showMessage("وضع الدراسة غير جاهز", "الرابط غير صحيح أو أن وضع الدراسة غير جاهز لهذه المحاضرة.", "platform.html#semesters", "المواد الدراسية");
+        return;
+      }
+
+      MS.setLast(course.id);
+      if (lecture.ai && SITE.aiEndpoint) AIChat.mount($("aiPanel"), { endpoint: SITE.aiEndpoint, lectureId: course.id + "-" + lecture.number });
+      var courseHref = "course.html?id=" + encodeURIComponent(course.id);
+      var semester = SEMESTERS.filter(function (s) { return s.id === course.semester; })[0];
+      if (semester) { $("crumbSem").textContent = semester.name; $("crumbSem").href = "semester.html?id=" + semester.id; }
+      $("crumbCourse").textContent = course.name;
+      $("crumbCourse").href = courseHref;
+
+      /* ---------- رأس الصفحة ---------- */
+      head.appendChild(el("p", "course-crumb", "وضع الدراسة"));
+      head.appendChild(el("h1", "course-title en", lecture.title));
+      if (lecture.titleAr) head.appendChild(el("p", "course-title-ar", lecture.titleAr));
+      var actions = el("div", "c-actions");
+      var back = el("a", "btn btn-secondary btn-sm", "ملف المحاضرة");
+      back.href = courseHref + "#lec-" + lecture.number;
+      actions.appendChild(back);
+      head.appendChild(actions);
+
+      var loading = el("p", "study-loading", "جارٍ تحميل محتوى الدراسة…");
+      loading.setAttribute("role", "status");
+      root.appendChild(loading);
+
+      /* ---------- تحميل محتوى الدراسة (ملف لكل محاضرة) ---------- */
+      var key = course.id + "-" + lecture.number;
+      var appSrc = document.querySelector('script[src^="js/app.js"]');
+      var ver = appSrc && /[?&]v=([\w.-]+)/.exec(appSrc.getAttribute("src"));
+      var loader = document.createElement("script");
+      loader.src = "data/study/" + key + ".js" + (ver ? "?v=" + ver[1] : "");
+      loader.onload = function () {
+        var data = window.STUDY && STUDY[key];
+        root.removeChild(loading);
+        if (!data || !data.topics || !data.topics.length) { failLoad(); return; }
+        start(data.topics);
+      };
+      loader.onerror = function () { if (loading.parentNode) root.removeChild(loading); failLoad(); };
+      document.head.appendChild(loader);
+
+      function failLoad() {
+        var box = el("div", "empty");
+        box.setAttribute("role", "alert");
+        box.appendChild(el("strong", "", "تعذّر تحميل محتوى الدراسة. حدّث الصفحة، وإن استمر الخطأ فأبلغ مُعدّ الموقع."));
+        root.appendChild(box);
+      }
+
+      function start(topics) {
+        /* ---------- الحالة المحفوظة على هذا الجهاز ---------- */
+        // ans: "رقم الموضوع:رقم السؤال" ← 1 صحيحة، 0 خاطئة (آخر إجابة)
+        var total = topics.reduce(function (n, t) { return n + t.quiz.length; }, 0);
+        var st = (function () {
+          var all = MS.load(MS.KEY.study, {}) || {};
+          var s = all[key] || {};
+          var ti = Math.min(Math.max(parseInt(s.ti, 10) || 0, 0), topics.length - 1);
+          return { ti: ti, ans: s.ans && typeof s.ans === "object" ? s.ans : {} };
+        })();
+        function save() {
+          var all = MS.load(MS.KEY.study, {}) || {};
+          all[key] = { ti: st.ti, ans: st.ans };
+          MS.save(MS.KEY.study, all);
+        }
+        function ak(t, q) { return t + ":" + q; }
+        function answeredCount() { return Object.keys(st.ans).length; }
+        function rightCount() { return Object.keys(st.ans).filter(function (k) { return st.ans[k] === 1; }).length; }
+        function topicDone(t) {
+          return topics[t].quiz.every(function (q, i) { return (ak(t, i) in st.ans); });
+        }
+        function wrongRefs() {
+          var out = [];
+          topics.forEach(function (t, ti) {
+            t.quiz.forEach(function (q, qi) { if (st.ans[ak(ti, qi)] === 0) out.push({ t: ti, q: qi }); });
+          });
+          return out;
+        }
+
+        var view = answeredCount() >= total ? "result" : "learn";
+        var mode = "topic";   // topic: اختبار موضوع واحد، retry: إعادة الأخطاء
+        var seq = [], pos = 0;
+
+        /* ---------- الشريط العلوي: الموضوع الحالي والتنقل بين المواضيع ---------- */
+        var top = el("div", "study-top");
+        var count = el("div", "study-count");
+        var countLabel = el("span", "", "الموضوع");
+        var countNum = el("span", "en");
+        count.appendChild(countLabel);
+        count.appendChild(countNum);
+        top.appendChild(count);
+        var bar = el("div", "bar");
+        var fill = el("i");
+        bar.appendChild(fill);
+        top.appendChild(bar);
+        var steps = el("nav", "study-steps");
+        steps.setAttribute("aria-label", "المواضيع");
+        top.appendChild(steps);
+        root.appendChild(top);
+
+        var stage = el("div", "study-stage");
+        root.appendChild(stage);
+
+        function paintTop() {
+          countNum.textContent = (st.ti + 1) + " / " + topics.length;
+          var done = topics.filter(function (t, i) { return topicDone(i); }).length;
+          fill.style.setProperty("--p", Math.round(done / topics.length * 100) + "%");
+          steps.textContent = "";
+          topics.forEach(function (t, i) {
+            var b = el("button", "study-step" + (i === st.ti && view !== "result" ? " is-current" : "") + (topicDone(i) ? " is-done" : ""), String(i + 1));
+            b.type = "button";
+            b.title = t.term;
+            b.setAttribute("aria-label", t.term);
+            if (i === st.ti && view !== "result") b.setAttribute("aria-current", "step");
+            b.addEventListener("click", function () { goLearn(i); });
+            steps.appendChild(b);
+          });
+        }
+
+        function goLearn(i) {
+          st.ti = i; save();
+          view = "learn"; mode = "topic";
+          render();
+        }
+        function goQuiz(list, m) {
+          seq = list; pos = 0; mode = m; view = "quiz";
+          render();
+        }
+
+        /* ---------- عرض الموضوع ---------- */
+        function renderLearn(t) {
+          var card = el("section", "study-card card");
+          var eyebrow = el("p", "study-eyebrow");
+          eyebrow.appendChild(el("span", "", "الموضوع"));
+          eyebrow.appendChild(el("span", "en", String(st.ti + 1)));
+          card.appendChild(eyebrow);
+          var h = el("h2", "study-term en", t.term);
+          h.tabIndex = -1;
+          h.setAttribute("data-focus", "");
+          card.appendChild(h);
+          var tt = el("p", "study-title", t.title);
+          tt.setAttribute("data-i18n-skip", "");
+          card.appendChild(tt);
+
+          if (t.words && t.words.length) {
+            card.appendChild(el("h3", "study-sub", "الكلمات الصعبة ونطقها"));
+            var wl = el("ul", "study-wordlist");
+            t.words.forEach(function (w) {
+              var li = el("li");
+              li.appendChild(el("span", "study-word en", w.en));
+              var p = el("span", "study-pron", w.pron);
+              p.setAttribute("data-i18n-skip", "");
+              li.appendChild(p);
+              wl.appendChild(li);
+            });
+            card.appendChild(wl);
+          }
+
+          var fl = el("ol", "study-facts");
+          t.facts.forEach(function (f, i) {
+            var li = el("li", "study-fact");
+            var row = el("div", "study-fact-head");
+            row.appendChild(el("span", "study-n en", String(i + 1)));
+            row.appendChild(el("div", "study-en en", f.en));
+            li.appendChild(row);
+            var ar = el("p", "study-ar", f.ar);
+            ar.setAttribute("data-i18n-skip", "");
+            li.appendChild(ar);
+            var tr = el("div", "study-trick");
+            tr.appendChild(el("span", "study-trick-label", "حيلة الحفظ"));
+            var tp = el("p", "", f.trick);
+            tp.setAttribute("data-i18n-skip", "");
+            tr.appendChild(tp);
+            li.appendChild(tr);
+            fl.appendChild(li);
+          });
+          card.appendChild(fl);
+
+          var acts = el("div", "study-actions");
+          if (st.ti > 0) {
+            var prev = el("button", "btn btn-secondary", "السابق");
+            prev.type = "button";
+            prev.addEventListener("click", function () { goLearn(st.ti - 1); });
+            acts.appendChild(prev);
+          }
+          var go = el("button", "btn btn-primary", "ابدأ الاختبار القصير");
+          go.type = "button";
+          go.addEventListener("click", function () {
+            goQuiz(t.quiz.map(function (q, i) { return { t: st.ti, q: i }; }), "topic");
+          });
+          acts.appendChild(go);
+          card.appendChild(acts);
+          return card;
+        }
+
+        /* ---------- عرض السؤال ---------- */
+        function renderQuiz() {
+          var ref = seq[pos];
+          var t = topics[ref.t], q = t.quiz[ref.q];
+          var card = el("section", "study-card card");
+          var eyebrow = el("p", "study-eyebrow");
+          eyebrow.appendChild(el("span", "", mode === "retry" ? "إعادة الأخطاء" : "السؤال"));
+          eyebrow.appendChild(el("span", "en", (pos + 1) + " / " + seq.length));
+          card.appendChild(eyebrow);
+          var qh = el("h2", "study-q en", q.q);
+          qh.tabIndex = -1;
+          qh.setAttribute("data-focus", "");
+          card.appendChild(qh);
+
+          var list = el("ul", "study-opts");
+          var feedback = el("div", "study-feedback");
+          feedback.setAttribute("aria-live", "polite");
+          var buttons = [];
+          var answered = false;
+
+          function nextLabel() {
+            if (pos < seq.length - 1) return "السؤال التالي";
+            if (mode === "topic" && ref.t < topics.length - 1) return "الموضوع التالي";
+            return "عرض النتيجة";
+          }
+          function choose(i) {
+            if (answered) return;
+            answered = true;
+            var ok = i === q.answer;
+            st.ans[ak(ref.t, ref.q)] = ok ? 1 : 0;
+            save();
+            buttons.forEach(function (b, j) {
+              b.disabled = true;
+              if (j === q.answer) b.classList.add("is-correct");
+              else if (j === i) b.classList.add("is-wrong");
+            });
+            feedback.classList.add(ok ? "is-correct" : "is-wrong");
+            feedback.appendChild(el("strong", "study-verdict", ok ? "إجابة صحيحة" : "إجابة خاطئة"));
+            var why = el("p", "study-why", q.why);
+            why.setAttribute("data-i18n-skip", "");
+            feedback.appendChild(why);
+            var nx = el("button", "btn btn-primary", nextLabel());
+            nx.type = "button";
+            nx.addEventListener("click", next);
+            var row = el("div", "study-actions");
+            row.appendChild(nx);
+            feedback.appendChild(row);
+            paintTop();
+            nx.focus();
+          }
+          q.options.forEach(function (o, i) {
+            var li = el("li");
+            var b = el("button", "study-opt en", o);
+            b.type = "button";
+            b.addEventListener("click", function () { choose(i); });
+            buttons.push(b);
+            li.appendChild(b);
+            list.appendChild(li);
+          });
+          card.appendChild(list);
+          card.appendChild(feedback);
+          return card;
+        }
+
+        function next() {
+          var ref = seq[pos];
+          if (pos < seq.length - 1) { pos++; render(); return; }
+          if (mode === "topic" && ref.t < topics.length - 1) { goLearn(ref.t + 1); return; }
+          view = "result";
+          render();
+        }
+
+        /* ---------- النتيجة ---------- */
+        function renderResult() {
+          var card = el("section", "study-card card");
+          var h = el("h2", "study-term", "نتيجتك");
+          h.tabIndex = -1;
+          h.setAttribute("data-focus", "");
+          card.appendChild(h);
+
+          var right = rightCount(), answered = answeredCount();
+          var pct = Math.round(right / total * 100);
+          var pass = answered >= total && pct >= PASS;
+          card.appendChild(el("strong", "study-score", right + " / " + total));
+          var sb = el("div", "bar");
+          var sf = el("i");
+          sf.style.setProperty("--p", pct + "%");
+          sb.appendChild(sf);
+          card.appendChild(sb);
+          var note = el("p", "study-note");
+          note.appendChild(el("span", "", "الحد الأدنى للنجاح"));
+          note.appendChild(document.createTextNode(" "));
+          note.appendChild(el("span", "en", PASS + "%"));
+          card.appendChild(note);
+
+          var msg;
+          if (pass) msg = "أحسنت! أتممت المحاضرة بنتيجة جيدة.";
+          else if (answered < total) msg = "لم تجب عن كل الأسئلة بعد. أكمل المواضيع المتبقية.";
+          else msg = "لم تبلغ نسبة النجاح بعد. راجع المواضيع ثم أعد الأسئلة التي أخطأت فيها.";
+          card.appendChild(el("p", "study-msg" + (pass ? " is-pass" : ""), msg));
+
+          if (pass && !MS.progress.isRead(course.id, lecture.number)) {
+            MS.progress.toggle(course.id, lecture.number);
+            MS.toast("تم تعليم المحاضرة كمقروءة");
+          }
+
+          var wrong = wrongRefs();
+          if (wrong.length) {
+            card.appendChild(el("h3", "study-sub", "الأسئلة التي أخطأت فيها"));
+            var wl = el("ul", "study-wrong");
+            wrong.forEach(function (r) {
+              var li = el("li");
+              li.appendChild(el("div", "study-en en", topics[r.t].quiz[r.q].q));
+              var rv = el("button", "mark-btn", "راجع الموضوع");
+              rv.type = "button";
+              rv.appendChild(el("span", "en", topics[r.t].term));
+              rv.addEventListener("click", function () { goLearn(r.t); });
+              li.appendChild(rv);
+              wl.appendChild(li);
+            });
+            card.appendChild(wl);
+          }
+
+          var acts = el("div", "study-actions");
+          if (wrong.length) {
+            var re = el("button", "btn btn-primary", "أعد الأسئلة التي أخطأت فيها");
+            re.type = "button";
+            re.addEventListener("click", function () { goQuiz(wrong, "retry"); });
+            acts.appendChild(re);
+          }
+          var again = el("button", "btn btn-secondary", "ابدأ من جديد");
+          again.type = "button";
+          again.addEventListener("click", function () {
+            st.ans = {}; st.ti = 0; save();
+            view = "learn"; mode = "topic";
+            MS.toast("بدأت من جديد");
+            render();
+          });
+          acts.appendChild(again);
+          var home = el("a", "btn btn-secondary", "ارجع إلى المادة");
+          home.href = courseHref;
+          acts.appendChild(home);
+          card.appendChild(acts);
+          return card;
+        }
+
+        function render() {
+          stage.textContent = "";
+          paintTop();
+          var card = view === "result" ? renderResult() : view === "quiz" ? renderQuiz() : renderLearn(topics[st.ti]);
+          stage.appendChild(card);
+          var f = stage.querySelector("[data-focus]");
+          if (f) f.focus({ preventScroll: true });
+          stage.scrollIntoView({ block: "start" });
+        }
+        render();
+      }
+    })();
+  </script>
+  <script>if (window.I18N) I18N.apply();</script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>وضع الدراسة | المنصة العراقية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="المنصة العراقية">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body>
+  <noscript>
+    <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
+  </noscript>
+  <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
         <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
           <option value="ar" lang="ar">عربي</option>
