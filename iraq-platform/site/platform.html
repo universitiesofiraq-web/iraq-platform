@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>المنصة العراقية</title>
-  <meta name="description" content="ملفات المواد الدراسية للطلاب الدوليين في مكان واحد.">
+  <meta name="description" content="محاضراتك وموادك الدراسية في مكان واحد.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,8 +20,47 @@
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
     try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
   </script>
+
+  <style>
+    /* Scoped to the department landing page; shared study/PDF layouts stay intact. */
+    .platform-home .hero-grid { grid-template-columns: minmax(0,1fr); padding-block: 24px; gap: 0; }
+    .platform-home .hero-media:has(figure[hidden]) { display:none; }
+    .platform-home .hero-media img { max-height:180px; object-fit:cover; }
+    .platform-home .hero { margin-top: 20px; }
+    .platform-home .hero h1 { font-size: clamp(1.45rem, 2.5vw, 2.15rem); margin: 0; line-height: 1.55; }
+    .department-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+    .platform-home .hero-sub { margin-top: 4px; font-size: 1rem; }
+    .platform-home .hero-uni { margin-top: 8px; }
+    .platform-home .hero-cta { margin-top: 18px; gap: 10px; }
+    .platform-home .section { padding-top: 28px; }
+    .platform-home .section-head { margin-bottom: 16px; }
+    .platform-home .sb-top { padding: 12px; min-height: 68px; }
+    .platform-home .sidebar .brand { font-size: 1rem; }
+    .platform-home .sb-user { margin: 10px 12px 0; padding: 10px; }
+    .platform-home .sb-user-text { gap: 4px; }
+    .platform-home .nav-link { min-height: 44px; padding-block: 8px; }
+    .platform-home .nav-sec + .nav-sec { margin-top: 10px; padding-top: 10px; }
+    .platform-home .sb-scroll { scrollbar-width: thin; }
+    .platform-home .quick-item .badge { position: static; flex: none; margin-inline-start: auto; align-self: flex-start; }
+    .platform-home .quick-item { gap: 12px; }
+    .platform-home .quick-text { overflow-wrap: anywhere; }
+    .upcoming { padding: 16px; }
+    .upcoming > summary, .nav-upcoming > summary { cursor: pointer; font-weight: 600; min-height: 44px; padding-block: 10px; }
+    .upcoming .quick { width: 100%; margin-top: 8px; }
+    .nav-upcoming { border-top: 1px solid var(--nav-line); margin-top: 12px; padding-top: 4px; color: var(--nav-muted); }
+    .nav-upcoming > summary { padding-inline: 12px; font-size: .85rem; }
+    .department-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .department-actions:empty { display: none; }
+    @media (min-width:1081px) { html.nav-min .nav-upcoming { display: none; } }
+    @media (max-width:600px) {
+      .platform-home .hero-grid { padding-block: 18px; }
+      .platform-home .hero-cta .btn { flex: 1 1 140px; font-size: .9rem; padding-inline: 12px; }
+      .platform-home .quick { grid-template-columns: minmax(0,1fr); }
+      .platform-home .hero { margin-top: 12px; }
+    }
+  </style>
 </head>
-<body>
+<body class="platform-home">
   <noscript>
     <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
   </noscript>
@@ -54,15 +93,13 @@
   <section class="hero band" id="home">
     <div class="container hero-grid">
       <div class="hero-text">
-        <p class="hero-brand" data-site-title></p>
         <p class="eyebrow">المنصة العراقية</p>
-        <h1 id="heroTitle">مواد قسمك في مكان واحد</h1>
+        <div class="department-heading"><h1 id="heroTitle">مواد قسمك في مكان واحد</h1><a id="changeDepartment" class="btn btn-secondary btn-sm" href="catalog.html">تغيير القسم</a></div>
         <p class="hero-sub" id="heroSub"></p>
         <p class="hero-uni" id="heroUni" hidden></p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="#semesters">استكشف المواد الدراسية</a>
           <a class="btn btn-secondary" href="#latest">أحدث المحاضرات</a>
-          <a class="btn btn-secondary" href="representatives.html">التمثيل الطلابي</a>
         </div>
       </div>
       <div class="hero-media">
@@ -76,8 +113,6 @@
     <div class="quick">
       <a class="quick-item card hue-1" href="#semesters"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
       <a class="quick-item card hue-2" href="#latest"><span class="tile" data-ico="file"></span><span class="quick-text"><strong>أحدث المحاضرات</strong><small>آخر الملفات المرفوعة</small></span></a>
-      <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
-      <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
       <button class="quick-item card hue-5" type="button" data-go="fav"><span class="tile" data-ico="star"></span><span class="quick-text"><strong>المفضلة</strong><small>موادك المحفوظة</small></span><span class="badge" id="favCount">0</span></button>
       <a class="quick-item card hue-6" id="reviewShortcut" href="#review" hidden><span class="tile" data-ico="list"></span><span class="quick-text"><strong>قائمة المراجعة</strong><small>راجعها لاحقاً</small></span><span class="badge" id="reviewCount">0</span></a>
     </div>
@@ -210,6 +245,16 @@
     </div>
   </section>
 
+  <section class="section upcoming-section" aria-label="ميزات قادمة">
+    <div class="container"><details class="card upcoming"><summary>ميزات قادمة</summary>
+      <div class="quick">
+      <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
+      <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
+        <span class="quick-item card is-soon" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>مساعد الدراسة</strong><small>سيُتاح بعد اكتمال ربطه بالمحاضرات</small></span><span class="badge badge-soon">قريباً</span></span>
+      </div>
+    </details></div>
+  </section>
+
   <!-- ===== 6. المساعدة: كيف تبدأ + الأسئلة الشائعة ===== -->
   <section class="section" id="help">
     <div class="container help-grid">
@@ -256,7 +301,7 @@
           </details>
           <details class="card">
             <summary>أين تُحفظ مفضلتي وتقدمي؟</summary>
-            <p>على هذا الجهاز وفي هذا المتصفح فقط. لو فتحت الموقع من جهاز آخر أو مسحت بيانات المتصفح فستبدأ من جديد.</p>
+            <p>للزائر، تُحفظ على هذا الجهاز وفي هذا المتصفح فقط. عند تسجيل الدخول، تتم مزامنة المفضلة والتقدم مع حسابك عند الاتصال بالإنترنت.</p>
           </details>
         </div>
       </div>
@@ -774,36 +819,75 @@
     }
   </script>
 <script>
-(function(){try{
-  if(!window.IQ_DEPT)return;
-  var h=document.getElementById("heroTitle");if(h)h.textContent=IQ_DEPT.name;
-  document.title=IQ_DEPT.name+" | المنصة العراقية";
-  var cta=document.querySelector(".hero-cta");if(!cta)return;
-  var a=document.createElement("a");a.className="btn btn-secondary";a.href="catalog.html";a.textContent="تغيير القسم";cta.appendChild(a);
-  fetch("/api/catalog/department?id="+IQ_DEPT.id).then(function(r){return r.json()}).then(function(d){
-    if(!d||!d.can)return;
-    var m=document.createElement("a");m.className="btn btn-secondary";m.href="dept.html?id="+IQ_DEPT.id+"&manage=1";m.textContent="إدارة القسم";cta.appendChild(m);
-    fetch("/api/auth/me").then(function(r){return r.json()}).then(function(me){
-      if(!me||!me.user)return;
-      var ok=me.user.admin||(me.user.scopes||[]).some(function(x){return x.level==="rep"});
-      if(!ok)return;
-      var a=document.createElement("a");a.className="btn btn-secondary";a.href="admin.html";a.textContent="لوحة المشرف";cta.appendChild(a);
-    }).catch(function(){});
-  }).catch(function(){});
-}catch(e){}})();
-</script>
-<script>
-(function(){try{
-  var cta=document.querySelector(".hero-cta");if(!cta||!window.IQ_DEPT)return;
-  fetch("/api/auth/me").then(function(r){return r.json()}).then(function(me){
-    var u=me&&me.user;
-    if(!u){var l=document.createElement("a");l.className="btn btn-secondary";l.href="login.html?next="+encodeURIComponent("platform.html?dept="+IQ_DEPT.id);l.textContent="سجّل الدخول لطلب تمثيل القسم";cta.appendChild(l);return;}
-    if(u.admin||(u.scopes||[]).some(function(x){return x.level==="rep"}))return;
-    var b=document.createElement("button");b.type="button";b.className="btn btn-secondary";b.textContent="اطلب تمثيل هذا القسم";
-    b.onclick=function(){fetch("/api/auth/rep-request",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:"department",id:IQ_DEPT.id})}).then(function(r){return r.json()}).then(function(d){b.textContent=d.ok?"تم إرسال طلب التمثيل":"تعذّر الإرسال";b.disabled=true;}).catch(function(){b.textContent="تعذّر الإرسال";});};
-    cta.appendChild(b);
-  }).catch(function(){});
-}catch(e){}})();
+(function () {
+  "use strict";
+  var lang = window.MS && MS.lang || "ar";
+  function text(ar, en, fa) { return lang === "en" ? en : lang === "fa" ? fa : ar; }
+  var title = document.getElementById("heroTitle");
+  var sub = document.getElementById("heroSub");
+  var description = document.getElementById("heroUni");
+  if (window.IQ_DEPT) {
+    title.textContent = IQ_DEPT.name;
+    document.title = IQ_DEPT.name + " | المنصة العراقية";
+    // The existing subtitle is university · college · department. Remove the repeated heading.
+    sub.textContent = (sub.textContent || "").split(" · ").filter(function (part) { return part.trim() !== IQ_DEPT.name; }).join(" · ");
+  }
+  description.hidden = false;
+  description.textContent = text("محاضراتك وموادك الدراسية في مكان واحد", "Your lectures and study materials in one place", "درس‌ها و جزوه‌های شما در یک مکان");
+  var foot = document.getElementById("footUni");
+  if (foot) { foot.hidden = false; foot.textContent = description.textContent; }
+  var brand = document.querySelector(".sidebar [data-site-title]");
+  if (brand) { brand.removeAttribute("data-site-title"); brand.textContent = text("المنصة العراقية", "Iraqi Universities", "پلتفرم دانشگاه‌های عراق"); }
+
+  // Keep unfinished features available in one collapsed section below working links.
+  var nav = document.getElementById("nav");
+  if (nav) {
+    var upcoming = document.createElement("details"); upcoming.className = "nav-upcoming";
+    var summary = document.createElement("summary"); summary.textContent = text("ميزات قادمة", "Coming soon", "به‌زودی"); upcoming.appendChild(summary);
+    var list = document.createElement("ul"); list.className = "nav-list";
+    document.querySelectorAll(".sidebar .nav-link.is-soon").forEach(function (item) { list.appendChild(item.parentNode); });
+    upcoming.appendChild(list);
+    nav.querySelectorAll(".nav-sec").forEach(function (section) { if (!section.querySelector(".nav-item")) section.remove(); });
+    if (list.children.length) nav.appendChild(upcoming);
+    var rep = document.createElement("a"); rep.className = "nav-link"; rep.href = "representatives.html";
+    if (window.MS) rep.appendChild(MS.icon("users",22));
+    var repLabel = document.createElement("span"); repLabel.className = "nav-label";
+    repLabel.textContent = text("التمثيل الطلابي", "Student representatives", "نمایندگان دانشجویان"); rep.appendChild(repLabel);
+    nav.insertBefore(rep, upcoming.parentNode ? upcoming : null);
+  }
+  var userName = document.querySelector(".sb-user-text strong");
+  var userHint = document.querySelector(".sb-user-text small");
+  if (userHint) userHint.textContent = text("محفوظ على هذا الجهاز فقط", "Saved on this device only", "فقط در این دستگاه ذخیره می‌شود");
+  var toolsNote = document.querySelector("#tools .section-head p");
+  if (toolsNote) toolsNote.textContent = text("محفوظ على هذا الجهاز فقط. سجّل الدخول لمزامنة المفضلة والتقدم بين أجهزتك.", "Saved on this device only. Sign in to sync favorites and progress across devices.", "فقط در این دستگاه ذخیره می‌شود. برای همگام‌سازی علاقه‌مندی‌ها و پیشرفت وارد شوید.");
+  // Preserve authorized department management, outside the primary learning actions.
+  var actions = document.createElement("div"); actions.className = "department-actions";
+  document.querySelector(".hero-text").appendChild(actions);
+  var departmentAccess = Promise.resolve(false);
+  if (window.IQ_DEPT) {
+    departmentAccess = fetch("/api/catalog/department?id=" + encodeURIComponent(IQ_DEPT.id)).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d || !d.can) return false;
+      var manage = document.createElement("a"); manage.className = "btn btn-secondary btn-sm";
+      manage.href = "dept.html?id=" + encodeURIComponent(IQ_DEPT.id) + "&manage=1";
+      manage.textContent = text("إدارة القسم", "Manage department", "مدیریت بخش"); actions.appendChild(manage);
+      return true;
+    }).catch(function () { return false; });
+  }
+  fetch("/api/auth/me", {cache:"no-store"}).then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+    var u = me && me.user;
+    if (!u) return;
+    if (userName) { userName.textContent = u.name || text("حسابي", "My account", "حساب من"); userName.setAttribute("data-i18n-skip", ""); }
+    if (userHint) userHint.textContent = text("تم تسجيل الدخول", "Signed in", "وارد شده‌اید");
+    if (toolsNote) toolsNote.textContent = text("تتم مزامنة المفضلة والتقدم مع حسابك عند الاتصال بالإنترنت.", "Favorites and progress sync with your account when online.", "علاقه‌مندی‌ها و پیشرفت هنگام اتصال به اینترنت همگام می‌شوند.");
+    if (window.IQ_DEPT && (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; }))) {
+      departmentAccess.then(function (allowed) {
+      if (!allowed) return;
+      var admin = document.createElement("a"); admin.className = "btn btn-secondary btn-sm"; admin.href = "admin.html";
+      admin.textContent = text("لوحة المشرف", "Admin dashboard", "پنل مدیریت"); actions.appendChild(admin);
+      });
+    }
+  }).catch(function () {});
+})();
 </script>
 </body>
 </html>
