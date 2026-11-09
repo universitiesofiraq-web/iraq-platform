@@ -169,8 +169,9 @@
         var unis = res[0], d = res[1];
         var box = $("teams"); box.innerHTML = "";
         if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
-        if (!unis.length) { box.textContent = "لا توجد جامعات بعد."; return; }
-        unis.forEach(function (u) {
+        var withRep = unis.filter(function (u) { return d.items.some(function (it) { return it.university_id === u.id && it.level === "rep"; }); });
+        if (!withRep.length) { box.textContent = "لا توجد جامعات لها ممثل بعد."; return; }
+        withRep.forEach(function (u) {
           var sec = el("div", null, "ad-uni");
           var head = el("div", null, "ad-uni-h");
           head.appendChild(el("b", u.name_ar));
