@@ -1,0 +1,51 @@
+.intro:has(.intro-video) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.125rem;
+  min-height: 0;
+}
+
+.intro:has(.intro-video) .features {
+  position: static;
+  flex-wrap: wrap;
+}
+
+.intro-video {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 46rem);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #cbd5e9;
+  border-radius: 1rem;
+  background: #17132c;
+  box-shadow: 0 10px 30px #25204424;
+  direction: rtl;
+}
+
+.intro-video figcaption {
+  padding: .6rem .9rem;
+  color: #f1eaff;
+  font-size: .9rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.intro-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #17132c;
+}
+
+.intro-video :focus-visible {
+  outline: 3px solid #89e5eb;
+  outline-offset: -4px;
+}
+
+@media (max-width: 780px) {
+  main:has(.intro-video) > .login { order: -1; }
+  .intro-video { align-self: center; }
+}
