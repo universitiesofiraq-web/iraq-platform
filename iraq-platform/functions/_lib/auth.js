@@ -8,7 +8,7 @@
 
 import { handleScopes, policy, userScopes, isAdminUser } from "./scope.js";
 
-export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "iq.dept"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
 export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
 export const ANNOUNCE_ROLES = ["admin"]; // التبليغات عامة للمنصة: للمشرف العام فقط (الممثل مقيّد بنطاقه)
