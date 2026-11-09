@@ -62,6 +62,18 @@ export async function handleCatalog(req, env) {
            WHERE st.department_id=? ORDER BY st.number, t.number, sb.name_ar`, id);
         return json({ ok: true, items });
       }
+      if (part === "subject") {
+        const id = num(q.get("id"));
+        if (!id) return fail("bad_request", 400);
+        const row = await env.DB.prepare(
+          `SELECT sb.id, sb.name_ar, sb.name_en, sb.professor, st.number AS stage, t.number AS term,
+                  d.id AS department_id, d.name_ar AS department, c.id AS college_id, c.name_ar AS college,
+                  u.id AS university_id, u.name_ar AS university
+           FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+           JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
+           JOIN universities u ON u.id=c.university_id WHERE sb.id=?`).bind(id).first();
+        return row ? json({ ok: true, item: row }) : fail("not_found", 404);
+      }
       return fail("not_found", 404);
     }
 
