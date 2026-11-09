@@ -7,10 +7,15 @@
   var notice = $("notice");
   function say(text) { notice.textContent = text ? T(text) : ""; }
 
+  // آخر قسم فتحه الطالب: يتابع إليه بدل صفحة الجامعات
+  function savedHome() {
+    try { var s = JSON.parse(localStorage.getItem("iq.dept") || "null"); if (s && Number(s.id) > 0) return "dept.html?id=" + Number(s.id); } catch (e) { /* لا شيء */ }
+    return "index.html";
+  }
   // الوجهة بعد الدخول: مسار نسبي داخل الموقع فقط
   function nextUrl() {
     var n = new URLSearchParams(location.search).get("next") || "";
-    return /^[A-Za-z0-9._\-\/?=&%#]+$/.test(n) && n.indexOf("//") === -1 && n.indexOf(":") === -1 ? n.replace(/^\//, "") : "index.html";
+    return /^[A-Za-z0-9._\-\/?=&%#]+$/.test(n) && n.indexOf("//") === -1 && n.indexOf(":") === -1 ? n.replace(/^\//, "") : savedHome();
   }
 
   /* ---------- نافذة التواصل ---------- */
@@ -54,7 +59,7 @@
     box.appendChild(go);
     if (u.role === "admin" || u.role === "rep" || u.role === "uploader") {
       var up = row("رفع الملفات", ICON.go);
-      up.addEventListener("click", function () { location.href = "upload.html"; });
+      up.addEventListener("click", function () { location.href = "contribute.html"; });
       box.appendChild(up);
     }
     if (u.role === "admin" || u.role === "rep") {
