@@ -75,7 +75,7 @@
       d.d.forEach(function (r) {
         var c = C[r[1]]; if (!c) return; var u = U[c.u]; if (!u) return;
         items.push({ k: "d", id: r[0], title: r[2], path: c.name + " · " + u.name, own: words(r[2]), all: words(r[2] + " " + c.name + " " + u.name + " " + u.en),
-          href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) + "&c=" + c.id + "&cn=" + encodeURIComponent(c.name) + "&d=" + r[0] + "&dn=" + encodeURIComponent(r[2]) });
+          href: "dept.html?id=" + r[0] });
       });
       return { U: U, items: items };
     }
