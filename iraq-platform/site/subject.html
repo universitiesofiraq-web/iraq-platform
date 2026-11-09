@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>المادة | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <style>
+    .sj{max-width:760px;margin:24px auto;padding:0 16px}
+    .sj h1{font-size:1.45rem;margin:6px 0}
+    .sj .crumb{opacity:.7;font-size:.9rem;margin-bottom:14px}
+    .sj h2{font-size:1.1rem;margin:22px 0 8px}
+    .sj-item{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border:1px solid rgba(128,128,128,.3);border-radius:12px;margin-bottom:8px}
+    .sj-item a{font-weight:600}
+    .sj-item small{opacity:.7}
+    .sj-act{display:flex;gap:6px;flex-wrap:wrap}
+    .sj-act button,.sj-top a{cursor:pointer;padding:6px 12px;border-radius:8px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit}
+    .sj-pend{border-color:#d69e2e;background:rgba(214,158,46,.08)}
+    .sj-tag{font-size:.75rem;padding:2px 8px;border-radius:99px;background:#d69e2e;color:#fff}
+    .sj-empty{opacity:.7;padding:18px;text-align:center}
+    .sj-rep{display:flex;gap:6px;width:100%}.sj-rep input{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit}
+    .sj-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <main class="sj">
+    <div class="sj-top"><a href="catalog.html">← الجامعات</a><a id="up" href="contribute.html">رفع ملف</a></div>
+    <div class="crumb" id="crumb"></div>
+    <h1 id="title">…</h1>
+    <p id="meta" class="crumb"></p>
+    <div id="pendBox" hidden><h2>بانتظار الموافقة</h2><div id="pend"></div></div>
+    <div id="files"></div>
+  </main>
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    var id = Number(new URLSearchParams(location.search).get("id"));
+    var cid = "s" + id;
+    var TYPE = { lecture: "محاضرات", quiz: "اختبارات", exam: "أسئلة سنوات سابقة" };
+    var canReview = false;
+
+    function post(p, body) {
+      return fetch("/api/" + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json(); });
+    }
+    function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+    function href(it) { return it.kind === "link" ? it.url : "/api/file/" + it.id; }
+
+    function row(it, pending) {
+      var r = el("div", null, "sj-item" + (pending ? " sj-pend" : ""));
+      var left = el("div");
+      var a = el("a", (it.number ? "المحاضرة " + it.number + (it.title ? " — " + it.title : "") + " · " : "") + it.label);
+      a.href = href(it); a.target = "_blank"; a.rel = "noopener";
+      left.appendChild(a);
+      var s = el("small", it.added ? " " + it.added : ""); left.appendChild(s);
+      if (pending) left.appendChild(el("span", "بانتظار الموافقة", "sj-tag"));
+      r.appendChild(left);
+      var act = el("div", null, "sj-act");
+      if (pending && canReview) {
+        var ok = el("button", "قبول"), no = el("button", "رفض");
+        ok.onclick = function () { post("review", { id: it.id, action: "approve" }).then(load); };
+        no.onclick = function () { post("review", { id: it.id, action: "reject" }).then(load); };
+        act.appendChild(ok); act.appendChild(no);
+      } else if (!pending) {
+        var rp = el("button", "إبلاغ");
+        rp.onclick = function () {
+          rp.hidden = true;
+          var f = el("div", null, "sj-rep"), inp = el("input"), send = el("button", "إرسال");
+          inp.placeholder = "سبب الإبلاغ (حقوق نشر، ملف خاطئ...)"; inp.maxLength = 300;
+          send.onclick = function () {
+            if (!inp.value.trim()) return;
+            post("report", { id: it.id, reason: inp.value }).then(function (d) { f.textContent = d.ok ? "شكراً، تم استلام البلاغ." : "تعذّر الإرسال."; });
+          };
+          f.appendChild(inp); f.appendChild(send); r.appendChild(f);
+        };
+        act.appendChild(rp);
+      }
+      if (canReview) {
+        var del = el("button", "حذف");
+        del.onclick = function () { if (confirm("حذف نهائي؟")) post("delete", { id: it.id }).then(load); };
+        act.appendChild(del);
+      }
+      r.appendChild(act);
+      return r;
+    }
+
+    function render(items) {
+      var box = $("files"); box.innerHTML = "";
+      var ok = items.filter(function (i) { return !i.status || i.status === "approved"; });
+      var pend = items.filter(function (i) { return i.status === "pending"; });
+      if (!ok.length) box.appendChild(el("div", "لا توجد ملفات معتمدة بعد.", "sj-empty"));
+      ["lecture", "quiz", "exam"].forEach(function (t) {
+        var list = ok.filter(function (i) { return i.type === t; }).sort(function (a, b) { return a.number - b.number; });
+        if (!list.length) return;
+        box.appendChild(el("h2", TYPE[t]));
+        list.forEach(function (i) { box.appendChild(row(i, false)); });
+      });
+      $("pendBox").hidden = !(canReview && pend.length);
+      var p = $("pend"); p.innerHTML = "";
+      if (canReview) pend.forEach(function (i) { p.appendChild(row(i, true)); });
+    }
+
+    function load() {
+      var src = canReview ? post("admin") : fetch("/api/uploads").then(function (r) { return r.json(); });
+      src.then(function (d) {
+        render(((d && d.items) || []).filter(function (i) { return i.courseId === cid; }));
+      });
+    }
+
+    fetch("/api/catalog/subject?id=" + id).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { $("title").textContent = "المادة غير موجودة"; return; }
+      var s = d.item;
+      $("title").textContent = s.name_ar;
+      $("crumb").textContent = s.university + " / " + s.college + " / " + s.department;
+      $("meta").textContent = "المرحلة " + s.stage + " — الكورس " + s.term + (s.professor ? " — " + s.professor : "");
+      document.title = s.name_ar + " | المنصة العراقية";
+      $("up").href = "contribute.html?subject=" + id;
+    });
+    fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+      var role = d && d.user && d.user.role; canReview = role === "admin" || role === "rep";
+    }).catch(function () {}).then(load);
+  })();
+  </script>
+</body>
+</html>
