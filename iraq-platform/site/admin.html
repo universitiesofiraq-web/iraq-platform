@@ -4,30 +4,250 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>إدارة الحسابات | المنصة العراقية</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>لوحة المشرف | المنصة العراقية</title>
   <link rel="icon" type="image/png" href="assets/icon-192.png">
   <meta name="theme-color" content="#13294B">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
-  <link rel="stylesheet" href="css/upload.css?v=p3-23">
-  <script>
-    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
-  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <style>
+    .ad-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+    .ad-tabs button{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
+    .ad-tabs button.on{background:#14307A;color:#fff;border-color:#14307A}
+    .ad-panel{display:none}.ad-panel.on{display:block}
+    .ad-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line,#2a3a6a);border-radius:12px;margin-bottom:8px}
+    .ad-row small{opacity:.75;display:block}
+    .ad-row .ad-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .ad-row button,.ad-row select{min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
+    .ad-form{display:grid;gap:8px;max-width:560px;margin:12px 0 22px}
+    .ad-form input,.ad-form select,.ad-form textarea{min-height:44px;width:100%;font:inherit;padding:6px 10px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit}
+    .ad-form textarea{min-height:90px}
+    .ad-form button{min-height:44px;border-radius:10px;border:0;background:#E0A93B;color:#0A1C4E;font:inherit;font-weight:600;cursor:pointer}
+    .ad-msg{min-height:1.2em;margin:8px 0}
+    .ad-tag{padding:2px 10px;border-radius:99px;font-size:.8rem;background:rgba(224,169,59,.18);color:#E0A93B}
+    .ad-hide{display:none!important}
+  </style>
 </head>
 <body>
-  <header class="up-top">
-    <div class="container up-top-in">
-      <a class="brand" href="index.html"><span>المنصة العراقية</span></a>
-      <a class="btn btn-secondary btn-sm" href="login.html">حسابي</a>
-    </div>
+  <header class="iq-top">
+    <a class="iq-brand" href="platform.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a href="contribute.html">رفع ملف</a><a class="iq-login" href="login.html">حسابي</a></nav>
   </header>
-  <main class="container up-main" id="main">
-    <h1 class="up-title">إدارة الحسابات</h1>
-    <p class="up-lead">هذه الصفحة للمشرفين فقط. يمكنك إيقاف حساب أو إعادة تفعيله، وتحديد دور كل شخص: طالب، أو رافع ملفات، أو ممثل الدفعة (يرفع الملفات ويكتب التبليغات).</p>
-    <p class="up-msg" id="msg" role="alert" hidden></p>
-    <section class="card up-card" aria-label="الحسابات"><div id="list"></div></section>
+  <main class="sj">
+    <h1>لوحة المشرف</h1>
+    <p id="gate" class="sj-empty">جارٍ التحقق من حسابك…</p>
+
+    <div id="app" class="ad-hide">
+      <div class="ad-tabs" role="tablist">
+        <button data-tab="users" class="ad-admin-only">الحسابات</button>
+        <button data-tab="teams">الفرق المستقلة</button>
+        <button data-tab="files">الملفات بانتظار المراجعة</button>
+        <button data-tab="reports">البلاغات</button>
+        <button data-tab="ann" class="ad-admin-only">التبليغات</button>
+      </div>
+      <p class="ad-msg" id="msg" role="alert"></p>
+
+      <section class="ad-panel" id="p-users">
+        <div id="users"></div>
+      </section>
+
+      <section class="ad-panel" id="p-teams">
+        <h2>أعضاء الفرق</h2>
+        <div id="teams"></div>
+        <h2>إضافة عضو</h2>
+        <div class="ad-form">
+          <input id="tEmail" type="email" dir="ltr" placeholder="name@gmail.com">
+          <select id="tLevel"><option value="uploader">رافع: ملفاته تظهر بعد موافقة الممثل</option><option value="rep">ممثل: إدارة كاملة لهذا النطاق</option></select>
+          <select id="tUni"><option value="">اختر الجامعة</option></select>
+          <select id="tCol"><option value="">— كل الجامعة —</option></select>
+          <select id="tDep"><option value="">— كل الكلية —</option></select>
+          <button id="tAdd" type="button">إضافة</button>
+        </div>
+      </section>
+
+      <section class="ad-panel" id="p-files">
+        <div id="files"></div>
+      </section>
+
+      <section class="ad-panel" id="p-reports">
+        <div id="reports"></div>
+      </section>
+
+      <section class="ad-panel" id="p-ann">
+        <div class="ad-form">
+          <input id="aTitle" maxlength="120" placeholder="عنوان التبليغ">
+          <textarea id="aBody" maxlength="1000" placeholder="نص التبليغ"></textarea>
+          <button id="aAdd" type="button">نشر التبليغ للجميع</button>
+        </div>
+        <div id="anns"></div>
+      </section>
+    </div>
   </main>
-  <script src="js/auth.js?v=p3-23"></script>
-  <script src="js/admin.js?v=p3-23"></script>
+
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    var ROLE = { student: "طالب", uploader: "رافع ملفات", rep: "ممثل" };
+    var TY = { university: "جامعة", college: "كلية", department: "قسم" }, LV = { rep: "ممثل", uploader: "رافع" };
+    var ME = null;
+
+    function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+    function msg(t, ok) { var m = $("msg"); m.textContent = t || ""; m.style.color = ok ? "#2f855a" : "#c53030"; }
+    function api(method, path, body) {
+      var o = { method: method, headers: {} };
+      if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
+      return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
+    }
+    function get(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
+    function fill(sel, items, ph) { sel.innerHTML = ""; sel.appendChild(new Option(ph, "")); items.forEach(function (x) { sel.appendChild(new Option(x.name_ar, x.id)); }); }
+    function showTab(name) {
+      document.querySelectorAll(".ad-tabs button").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === name); });
+      document.querySelectorAll(".ad-panel").forEach(function (p) { p.classList.toggle("on", p.id === "p-" + name); });
+      if (name === "users") loadUsers();
+      if (name === "teams") loadTeams();
+      if (name === "files") loadFiles();
+      if (name === "reports") loadReports();
+      if (name === "ann") loadAnns();
+    }
+    document.querySelectorAll(".ad-tabs button").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+
+    /* الحسابات (مشرف فقط) */
+    function loadUsers() {
+      api("GET", "auth/users").then(function (d) {
+        var box = $("users"); box.innerHTML = "";
+        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
+        d.users.forEach(function (u) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", u.name || u.email)); l.appendChild(el("small", u.email + " — " + (u.active ? "فعّال" : "موقوف")));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts");
+          if (u.role === "admin") {
+            acts.appendChild(el("span", "مشرف عام", "ad-tag"));
+          } else {
+            var s = document.createElement("select");
+            Object.keys(ROLE).forEach(function (k) { s.appendChild(new Option(ROLE[k], k, false, k === u.role)); });
+            s.onchange = function () { api("POST", "auth/user", { id: u.id, role: s.value }).then(function (x) { msg(x.ok ? "تم تغيير الدور." : "تعذّر تغيير الدور.", x.ok); loadUsers(); }); };
+            acts.appendChild(s);
+            var t = el("button", u.active ? "إيقاف" : "تفعيل");
+            t.onclick = function () { api("POST", "auth/user", { id: u.id, active: !u.active }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadUsers(); }); };
+            acts.appendChild(t);
+          }
+          r.appendChild(acts);
+          box.appendChild(r);
+        });
+        if (!d.users.length) box.textContent = "لا يوجد مستخدمون بعد.";
+      });
+    }
+
+    /* الفرق المستقلة */
+    function loadTeams() {
+      api("GET", "auth/scopes").then(function (d) {
+        var box = $("teams"); box.innerHTML = "";
+        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
+        if (!d.items.length) box.textContent = "لا يوجد أعضاء بعد.";
+        d.items.forEach(function (it) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", it.name || it.email)); l.appendChild(el("small", it.email + " — " + TY[it.type] + ": " + it.node));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts"); acts.appendChild(el("span", LV[it.level], "ad-tag"));
+          if (it.can_edit) {
+            var x = el("button", "إزالة");
+            x.onclick = function () { api("POST", "auth/scope", { email: it.email, type: it.type, id: it.node_id, level: it.level, action: "remove" }).then(loadTeams); };
+            acts.appendChild(x);
+          }
+          r.appendChild(acts); box.appendChild(r);
+        });
+      });
+    }
+    var tU = $("tUni"), tC = $("tCol"), tD = $("tDep");
+    tU.onchange = function () { tC.innerHTML = ""; tD.innerHTML = ""; if (tU.value) get("colleges?university_id=" + tU.value).then(function (a) { fill(tC, a, "— كل الجامعة —"); }); };
+    tC.onchange = function () { tD.innerHTML = ""; if (tC.value) get("departments?college_id=" + tC.value).then(function (a) { fill(tD, a, "— كل الكلية —"); }); };
+    $("tAdd").onclick = function () {
+      var email = $("tEmail").value.trim();
+      if (!email || !tU.value) return msg("اكتب البريد واختر الجامعة.");
+      var type = tD.value ? "department" : tC.value ? "college" : "university";
+      var id = Number(tD.value || tC.value || tU.value);
+      api("POST", "auth/scope", { email: email, type: type, id: id, level: $("tLevel").value, action: "add" }).then(function (d) {
+        var ERR = { user_not_found: "هذا البريد لم يسجّل دخوله إلى المنصة بعد.", forbidden: "لا تملك صلاحية على هذا النطاق." };
+        if (d.ok) { msg("تمت الإضافة.", true); $("tEmail").value = ""; loadTeams(); } else msg(ERR[d.error] || "تعذّرت الإضافة.");
+      });
+    };
+
+    /* الملفات بانتظار المراجعة */
+    function loadFiles() {
+      api("POST", "admin", {}).then(function (d) {
+        var box = $("files"); box.innerHTML = "";
+        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
+        var items = d.items.filter(function (e) { return e.status === "pending"; });
+        if (!items.length) box.textContent = "لا توجد ملفات بانتظار المراجعة.";
+        items.forEach(function (e) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", e.title || e.label || e.filename || e.id)); l.appendChild(el("small", (e.by ? e.by + " — " : "") + (e.at || "")));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts");
+          var ok = el("button", "قبول"); ok.onclick = function () { api("POST", "review", { id: e.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم القبول." : "تعذّر.", x.ok); loadFiles(); }); };
+          var no = el("button", "رفض"); no.onclick = function () { api("POST", "review", { id: e.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadFiles(); }); };
+          acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
+        });
+      });
+    }
+
+    /* البلاغات */
+    function loadReports() {
+      api("POST", "reports", {}).then(function (d) {
+        var box = $("reports"); box.innerHTML = "";
+        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
+        var open = (d.items || []).filter(function (r) { return r.open; });
+        if (!open.length) box.textContent = "لا توجد بلاغات مفتوحة.";
+        open.forEach(function (rp) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", rp.reason)); l.appendChild(el("small", "ملف: " + rp.id + " — " + (rp.at || "")));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts");
+          var done = el("button", "تمّت المعالجة");
+          done.onclick = function () { api("POST", "reportdone", { rid: rp.rid }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadReports(); }); };
+          acts.appendChild(done); r.appendChild(acts); box.appendChild(r);
+        });
+      });
+    }
+
+    /* التبليغات (مشرف فقط) */
+    function loadAnns() {
+      fetch("/api/announcements").then(function (r) { return r.json(); }).then(function (d) {
+        var box = $("anns"); box.innerHTML = "";
+        (d.items || []).forEach(function (a) {
+          var r = el("div", null, "ad-row");
+          var l = el("div"); l.appendChild(el("b", a.title)); l.appendChild(el("small", a.body));
+          r.appendChild(l);
+          var acts = el("div", null, "ad-acts");
+          var x = el("button", "حذف");
+          x.onclick = function () { api("POST", "announcements/delete", { id: a.id }).then(function (y) { msg(y.ok ? "تم الحذف." : "تعذّر.", y.ok); loadAnns(); }); };
+          acts.appendChild(x); r.appendChild(acts); box.appendChild(r);
+        });
+      });
+    }
+    $("aAdd").onclick = function () {
+      var t = $("aTitle").value.trim(), b = $("aBody").value.trim();
+      if (!t || !b) return msg("اكتب العنوان والنص.");
+      api("POST", "announcements", { title: t, body: b }).then(function (d) {
+        if (d.ok) { msg("تم النشر.", true); $("aTitle").value = ""; $("aBody").value = ""; loadAnns(); } else msg("تعذّر النشر.");
+      });
+    };
+
+    /* البوابة: المشرف يرى كل شيء، الممثل يرى فرقه وملفاته وبلاغاته */
+    api("GET", "auth/me").then(function (d) {
+      ME = d && d.user;
+      if (!ME) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
+      var isRep = ME.admin || (ME.scopes || []).some(function (x) { return x.level === "rep"; });
+      if (!isRep) { $("gate").textContent = "هذه الصفحة لمشرفي المنصة وممثلي الأقسام والكليات والجامعات فقط."; return; }
+      $("gate").classList.add("ad-hide");
+      $("app").classList.remove("ad-hide");
+      if (!ME.admin) document.querySelectorAll(".ad-admin-only").forEach(function (b) { b.classList.add("ad-hide"); });
+      get("universities").then(function (a) { fill(tU, a, "اختر الجامعة"); });
+      showTab(ME.admin ? "users" : "teams");
+    }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
+  })();
+  </script>
 </body>
 </html>
