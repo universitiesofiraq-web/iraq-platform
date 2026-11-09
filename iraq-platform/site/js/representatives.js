@@ -13,13 +13,21 @@
     }
   }
 
-  async function read(path, signal) {
-    const response = await fetch("/api/" + path, { credentials: "same-origin", cache: "no-store", signal });
+  async function request(path, { signal, body } = {}) {
+    const options = { credentials: "same-origin", cache: "no-store", signal };
+    if (body !== undefined) {
+      options.method = "POST";
+      options.headers = { "content-type": "application/json" };
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch("/api/" + path, options);
     if (!response.ok) throw new ApiError(response.status);
     const data = await response.json();
     if (!data || data.ok !== true) throw new ApiError(response.status);
     return data;
   }
+
+  const read = (path, signal) => request(path, { signal });
 
   function numericId(value) {
     return Number.isSafeInteger(value) && value > 0;
@@ -40,6 +48,13 @@
     team: signal => read("auth/scopes", signal),
     announcements: signal => read("announcements", signal),
     requests: signal => read("auth/rep-requests", signal),
+    apply: id => request("auth/rep-request", { body: { type: "department", id } }),
+    decide: (id, action) => request("auth/rep-request/decide", { body: { id, action } }),
+    academicOptions: (level, parent, signal) => read([
+      "catalog/universities",
+      "catalog/colleges?university_id=" + parent,
+      "catalog/departments?college_id=" + parent
+    ][level], signal),
     department: (id, signal) => read("catalog/department?id=" + id, signal),
     subjects: (id, signal) => read("catalog/subjects?department_id=" + id, signal),
     uploads: signal => read("uploads", signal)
@@ -110,7 +125,7 @@
       action("إدارة المحتوى", department?.can && scope ? "dept.html?id=" + scope.node_id + "&manage=1" : "admin.html"),
       action("إنشاء تبليغ عام", admin ? "admin.html" : null, admin ? "من تبويب التبليغات في لوحة الإدارة." : "متاح للمشرف العام في النظام الحالي."),
       action("الجدول الأكاديمي", null, "بيانات الجدول غير متاحة لهذا النطاق."),
-      action("مراجعة طلبات التمثيل", admin ? "admin.html" : null, admin ? "من تبويب طلبات التمثيل في لوحة الإدارة." : "تعرض الواجهة الحالية الطلبات للمشرف العام."),
+      action("مراجعة طلبات التمثيل", admin ? "#applications" : null, admin ? "راجع الطلبات المعلّقة في هذه الصفحة." : "تعرض الواجهة الحالية الطلبات للمشرف العام."),
       action("معلومات نطاق التمثيل", "#overview")
     );
   }
@@ -195,8 +210,10 @@
     if (admin) {
       const pending = requests.status === "fulfilled"
         ? items(requests.value).filter(item => item.status === "pending").length : null;
-      activity.append(node("p", pending === null ? "تعذّر تحميل عدد الطلبات المعلّقة." :
-        pending.toLocaleString("ar-IQ") + " طلب تمثيل معلّق"));
+      const count = node("p", pending === null ? "تعذّر تحميل عدد الطلبات المعلّقة." :
+        pending.toLocaleString("ar-IQ") + " طلب تمثيل معلّق");
+      count.id = "pending-count";
+      activity.append(count);
     }
     activity.append(node("p", "الأنشطة الأكاديمية القادمة غير متاحة من الخدمة الحالية.", "rp-muted"));
   }
@@ -261,8 +278,178 @@
     section.append(actions);
   }
 
+  function actionError(error) {
+    if (error.status === 401) return "انتهت الجلسة. سجّل الدخول مجددًا.";
+    if (error.status === 403) return "الخادم رفض الإجراء لصلاحيات هذا الحساب.";
+    return "تعذّر تنفيذ الإجراء. حاول مرة أخرى.";
+  }
+
+  function applicationForm(refresh) {
+    const form = node("form");
+    const status = node("p");
+    status.setAttribute("role", "status");
+    const names = ["الجامعة", "الكلية", "القسم"];
+    const selects = names.map((name, index) => {
+      const label = node("label", name);
+      const select = node("select");
+      select.id = "apply-scope-" + index;
+      label.htmlFor = select.id;
+      select.required = true;
+      form.append(label, select);
+      return select;
+    });
+    const submit = node("button", "إرسال طلب التمثيل");
+    submit.type = "submit";
+    submit.disabled = true;
+    let controller;
+    let submitting = false;
+    let expired = false;
+    form.append(submit, status);
+
+    function resetFrom(level) {
+      selects.slice(level).forEach((select, index) => {
+        select.replaceChildren(new Option("اختر " + names[level + index], ""));
+        select.disabled = true;
+      });
+      submit.disabled = true;
+    }
+
+    async function load(level, parent) {
+      controller?.abort();
+      controller = new AbortController();
+      const { signal } = controller;
+      resetFrom(level);
+      status.textContent = "جارٍ تحميل " + names[level] + "…";
+      try {
+        const options = items(await service.academicOptions(level, parent, signal)).filter(row => numericId(row.id));
+        if (signal.aborted) return;
+        selects[level].replaceChildren(new Option("اختر " + names[level], ""),
+          ...options.map(row => new Option(row.name_ar, String(row.id))));
+        selects[level].disabled = options.length === 0;
+        status.textContent = options.length ? "" : "لا توجد خيارات متاحة.";
+      } catch (error) {
+        if (!signal.aborted) {
+          const retry = node("button", "أعد تحميل الخيارات");
+          retry.type = "button";
+          retry.addEventListener("click", () => load(level, parent));
+          status.replaceChildren(node("span", "تعذّر تحميل الخيارات. "), retry);
+        }
+      }
+    }
+
+    selects.forEach((select, index) => select.addEventListener("change", () => {
+      if (index < 2) {
+        if (numericId(Number(select.value))) void load(index + 1, Number(select.value));
+        else {
+          controller?.abort();
+          resetFrom(index + 1);
+          status.textContent = "";
+        }
+      } else submit.disabled = !numericId(Number(select.value));
+    }));
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const id = Number(selects[2].value);
+      if (submitting || expired || !numericId(id) || !form.reportValidity()) return;
+      submitting = true;
+      const wasDisabled = selects.map(select => select.disabled);
+      selects.forEach(select => { select.disabled = true; });
+      submit.disabled = true;
+      status.textContent = "جارٍ إرسال الطلب…";
+      try {
+        const result = await service.apply(id);
+        status.textContent = result.duplicate ? "يوجد طلب معلّق لهذا القسم بالفعل." : "أرسل الخادم تأكيد تسجيل الطلب.";
+        await refresh();
+      } catch (error) {
+        expired = error.status === 401;
+        status.textContent = actionError(error);
+        if (expired) status.append(link("تسجيل الدخول", "login.html?next=representatives.html"));
+      } finally {
+        submitting = false;
+        selects.forEach((select, index) => { select.disabled = expired || wasDisabled[index]; });
+        submit.disabled = expired;
+      }
+    });
+    void load(0, 0);
+    return form;
+  }
+
+  function showApplications(user, canApply) {
+    $("applications")?.remove();
+    const section = node("section", undefined, "rp-card rp-session");
+    section.id = "applications";
+    section.setAttribute("aria-labelledby", "applications-title");
+    const admin = isAdmin(user);
+    const heading = node("h2", admin ? "طلبات التمثيل المعلّقة" : "طلباتي للتمثيل الطلابي");
+    heading.id = "applications-title";
+    const feedback = node("p");
+    feedback.setAttribute("role", "status");
+    const list = node("ul", undefined, "rp-list");
+    list.setAttribute("aria-live", "polite");
+    const labels = { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض" };
+
+    async function refresh() {
+      list.replaceChildren(node("li", "جارٍ تحميل الطلبات…"));
+      try {
+        const requests = items(await service.requests());
+        const rows = admin ? requests.filter(row => row.status === "pending") : requests;
+        const count = $("pending-count");
+        if (admin && count) count.textContent = rows.length.toLocaleString("ar-IQ") + " طلب تمثيل معلّق";
+        list.replaceChildren(...rows.map(row => {
+          const item = node("li");
+          item.append(node("strong", row.node || "نطاق غير مسمّى"),
+            node("p", labels[row.status] || "حالة غير معروفة", "rp-muted"));
+          if (admin && numericId(row.id)) {
+            if (row.name) item.append(node("p", row.name));
+            const actions = node("div", undefined, "rp-actions");
+            for (const [action, title] of [["approve", "قبول"], ["reject", "رفض"]]) {
+              const button = node("button", title);
+              button.type = "button";
+              button.addEventListener("click", async () => {
+                const consequence = action === "approve" ? "سيمنح الخادم صلاحية التمثيل في هذا النطاق." : "سيسجّل الخادم رفض الطلب.";
+                if (!window.confirm(title + " الطلب؟ " + consequence)) return;
+                [...actions.children].forEach(control => { control.disabled = true; });
+                feedback.textContent = "جارٍ تسجيل القرار…";
+                try {
+                  await service.decide(row.id, action);
+                  feedback.textContent = "سجّل الخادم القرار.";
+                  await refresh();
+                } catch (error) {
+                  feedback.textContent = actionError(error);
+                  if (error.status === 401) feedback.append(link("تسجيل الدخول", "login.html?next=representatives.html"));
+                  else [...actions.children].forEach(control => { control.disabled = false; });
+                }
+              });
+              actions.append(button);
+            }
+            item.append(actions);
+          }
+          return item;
+        }));
+        if (!rows.length) list.append(node("li", "لا توجد طلبات لعرضها."));
+      } catch (error) {
+        list.replaceChildren(node("li", actionError(error)));
+        const retry = node("button", "أعد تحميل الطلبات");
+        retry.type = "button";
+        retry.addEventListener("click", refresh);
+        list.firstElementChild.append(retry);
+      }
+    }
+
+    section.append(heading, feedback, list);
+    if (canApply) {
+      section.append(node("h3", "طلب تمثيل قسم"),
+        node("p", "يخضع الطلب لمراجعة المشرف قبل منح صلاحية التمثيل.", "rp-muted"),
+        applicationForm(refresh));
+    }
+    section.append(node("p", "إلغاء الطلبات المعلّقة والانضمام إلى شعب الطلبة غير متاحين في الخدمة الحالية.", "rp-muted"));
+    $("main").append(section);
+    void refresh();
+  }
+
   async function loadSession() {
     scopeController?.abort();
+    $("applications")?.remove();
     $("dashboard").hidden = true;
     $("session-actions").replaceChildren();
     sessionStatus.textContent = "جارٍ التحقق من الجلسة…";
@@ -284,9 +471,10 @@
     }
     const scopes = representativeScopes(user);
     const admin = isAdmin(user);
+    showApplications(user, !admin && !scopes.length);
     if (!admin && !scopes.length) {
-      sessionStatus.textContent = "يمكنك طلب تمثيل قسمك من صفحته الأكاديمية. تظهر أدوات الإدارة بعد اعتماد صلاحيتك.";
-      $("session-actions").append(link("اختر قسمك", "catalog.html"));
+      sessionStatus.textContent = "تابع حالة طلباتك أو أرسل طلب تمثيل قسم. تظهر أدوات الإدارة بعد اعتماد الصلاحية.";
+      $("session-actions").append(link("اختر قسمك", "catalog.html"), link("طلباتي للتمثيل", "#applications"));
       return;
     }
     sessionStatus.textContent = admin ? "مشرف عام" : "ممثل معتمد ضمن نطاقه الأكاديمي";
