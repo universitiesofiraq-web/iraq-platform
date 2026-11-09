@@ -3,10 +3,13 @@
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
 import { handleAuth, uploadAccount } from "../_lib/auth.js";
+import { handleCatalog } from "../_lib/catalog.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
   if (authRes) return authRes;
+  const catRes = await handleCatalog(request, env);
+  if (catRes) return catRes;
   if (!env.LECTURES) {
     const path = new URL(request.url).pathname;
     if (path.endsWith("/api/uploads.js")) {
