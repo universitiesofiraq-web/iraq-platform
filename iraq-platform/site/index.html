@@ -48,6 +48,7 @@
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
+    var KT = { gov: "حكومية", private: "أهلية" };
     var DB = null, hits = [], cur = -1, KIND = { u: "جامعة", c: "كلية", d: "قسم" };
 
     function norm(s) {
@@ -60,11 +61,11 @@
 
     function build(d) {
       var U = {}, C = {}, items = [];
-      d.u.forEach(function (r) { U[r[0]] = { id: r[0], name: r[1], en: r[2] || "", city: r[3] || "" }; });
+      d.u.forEach(function (r) { U[r[0]] = { id: r[0], name: r[1], en: r[2] || "", city: r[3] || "", kind: r[4] || "" }; });
       d.c.forEach(function (r) { C[r[0]] = { id: r[0], u: r[1], name: r[2], en: r[3] || "" }; });
       Object.keys(U).forEach(function (k) {
         var u = U[k];
-        items.push({ k: "u", id: u.id, title: u.name, path: u.city || u.en, own: words(u.name + " " + u.en), all: words(u.name + " " + u.en + " " + u.city), href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) });
+        items.push({ k: "u", id: u.id, title: u.name, path: [KT[u.kind], u.city || u.en].filter(Boolean).join(" · "), own: words(u.name + " " + u.en), all: words(u.name + " " + u.en + " " + u.city), href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) });
       });
       d.c.forEach(function (r) {
         var c = C[r[0]], u = U[c.u]; if (!u) return;
@@ -155,7 +156,8 @@
       d.u.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ar"); }).forEach(function (r) {
         var a = document.createElement("a"); a.className = "iq-u"; a.href = "catalog.html?u=" + r[0] + "&n=" + encodeURIComponent(r[1]);
         var b = document.createElement("b"); b.textContent = r[1]; a.appendChild(b);
-        if (r[3] || r[2]) { var s = document.createElement("small"); s.textContent = r[3] || r[2]; a.appendChild(s); }
+        var sub = [KT[r[4]], r[3] || r[2]].filter(Boolean).join(" · ");
+        if (sub) { var s = document.createElement("small"); s.textContent = sub; a.appendChild(s); }
         g.appendChild(a);
       });
       run();
