@@ -32,9 +32,7 @@ t("إشعار بمستلم غير صالح يُرفض", () => assert.equal(build
 
 let failed = 0;
 for (const [name, fn] of cases) {
-  try { fn(); console.log("ok  -", name); } catch (e) { failed++; console.log("FAIL-", name, "
-   ", e.message.split("
-")[0]); }
+  try { fn(); console.log("ok  -", name); } catch (e) { failed++; console.log("FAIL-", name, "\n   ", e.message.split("\n")[0]); }
 }
 console.log(`\n${cases.length - failed}/${cases.length} passed`);
 process.exit(failed ? 1 : 0);
