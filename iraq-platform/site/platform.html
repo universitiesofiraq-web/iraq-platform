@@ -791,5 +791,18 @@
   }).catch(function(){});
 }catch(e){}})();
 </script>
+<script>
+(function(){try{
+  var cta=document.querySelector(".hero-cta");if(!cta||!window.IQ_DEPT)return;
+  fetch("/api/auth/me").then(function(r){return r.json()}).then(function(me){
+    var u=me&&me.user;
+    if(!u){var l=document.createElement("a");l.className="btn btn-secondary";l.href="login.html?next="+encodeURIComponent("platform.html?dept="+IQ_DEPT.id);l.textContent="سجّل الدخول لطلب تمثيل القسم";cta.appendChild(l);return;}
+    if(u.admin||(u.scopes||[]).some(function(x){return x.level==="rep"}))return;
+    var b=document.createElement("button");b.type="button";b.className="btn btn-secondary";b.textContent="اطلب تمثيل هذا القسم";
+    b.onclick=function(){fetch("/api/auth/rep-request",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:"department",id:IQ_DEPT.id})}).then(function(r){return r.json()}).then(function(d){b.textContent=d.ok?"تم إرسال طلب التمثيل":"تعذّر الإرسال";b.disabled=true;}).catch(function(){b.textContent="تعذّر الإرسال";});};
+    cta.appendChild(b);
+  }).catch(function(){});
+}catch(e){}})();
+</script>
 </body>
 </html>
