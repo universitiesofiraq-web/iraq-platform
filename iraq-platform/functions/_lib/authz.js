@@ -24,7 +24,7 @@ export function scopeCovers(scopes, chain, minLevel) {
 
 /* القرار النهائي: { ok, reason } */
 export function authorize({ user, isAdmin, scopes = [], chain = null, action }) {
-  const rule = ACTIONS[action];
+  const rule = Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : undefined;
   if (!rule) return { ok: false, reason: "unknown_action" };
   if (isAdmin) return { ok: true, reason: "admin" };
   if (rule.minLevel === null && !rule.adminOnly) return { ok: true, reason: "public" };
