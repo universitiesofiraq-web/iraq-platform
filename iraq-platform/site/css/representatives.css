@@ -1,0 +1,38 @@
+.rp-page [hidden] { display: none !important; }
+.rp-page .iq-top { flex-wrap: wrap; }
+.rp-page .iq-top nav { flex-wrap: wrap; }
+.rp-page .iq-top nav a { display: inline-flex; }
+.rp-page .iq-top [aria-current] { background: rgba(255, 255, 255, .13); }
+.rp-skip { position: absolute; z-index: 1; inset-inline-start: 1rem; inset-block-start: .5rem; padding: .6rem 1rem; background: var(--surface); transform: translateY(-150%); }
+.rp-skip:focus { transform: none; }
+.rp-wrap { width: min(100% - 2rem, 67rem); margin-inline: auto; padding-block: 1.5rem 3rem; }
+.rp-hero { background: var(--lapis-d); color: #fff; padding: clamp(1.25rem, 5vw, 3rem); border-radius: 1.25rem; border-block-start: .25rem solid var(--gold); }
+.rp-hero h1 { font-size: clamp(1.8rem, 6vw, 3rem); margin-block: .15rem .4rem; line-height: 1.2; }
+.rp-hero p { margin: 0; max-inline-size: 46rem; color: #e0e9ff; }
+.rp-hero .rp-kicker { font-weight: 700; color: #f6cc76; }
+.rp-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: clamp(1rem, 3vw, 1.5rem); min-width: 0; overflow-wrap: anywhere; }
+.rp-card h2 { font-size: 1.25rem; margin-block: 0 .75rem; }
+.rp-card h3 { font-size: 1rem; margin-block: 1rem .4rem; }
+.rp-card p { margin-block: .35rem .75rem; }
+.rp-session { margin-block: 1rem; }
+.rp-jumps, .rp-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.rp-jumps { margin-block: 1rem; }
+.rp-jumps a, .rp-action, .rp-card button, .rp-card select { min-block-size: 44px; }
+.rp-jumps a, .rp-action, .rp-card button { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid var(--line); border-radius: .65rem; padding: .45rem .8rem; background: var(--surface); color: var(--ink); font-weight: 650; text-decoration: none; }
+.rp-action:disabled, .rp-card button:disabled { opacity: .75; cursor: default; }
+.rp-action:not(:disabled):hover, .rp-jumps a:hover, .rp-card button:not(:disabled):hover { border-color: var(--lapis); }
+.rp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.rp-context { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: .5rem; margin-block: .7rem; }
+.rp-context div { border: 1px solid var(--line); padding: .55rem .65rem; border-radius: .65rem; min-width: 0; }
+.rp-context dt { color: var(--ink2); font-size: .88rem; }
+.rp-context dd { margin: 0; font-weight: 700; }
+.rp-list, .rp-action-list { padding: 0; margin: 0; list-style: none; }
+.rp-list li, .rp-action-list li { padding-block: .5rem; border-block-end: 1px solid var(--line); }
+.rp-list li:last-child, .rp-action-list li:last-child { border-block-end: 0; }
+.rp-muted { color: var(--ink2); font-size: .92rem; }
+.rp-action-list .rp-muted { margin-block: .2rem; }
+.rp-card select { display: block; max-inline-size: 100%; inline-size: 100%; margin-block: .3rem .7rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: .65rem; padding: .4rem .65rem; }
+.rp-card label { font-weight: 650; }
+.rp-metric { font-size: 1.55rem; font-weight: 800; }
+@media (max-width: 45rem) { .rp-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .rp-page *, .rp-page *::before, .rp-page *::after { scroll-behavior: auto !important; transition: none !important; } }

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>التمثيل الطلابي | المنصة العراقية</title>
+  <meta name="theme-color" content="#0A1C4E">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <link rel="stylesheet" href="css/representatives.css?v=1">
+  <script src="js/representatives.js?v=1" defer></script>
+</head>
+<body class="rp-page">
+  <a class="rp-skip" href="#main">انتقل إلى المحتوى</a>
+  <header class="iq-top">
+    <a class="iq-brand" href="./">المنصة العراقية</a>
+    <nav aria-label="تنقل المنصة">
+      <a href="catalog.html">الجامعات</a>
+      <a href="representatives.html" aria-current="page">التمثيل الطلابي</a>
+    </nav>
+  </header>
+  <main id="main" class="rp-wrap" tabindex="-1">
+    <section class="rp-hero" aria-labelledby="title">
+      <p class="rp-kicker">منصة الجامعات العراقية</p>
+      <h1 id="title">التمثيل الطلابي</h1>
+      <p>تابع طلباتك ونطاقك الأكاديمي، وانتقل إلى الأدوات المتاحة لحسابك.</p>
+    </section>
+
+    <section id="session" class="rp-card rp-session" aria-labelledby="session-title">
+      <h2 id="session-title">حالة الحساب</h2>
+      <p id="session-status" role="status">جارٍ التحقق من الجلسة…</p>
+      <div id="session-actions" class="rp-actions"></div>
+    </section>
+
+    <div id="dashboard" hidden>
+      <nav class="rp-jumps" aria-label="أقسام لوحة التمثيل">
+        <a href="#overview">نظرة عامة</a>
+        <a href="#actions">الأدوات</a>
+        <a href="#notices">التبليغات</a>
+        <a href="#team-directory">دليل الممثلين</a>
+        <a href="#applications">طلبات التمثيل</a>
+      </nav>
+      <div class="rp-grid">
+        <section id="overview" class="rp-card" aria-labelledby="overview-title">
+          <h2 id="overview-title">النطاق الأكاديمي</h2>
+          <div id="scope-picker" hidden>
+            <label for="scope">نطاق التمثيل</label>
+            <select id="scope"></select>
+          </div>
+          <p id="scope-status" role="status"></p>
+          <dl id="context" class="rp-context"></dl>
+          <h3>الصلاحيات المتاحة</h3>
+          <ul id="capabilities" class="rp-list"></ul>
+        </section>
+        <section class="rp-card" aria-labelledby="activity-title">
+          <h2 id="activity-title">النشاط الأكاديمي</h2>
+          <div id="activity" aria-live="polite"></div>
+        </section>
+        <section id="actions" class="rp-card" aria-labelledby="actions-title">
+          <h2 id="actions-title">الأدوات</h2>
+          <ul id="quick-actions" class="rp-action-list"></ul>
+        </section>
+        <section id="notices" class="rp-card" aria-labelledby="notices-title">
+          <h2 id="notices-title">تبليغات المنصة العامة</h2>
+          <div id="announcements" aria-live="polite"></div>
+        </section>
+      </div>
+    </div>
+    <noscript><p>تحتاج الصفحة إلى JavaScript للتحقق من الجلسة وعرض بيانات حسابك.</p></noscript>
+  </main>
+</body>
+</html>
