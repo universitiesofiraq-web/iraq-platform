@@ -6,17 +6,19 @@ const vm = require('node:vm');
 const script = fs.readFileSync(path.resolve(__dirname, '../iraq-platform/site/js/representatives.js'), 'utf8');
 
 class Element {
-  constructor(tag) { this.tag = tag; this.children = []; this.hidden = false; this.ownText = ''; }
+  constructor(tag) { this.tag = tag; this.children = []; this.hidden = false; this.ownText = ''; this.value = ''; }
   set textContent(text) { this.ownText = String(text); this.children = []; }
   get textContent() { return this.ownText + this.children.map(element => element.textContent).join(' '); }
   append(...children) { this.children.push(...children); }
   replaceChildren(...children) { this.children = children; this.ownText = ''; }
   addEventListener(name, listener) { this[name] = listener; }
+  setAttribute(name, value) { this[name] = value; }
+  remove() {}
 }
 
 const scope = { type: 'department', node_id: 3855, level: 'rep' };
 const defaults = {
-  '/api/auth/scopes': { items: [{ type: 'department', node_id: 3855, node: 'الطب', university: 'جامعة البصرة' }] },
+  '/api/auth/scopes': { items: [{ type: 'department', node_id: 3855, level: 'rep', name: 'ممثل الطب', email: 'private@example.test', node: 'الطب', university: 'جامعة البصرة' }] },
   '/api/catalog/department?id=3855': { item: { name_ar: 'الطب', college: 'كلية الطب', university: 'جامعة البصرة' }, can: true },
   '/api/catalog/subjects?department_id=3855': { items: [{ id: 1, name_ar: 'تشريح' }] },
   '/api/uploads': { items: [{ courseId: 's1', type: 'lecture', title: 'محاضرة القسم' }, { courseId: 's2', type: 'lecture', title: 'محاضرة قسم آخر' }, { courseId: 's1', type: 'quiz', title: 'اختبار' }] },
@@ -27,6 +29,7 @@ const defaults = {
 async function load(user, overrides = {}) {
   const elements = new Map();
   const get = id => {
+    if (id === 'team-directory' && !elements.has(id)) return null;
     if (!elements.has(id)) elements.set(id, new Element(id));
     return elements.get(id);
   };
@@ -109,4 +112,17 @@ test('catalog failure is distinct from an empty announcement list', async () => 
   });
   assert.match(get('activity').textContent, /تعذّر تحميل المحاضرات/);
   assert.match(get('announcements').textContent, /لا توجد تبليغات/);
+});
+
+
+test('directory shows server-provided names and scopes without exposing emails or advanced actions', async () => {
+  const { get } = await load({ role: 'student', scopes: [scope] });
+  assert.match(get('dashboard').textContent, /دليل الممثلين.*ممثل الطب/);
+  assert.doesNotMatch(get('dashboard').textContent, /private@example/);
+  const directory = get('dashboard').children.at(-1);
+  assert.equal(directory.children.at(-1).children[1].children[0].disabled, true);
+  const search = directory.children[1].children[1];
+  search.value = 'لا يوجد';
+  search.input();
+  assert.match(directory.textContent, /لا توجد نتائج مطابقة/);
 });
