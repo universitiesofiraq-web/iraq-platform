@@ -105,6 +105,7 @@
             row.appendChild(del);
           }
           if (type !== "subject") row.onclick = function () { stack.push({ type: type, id: it.id, name: it.name_ar }); load(); };
+          else row.onclick = function () { location.href = "subject.html?id=" + it.id; };
           list.appendChild(row);
         });
         var f = $("add"); f.hidden = !admin;
