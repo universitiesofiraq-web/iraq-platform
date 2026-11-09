@@ -103,7 +103,9 @@ export async function handleScopes(req, env, user, p) {
       const mine = r.user_id === user.id;
       const manageable = await pol.manage(r.type, r.node_id);
       if (!mine && !manageable) continue;
-      out.push({ email: r.email, name: r.name, type: r.type, node_id: r.node_id, level: r.level, node: await nodeName(env, r.type, r.node_id), can_edit: manageable });
+      const ch = await chainOf(env, r.type, r.node_id);
+      const uni = ch && ch.university ? await env.DB.prepare("SELECT name_ar FROM universities WHERE id=?").bind(ch.university).first() : null;
+      out.push({ email: r.email, name: r.name, type: r.type, node_id: r.node_id, level: r.level, node: await nodeName(env, r.type, r.node_id), can_edit: manageable, university_id: ch ? ch.university : null, university: uni ? uni.name_ar : "" });
     }
     return json({ ok: true, admin: pol.admin, items: out });
   }
