@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>المنصة العراقية</title>
+  <meta name="description" content="ملفات المواد الدراسية للطلاب الدوليين في مكان واحد.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="المنصة العراقية">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body>
+  <noscript>
+    <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
+  </noscript>
+  <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+  <!-- ===== 1. الواجهة ===== -->
+  <section class="hero band" id="home">
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <p class="hero-brand" data-site-title></p>
+        <p class="eyebrow">للطلاب الدوليين</p>
+        <h1>رحلتك في عالم الطب تبدأ من هنا</h1>
+        <p class="hero-sub" id="heroSub"></p>
+        <p class="hero-uni" id="heroUni" hidden></p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#semesters">استكشف المواد الدراسية</a>
+          <a class="btn btn-secondary" href="#latest">أحدث المحاضرات</a>
+        </div>
+      </div>
+      <div class="hero-media">
+        <figure class="uni-photo" id="uniPhoto" hidden></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== الوصول السريع ===== -->
+  <section aria-label="الوصول السريع">
+    <div class="quick">
+      <a class="quick-item card hue-1" href="#semesters"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
+      <a class="quick-item card hue-2" href="#latest"><span class="tile" data-ico="file"></span><span class="quick-text"><strong>أحدث المحاضرات</strong><small>آخر الملفات المرفوعة</small></span></a>
+      <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
+      <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
+      <button class="quick-item card hue-5" type="button" data-go="fav"><span class="tile" data-ico="star"></span><span class="quick-text"><strong>المفضلة</strong><small>موادك المحفوظة</small></span><span class="badge" id="favCount">0</span></button>
+      <a class="quick-item card hue-6" id="reviewShortcut" href="#review" hidden><span class="tile" data-ico="list"></span><span class="quick-text"><strong>قائمة المراجعة</strong><small>راجعها لاحقاً</small></span><span class="badge" id="reviewCount">0</span></a>
+    </div>
+  </section>
+
+  <!-- ===== الكورسات ===== -->
+  <section class="section" id="semesters">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>الكورسات</h2>
+          <p>اختر الكورس لتفتح موادّه.</p>
+        </div>
+      </div>
+      <div class="quick" id="semGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== 2. المواد الدراسية: البحث والتصفية والبطاقات ===== -->
+  <section class="section" id="subjects">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>البحث في المواد</h2>
+          <p>ابحث بالاسم أو الأستاذ أو المحاضرة، أو صفِّ حسب النوع.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-row">
+          <div class="search-box" id="searchBox">
+            <input class="field search" id="search" type="search"
+                   placeholder="ابحث عن مادة أو أستاذ أو محاضرة"
+                   aria-label="ابحث عن مادة أو أستاذ أو رمز" autocomplete="off">
+            <button class="search-clear" id="searchClear" type="button" aria-label="مسح البحث" hidden></button>
+          </div>
+          <select class="field sort" id="sort" aria-label="ترتيب المواد">
+            <option value="default">الترتيب</option>
+            <option value="name">الاسم</option>
+            <option value="code">الرمز</option>
+          </select>
+        </div>
+        <div class="chips" id="chips" role="group" aria-label="تصفية المواد"></div>
+        <div class="active-filter" id="profFilter" hidden></div>
+        <div class="result-line" id="resultLine" aria-live="polite"></div>
+      </div>
+      <div id="groups"></div>
+    </div>
+  </section>
+
+  <!-- ===== تبليغات ممثل الدفعة (تظهر فقط إن وُجد تبليغ) ===== -->
+  <section class="section" id="announcements" hidden>
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>التبليغات</h2>
+          <p>آخر ما نشره ممثل الدفعة والمشرفون.</p>
+        </div>
+      </div>
+      <div class="ann-list" id="annList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 3. أحدث المحاضرات ===== -->
+  <section class="section" id="latest">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>أحدث المحاضرات</h2>
+          <p>آخر ما رُفع إلى الموقع، مرتّباً حسب تاريخ الإضافة.</p>
+        </div>
+      </div>
+      <div id="latestList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 4. الأساتذة ===== -->
+  <section class="section" id="professors">
+    <div class="container">
+      <details class="card fold" id="profFold">
+        <summary>
+          <span class="fold-title">
+            <h2>الأساتذة</h2>
+            <span class="fold-hint">اضغط على اسم أستاذ لترى المواد التي يدرّسها في هذا الكورس.</span>
+          </span>
+        </summary>
+        <div class="profs" id="profList"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===== 5. أدوات الطالب ===== -->
+  <section class="section" id="tools">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>أدوات الطالب</h2>
+          <p>المفضلة والتقدم وتاريخ الامتحان محفوظة على هذا الجهاز وفي هذا المتصفح فقط، ولا تنتقل إلى جهاز آخر.</p>
+        </div>
+      </div>
+      <div class="tools-grid">
+        <section class="panel card" aria-labelledby="wLastT">
+          <h3 class="panel-title" id="wLastT">تابع من حيث توقفت</h3>
+          <div id="wLast"></div>
+        </section>
+        <section class="panel card" aria-labelledby="wExamT">
+          <h3 class="panel-title" id="wExamT">عدّاد الامتحان</h3>
+          <label class="w-field">تاريخ الامتحان
+            <input class="field" type="date" id="examDate">
+          </label>
+          <p class="w-result" id="examOut" aria-live="polite"></p>
+        </section>
+        <section class="panel card" aria-labelledby="wProgT">
+          <h3 class="panel-title" id="wProgT">تقدّمك في القراءة</h3>
+          <div class="donut-wrap" id="wProg"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== قائمة المراجعة (تظهر فقط عند وجود محاضرات فيها) ===== -->
+  <section class="section" id="review" hidden>
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>قائمة المراجعة</h2>
+          <p>المحاضرات التي علّمتها "راجعها لاحقاً". تُحفظ على هذا الجهاز فقط.</p>
+        </div>
+      </div>
+      <div id="reviewList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 6. المساعدة: كيف تبدأ + الأسئلة الشائعة ===== -->
+  <section class="section" id="help">
+    <div class="container help-grid">
+      <div id="how">
+        <h2 class="subhead">كيف تبدأ</h2>
+        <div class="steps">
+          <div class="step">
+            <span class="step-num">1</span>
+            <div>
+              <h3>اختر المادة</h3>
+              <p>ابحث بالاسم أو اسم الأستاذ، أو صفِّ القائمة حسب النوع. واضغط على النجمة لتثبيت موادك المفضلة.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <div>
+              <h3>افتح المحاضرة</h3>
+              <p>داخل المادة تجد المحاضرات مرتبة بالرقم. اضغط على الملف ليفتح في نافذة داخل الصفحة.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <div>
+              <h3>علّمها كمقروءة</h3>
+              <p>بعد القراءة اضغط "علّم كمقروءة"، فيزيد شريط تقدمك في المادة وتعرف أين وصلت.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="faq">
+        <h2 class="subhead">الأسئلة الشائعة</h2>
+        <div class="faq">
+          <details class="card">
+            <summary>من أين تأتي الملفات ومن يرفعها؟</summary>
+            <p>تُجمع الملفات من قنوات تلغرام، ويرفعها مُعدّ الموقع ومساعدان من الجامعة.</p>
+          </details>
+          <details class="card">
+            <summary>كيف أفتح الملف من الآيباد أو الهاتف؟</summary>
+            <p>اضغط على اسم الملف داخل المحاضرة، فيفتح في نافذة داخل الصفحة. ومن أعلى النافذة يمكنك فتحه في تبويب مستقل أو تنزيله.</p>
+          </details>
+          <details class="card">
+            <summary>هل أحتاج إلى حساب أو تسجيل دخول؟</summary>
+            <p>التسجيل اختياري. بحساب تُحفظ مفضلتك وتقدمك وتاريخ الامتحان على الخادم فتجدها على أي جهاز، وبدونه تبقى محفوظة على هذا الجهاز فقط.</p>
+          </details>
+          <details class="card">
+            <summary>أين تُحفظ مفضلتي وتقدمي؟</summary>
+            <p>على هذا الجهاز وفي هذا المتصفح فقط. لو فتحت الموقع من جهاز آخر أو مسحت بيانات المتصفح فستبدأ من جديد.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <!-- ===== التذييل (نفسه في كل الصفحات) ===== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a class="brand" href="index.html">
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
+          <span data-site-title></span>
+        </a>
+        <p class="foot-uni" id="footUni" hidden></p>
+        <p id="footNotice" hidden></p>
+      </div>
+      <nav class="footer-links" aria-label="روابط التذييل">
+        <a href="#semesters">المواد</a>
+        <a href="#latest">المحاضرات</a>
+        <a href="#professors">الأساتذة</a>
+        <a href="#tools">أدوات الطالب</a>
+        <a href="#faq">الأسئلة الشائعة</a>
+      </nav>
+    </div>
+    <div class="container footer-bottom" id="footBottom"></div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=p3-23"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/i18n.js?v=p3-23"></script>
+  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/auth.js?v=p3-23"></script>
+  <script src="js/nav.js?v=p3-23"></script>
+  <script>
+    (function () {
+      var $ = MS.$, el = MS.el;
+
+      if (MS.dataError()) return;
+      MS.initShared();
+      MS.initHeader();
+      $("heroSub").textContent = SITE.subtitle;
+      $("searchBox").appendChild(MS.icon("search", 20));
+
+      function href(c) { return "course.html?id=" + encodeURIComponent(c.id); }
+      var norm = MS.norm;
+
+
+      /* ---------- ودجت: تابع من حيث توقفت ---------- */
+      function renderLast() {
+        var box = $("wLast");
+        box.textContent = "";
+        var c = MS.course(MS.getLast());
+        box.parentNode.classList.toggle("is-empty", !c);
+        if (!c) {
+          box.appendChild(el("p", "w-empty", "لم تفتح أي مادة بعد. اختر مادة من القائمة وابدأ."));
+          var go = el("a", "w-link", "اذهب إلى المواد");
+          go.href = "#semesters";
+          box.appendChild(go);
+          return;
+        }
+        var row = el("div", "w-subject");
+        var tile = el("span", "tile");
+        tile.appendChild(MS.icon(c.icon, 24));
+        row.appendChild(tile);
+        var names = el("div", "w-names");
+        names.appendChild(el("div", "w-en en", c.name));
+        names.appendChild(el("div", "w-ar", c.nameAr));
+        row.appendChild(names);
+        box.appendChild(row);
+
+        var total = c.lectures.length;
+        if (total) {
+          var done = MS.progress.done(c);
+          var bar = el("div", "bar");
+          var fill = el("i");
+          fill.style.setProperty("--p", Math.round(done / total * 100) + "%");
+          bar.appendChild(fill);
+          box.appendChild(bar);
+          box.appendChild(el("div", "bar-label", "قرأت " + done + " من " + MS.lecturesLabel(total, true)));
+        }
+        var link = el("a", "w-link", "تابع المادة");
+        link.href = href(c);
+        box.appendChild(link);
+      }
+      renderLast();
+
+      /* ---------- ودجت: عدّاد الامتحان ---------- */
+      function daysLabel(n) {
+        if (n === 1) return "يوم واحد";
+        if (n === 2) return "يومان";
+        return n + (n <= 10 ? " أيام" : " يوماً");
+      }
+      function renderExam() {
+        var v = MS.load(MS.KEY.exam, "");
+        var out = $("examOut");
+        out.textContent = "";
+        if (!v) { out.textContent = "حدد التاريخ لتعرف كم يوم بقي."; return; }
+        var p = v.split("-");
+        var d = new Date(+p[0], +p[1] - 1, +p[2]);
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var n = Math.round((d - today) / 86400000);
+        if (n < 0) out.appendChild(document.createTextNode("مضى موعد الامتحان."));
+        else if (n === 0) out.appendChild(document.createTextNode("الامتحان اليوم، بالتوفيق."));
+        else {
+          out.appendChild(document.createTextNode("باقي "));
+          out.appendChild(el("strong", "", daysLabel(n)));
+        }
+        var clear = el("button", "w-clear", "مسح");
+        clear.type = "button";
+        clear.addEventListener("click", function () {
+          MS.save(MS.KEY.exam, "");
+          $("examDate").value = "";
+          renderExam();
+          MS.toast("تم مسح تاريخ الامتحان");
+        });
+        out.appendChild(clear);
+      }
+      var savedExam = MS.load(MS.KEY.exam, "");
+      if (savedExam) $("examDate").value = savedExam;
+      $("examDate").addEventListener("change", function (e) {
+        MS.save(MS.KEY.exam, e.target.value);
+        renderExam();
+        if (e.target.value) MS.toast("تم حفظ تاريخ الامتحان");
+      });
+      renderExam();
+
+      /* ---------- ودجت: تقدّمك (من المحاضرات المقروءة فعلاً على هذا الجهاز) ---------- */
+      function renderProgress() {
+        var box = $("wProg");
+        box.textContent = "";
+        var total = 0, done = 0;
+        COURSES.forEach(function (c) { total += c.lectures.length; done += MS.progress.done(c); });
+        if (!total) { box.appendChild(el("p", "w-empty", "لم تُرفع ملفات بعد")); return; }
+        var pct = Math.round(done / total * 100);
+        var C = 2 * Math.PI * 40;
+        var ring = el("div", "donut");
+        ring.innerHTML = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="40"/><circle class="value" cx="50" cy="50" r="40" stroke-dasharray="' + (C * pct / 100).toFixed(1) + " " + C.toFixed(1) + '"/></svg>';
+        ring.appendChild(el("span", "donut-text", pct + "%"));
+        box.appendChild(ring);
+        var leg = el("div", "donut-legend");
+        [[done, "مقروءة"], [total - done, "المتبقية"]].forEach(function (r) {
+          var row = el("div");
+          row.appendChild(el("strong", "", String(r[0])));
+          row.appendChild(document.createTextNode(" "));
+          row.appendChild(el("span", "", r[1]));
+          leg.appendChild(row);
+        });
+        box.appendChild(leg);
+      }
+      renderProgress();
+
+      /* ---------- المواد: بحث، تصفية، ترتيب ---------- */
+      var state = { cat: "all", q: "", sort: "default", prof: null };
+      var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function matches(c, q) {
+        if (!q) return true;
+        var hay = [c.name, c.nameAr, c.code]
+          .concat(c.professors.map(function (p) { return p.name; }))
+          .map(norm).join(" ");
+        return hay.indexOf(q) !== -1;
+      }
+      function visible(c) {
+        if (state.cat === "fav" && !MS.favs.has(c.id)) return false;
+        if (state.cat !== "all" && state.cat !== "fav" && c.category !== state.cat) return false;
+        if (state.prof && !c.professors.some(function (p) { return p.name === state.prof; })) return false;
+        return matches(c, state.q);
+      }
+      function sorted(list) {
+        var out = list.slice();
+        if (state.sort === "name") out.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        if (state.sort === "code") out.sort(function (a, b) { return a.code.localeCompare(b.code, "en", { numeric: true }); });
+        return out;
+      }
+
+      function profLines(c, cls) {
+        var box = el("div", cls);
+        c.professors.forEach(function (p) {
+          box.appendChild(el("span", "en", p.name + (p.role ? " (" + p.role + ")" : "")));
+        });
+        return box;
+      }
+      function creditsText(c) {
+        return "الدرجة " + c.credits.total + " (نظري " + c.credits.theory + "، عملي " + c.credits.practical + ")";
+      }
+      function statusText(c) {
+        var files = MS.fileCount(c);
+        if (!files) return null;
+        return "قرأت " + MS.progress.done(c) + " من " + MS.lecturesLabel(c.lectures.length, true) + "، " + MS.filesLabel(files);
+      }
+
+      /* بطاقة المادة: مكوّن مشترك (MS.courseCard في app.js) */
+      function makeCard(c) {
+        return MS.courseCard(c, function () {
+          renderChips();
+          if (state.cat === "fav") renderGroups();
+        });
+      }
+
+      /* ---------- بحث داخل عناوين المحاضرات ---------- */
+      function lastAdded(l) {
+        return l.files.reduce(function (m, f) { return (f.added || "") > m ? f.added : m; }, "");
+      }
+      function fmtDate(iso) {
+        var d = new Date(iso + "T00:00:00");
+        return d.toLocaleDateString(MS.lang === "en" ? "en-GB" : MS.lang === "fa" ? "fa-IR-u-nu-latn" : "ar-u-nu-latn", { day: "numeric", month: "long", year: "numeric" });
+      }
+      /* عنصر محاضرة واحد (أحدث المحاضرات، نتائج البحث، المراجعة) */
+      function lectureItem(c, l, tag) {
+        var a = el("a", "latest-item");
+        a.href = href(c) + "#lec-" + l.number;
+        a.appendChild(el("span", "file-ico", "PDF"));
+        var main = el("div", "latest-main");
+        main.appendChild(el("div", "latest-name en", l.title));
+        if (l.pron) main.appendChild(el("div", "latest-pron", l.pron));
+        var sub = el("div", "latest-sub en", c.name + " · " + c.professors.map(function (p) { return p.name; }).join("، ").replace(/، /g, ", "));
+        if (tag) sub.appendChild(el("span", "tag", "  " + tag));
+        main.appendChild(sub);
+        a.appendChild(main);
+        var added = lastAdded(l);
+        if (added) {
+          var t = el("time", "latest-date", fmtDate(added));
+          t.setAttribute("datetime", added);
+          a.appendChild(t);
+        }
+        a.appendChild(el("span", "go"));
+        return a;
+      }
+      function lectureResults() {
+        var out = [];
+        if (!state.q) return out;
+        COURSES.forEach(function (c) {
+          if (state.cat !== "all" && state.cat !== "fav" && c.category !== state.cat) return;
+          if (state.cat === "fav" && !MS.favs.has(c.id)) return;
+          if (state.prof && !c.professors.some(function (p) { return p.name === state.prof; })) return;
+          c.lectures.forEach(function (l) {
+            var hay = [l.title, l.titleAr, l.pron].concat(l.files.map(function (f) { return f.label; })).map(norm).join(" ");
+            if (hay.indexOf(state.q) !== -1) out.push({ c: c, l: l });
+          });
+        });
+        return out;
+      }
+
+      function filtering() { return !!(state.q || state.prof || state.cat !== "all"); }
+
+      /* ---------- بطاقات الكورسات ---------- */
+      function renderSemesters() {
+        var grid = $("semGrid");
+        SEMESTERS.forEach(function (sem, i) {
+          var n = COURSES.filter(function (c) { return c.semester === sem.id; }).length;
+          var a = el("a", "quick-item card hue-" + (sem.current ? 3 : i % 2 + 1) + (sem.current ? " is-current" : ""));
+          a.href = "semester.html?id=" + sem.id;
+          var tile = el("span", "tile");
+          tile.appendChild(MS.icon(sem.current ? "calendar" : "book", 22));
+          a.appendChild(tile);
+          var txt = el("span", "quick-text");
+          txt.appendChild(el("strong", "", sem.name));
+          txt.appendChild(el("small", "", n ? MS.subjectsLabel(n) : "قريباً"));
+          a.appendChild(txt);
+          if (sem.current) a.appendChild(el("span", "badge", "الحالي"));
+          a.appendChild(el("span", "go"));
+          grid.appendChild(a);
+        });
+      }
+      renderSemesters();
+
+      function renderGroups() {
+        var root = $("groups");
+        root.textContent = "";
+        var total = 0;
+
+        var lr = lectureResults();
+        if (lr.length) {
+          var lsec = el("section", "group lec-results");
+          var lh = el("div", "group-head");
+          lh.appendChild(el("h3", "group-title", "المحاضرات المطابقة"));
+          lh.appendChild(el("span", "group-count", MS.lecturesLabel(lr.length)));
+          lsec.appendChild(lh);
+          var llist = el("div", "latest card");
+          lr.forEach(function (it) { llist.appendChild(lectureItem(it.c, it.l)); });
+          lsec.appendChild(llist);
+          root.appendChild(lsec);
+        }
+
+        if (!filtering() && !lr.length) {
+          $("resultLine").textContent = "";
+          return;
+        }
+
+
+        CATEGORIES.forEach(function (cat) {
+          var list = sorted(COURSES.filter(function (c) { return c.category === cat.id && visible(c); }));
+          if (!list.length) return;
+          total += list.length;
+
+          var sec = el("section", "group");
+          var head = el("div", "group-head");
+          head.appendChild(el("h3", "group-title", cat.name));
+          head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
+          sec.appendChild(head);
+          var grid = el("div", "course-grid");
+          list.forEach(function (c) { grid.appendChild(makeCard(c)); });
+          sec.appendChild(grid);
+          root.appendChild(sec);
+        });
+
+        if (!total && !lr.length) {
+          var empty = el("div", "empty");
+          if (state.cat === "fav" && !state.q) {
+            empty.appendChild(el("strong", "", "لم تضف مواد إلى المفضلة بعد"));
+            empty.appendChild(el("p", "", "اضغط على النجمة في أي مادة لتظهر هنا."));
+          } else {
+            empty.appendChild(el("strong", "", "لا توجد مادة بهذا الاسم"));
+            empty.appendChild(el("p", "", "جرّب اسم المادة بالإنجليزية، أو اسم الأستاذ، أو رمز المادة."));
+          }
+          root.appendChild(empty);
+        }
+        $("resultLine").textContent = (state.q || state.prof || state.cat !== "all")
+          ? ("النتائج: " + MS.subjectsLabel(total) + (lr.length ? "، " + MS.lecturesLabel(lr.length) : "")) : "";
+      }
+
+      function renderChips() {
+        var box = $("chips");
+        box.textContent = "";
+        var defs = [{ id: "all", name: "الكل", n: COURSES.length }];
+        CATEGORIES.forEach(function (cat) {
+          defs.push({ id: cat.id, name: cat.name, n: COURSES.filter(function (c) { return c.category === cat.id; }).length });
+        });
+        var favN = MS.favs.all().filter(function (id) { return !!MS.course(id); }).length;
+        defs.push({ id: "fav", name: "المفضلة", n: favN });
+        $("favCount").textContent = String(favN);
+
+        defs.forEach(function (d) {
+          var b = el("button", "chip" + (state.cat === d.id ? " is-on" : ""));
+          b.type = "button";
+          b.setAttribute("aria-pressed", String(state.cat === d.id));
+          b.appendChild(document.createTextNode(d.name));
+          b.appendChild(el("small", "", String(d.n)));
+          b.addEventListener("click", function () {
+            state.cat = d.id;
+            renderChips();
+            renderGroups();
+          });
+          box.appendChild(b);
+        });
+      }
+
+      var searchClear = $("searchClear");
+      searchClear.appendChild(MS.icon("close", 16));
+      $("search").addEventListener("input", function (e) {
+        state.q = norm(e.target.value.trim());
+        searchClear.hidden = !e.target.value;
+        renderGroups();
+      });
+      searchClear.addEventListener("click", function () {
+        $("search").value = "";
+        state.q = "";
+        searchClear.hidden = true;
+        renderGroups();
+        $("search").focus();
+      });
+      $("sort").addEventListener("change", function (e) {
+        state.sort = e.target.value;
+        renderGroups();
+      });
+
+      /* ---------- الأساتذة: بطاقات تصفّي المواد ---------- */
+      function renderProfFilter() {
+        var box = $("profFilter");
+        box.textContent = "";
+        box.hidden = !state.prof;
+        if (!state.prof) return;
+        box.appendChild(document.createTextNode("المواد التي يدرّسها "));
+        box.appendChild(el("strong", "en", state.prof));
+        var x = el("button", "af-clear", "إلغاء");
+        x.type = "button";
+        x.addEventListener("click", function () { setProf(null, false); });
+        box.appendChild(x);
+      }
+
+      function setProf(name, scroll) {
+        state.prof = name;
+        renderProfs();
+        renderProfFilter();
+        renderGroups();
+        if (name && scroll) $("subjects").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+      }
+
+      function renderProfs() {
+        var box = $("profList");
+        box.textContent = "";
+        MS.professors().forEach(function (p) {
+          var b = el("button", "prof-card" + (state.prof === p.name ? " is-on" : ""));
+          b.type = "button";
+          b.setAttribute("aria-pressed", String(state.prof === p.name));
+          var initial = p.name.replace(/^(Dr|Mr|Mrs)\.\s*/, "").charAt(0).toUpperCase();
+          b.appendChild(el("span", "prof-avatar", initial));
+          var info = el("span", "prof-info");
+          info.appendChild(el("span", "prof-name en", p.name));
+          if (p.roles.length) info.appendChild(el("span", "prof-role en", p.roles.join(", ")));
+          var subs = el("span", "prof-subjects");
+          p.courses.forEach(function (c) { subs.appendChild(el("span", "", c.nameAr)); });
+          info.appendChild(subs);
+          b.appendChild(info);
+          b.addEventListener("click", function () {
+            setProf(state.prof === p.name ? null : p.name, true);
+          });
+          box.appendChild(b);
+        });
+      }
+
+      var profFold = $("profFold");
+      function openProfs() { if (profFold) profFold.open = true; }
+      document.querySelectorAll('a[href="#professors"]').forEach(function (a) { a.addEventListener("click", openProfs); });
+      if (location.hash === "#professors") openProfs();
+
+      renderChips();
+      renderGroups();
+      renderProfs();
+
+      /* اختصارات الصفحة الرئيسية */
+      [].forEach.call(document.querySelectorAll("[data-go]"), function (b) {
+        b.addEventListener("click", function () {
+          state.cat = b.getAttribute("data-go");
+          renderChips();
+          renderGroups();
+          $("subjects").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+        });
+      });
+      // روابط تصل من الصفحات الأخرى: index.html#favorites و index.html#search
+      function applyHash() {
+        if (location.hash === "#favorites") {
+          state.cat = "fav";
+          renderChips();
+          renderGroups();
+          $("subjects").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+        } else if (location.hash === "#search") {
+          setTimeout(function () { $("search").focus(); }, 0);
+        }
+      }
+      applyHash();
+      window.addEventListener("hashchange", applyHash);
+
+      /* ---------- قائمة المراجعة ---------- */
+      (function renderReview() {
+        var items = [], all = MS.review.all();
+        COURSES.forEach(function (c) {
+          c.lectures.forEach(function (l) {
+            if ((all[c.id] || []).indexOf(l.number) !== -1) items.push({ c: c, l: l });
+          });
+        });
+        $("review").hidden = !items.length;
+        $("reviewShortcut").hidden = !items.length;
+        $("reviewCount").textContent = String(items.length);
+        if (!items.length) return;
+        var list = el("div", "latest card");
+        items.forEach(function (it) { list.appendChild(lectureItem(it.c, it.l)); });
+        $("reviewList").appendChild(list);
+      })();
+
+      /* ---------- آخر الملفات ---------- */
+      (function renderLatest() {
+        var box = $("latestList");
+        var items = [];
+        // تظهر المحاضرة إن كان فيها ملف واحد على الأقل مسموح عرضه هنا (MS.inLatest: قرار المشرف، وإلا كورس الطالب الحالي فقط)
+        COURSES.forEach(function (c) {
+          c.lectures.forEach(function (l) {
+            var shown = l.files.filter(function (f) { return MS.inLatest(c, f); });
+            if (shown.length) items.push({ c: c, l: l, d: lastAdded({ files: shown }) });
+          });
+        });
+        if (!items.length) {
+          var empty = el("div", "empty");
+          empty.appendChild(el("strong", "", "لم تُرفع ملفات بعد"));
+          empty.appendChild(el("p", "", "ستظهر هنا أحدث الملفات فور رفعها."));
+          box.appendChild(empty);
+          return;
+        }
+        items.sort(function (a, b) { return b.d.localeCompare(a.d); });
+        var list = el("div", "latest card");
+        items.slice(0, 6).forEach(function (it) { list.appendChild(lectureItem(it.c, it.l)); });
+        box.appendChild(list);
+      })();
+
+      /* ---------- التبليغات: من الخادم؛ بلا قاعدة بيانات أو بلا تبليغات يبقى القسم مخفياً ---------- */
+      (function renderAnnouncements() {
+        if (!window.fetch) return;
+        fetch("api/announcements", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+          if (!d || !d.items || !d.items.length) return;
+          var box = $("annList");
+          d.items.slice(0, 5).forEach(function (a) {
+            var card = el("article", "card ann-item");
+            card.appendChild(el("h3", "ann-title", a.title));
+            if (a.body) card.appendChild(el("p", "ann-body", a.body));
+            card.appendChild(el("p", "ann-meta", a.by + " · " + fmtDate(new Date(a.at).toISOString())));
+            box.appendChild(card);
+          });
+          $("announcements").hidden = false;
+        }).catch(function () { /* بلا اتصال: لا تبليغات */ });
+      })();
+
+      /* ---------- التذييل ---------- */
+      $("footBottom").textContent = "© " + new Date().getFullYear() + " " + SITE.title;
+    })();
+  </script>
+  <script>if (window.I18N) I18N.apply();</script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+/* صفحة الكورس (مرجع محمد 2026-10-16): بطاقات أفقية وبانر. محدد بنطاق .semester-design؛ القائمة الجانبية من nav.js. */
+.semester-design {
+ --container: 1440px; --color-bg: #f5f8f8;
+ --course-art: 43%; --course-height: 246px; --hero-height: 250px;
+ --hero-art: url('../assets/hero-respiratory.webp');
+ --rail-shadow: 0 12px 36px rgba(19,62,71,.06);
+ --brand-size: 34px; --mobile-art: 36%;
+ background: var(--color-bg);
+}
+.semester-design .site-header { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.semester-brand { font-family: Georgia,serif; font-size: var(--brand-size); font-weight: 700; color: var(--color-petrol); order: 5; margin-inline-start: auto; }
+.semester-design .search-pill { max-width: 620px; }
+.semester-design .sem-head { padding-top: var(--space-5); }
+.semester-design .breadcrumb { display: none; }
+.semester-design .sem-title { font-family: var(--font-body); }
+.semester-design .banner {
+ position: relative; display: flex; align-items: center; min-height: var(--hero-height); height: auto;
+ padding: var(--space-6); background: var(--hero-art) left center / cover no-repeat, var(--color-petrol);
+ box-shadow: var(--rail-shadow); isolation: isolate;
+}
+.semester-design .banner > div { width: 58%; position: relative; z-index: 1; }
+.semester-design .banner-title { font-family: var(--font-body); font-size: clamp(26px,3vw,42px); }
+.semester-design .banner-sub { font-size: var(--text-md); }
+.semester-design .banner-tag { font-size: 10px; letter-spacing: .2em; }
+.semester-design .sem-filter { margin-block: var(--space-5); }
+.semester-design .chip { border-radius: var(--radius-md); }
+.semester-design .chip.is-on { background: var(--color-petrol); }
+.semester-design .group { margin-top: var(--space-5); }
+.semester-design .group-head { margin-bottom: var(--space-3); }
+.semester-design .group-title { font-size: var(--text-base); color: var(--color-muted); }
+.semester-design .course-grid { gap: var(--space-4); }
+.semester-design .course-card {
+ display: grid; direction: ltr; grid-template-columns: var(--course-art) minmax(0,1fr);
+ grid-template-rows: 1fr auto; min-height: var(--course-height); padding: 0;
+ border: 1px solid var(--color-border); box-shadow: var(--rail-shadow); background: var(--color-surface);
+}
+.semester-design .course-card::before { left: 0; right: auto; top: var(--space-2); bottom: var(--space-2); width: 4px; border-radius: var(--radius-pill); }
+.semester-design .cc-media {
+ grid-column: 1; grid-row: 1; height: auto; min-height: 170px;
+ padding: var(--space-4) 0 0 var(--space-2); overflow: hidden;
+ background: radial-gradient(ellipse at center,var(--h-bg),transparent 72%);
+}
+.semester-design .cc-img { width: 100%; height: 100%; max-height: 206px; object-fit: contain; }
+.semester-design .cc-info { grid-column: 2; grid-row: 1; direction: rtl; justify-content: center; padding: var(--space-5) var(--space-3) var(--space-2) var(--space-2); }
+html[dir="ltr"] .semester-design .cc-info { direction: ltr; }
+.semester-design .cc-kicker { font-size: 11px; letter-spacing: .06em; }
+.semester-design .cc-title { font-size: 17px; line-height: 1.35; overflow-wrap: normal; text-align: start; }
+.semester-design .cc-ar { font-size: var(--text-sm); font-weight: 400; }
+.semester-design .cc-profs { font-size: 11px; margin-top: var(--space-3); }
+.semester-design .cc-facts { display: none; }
+.semester-design .cc-foot { grid-column: 1 / -1; direction: ltr; padding: var(--space-2) var(--space-3) var(--space-3); min-height: 54px; }
+.semester-design .cc-state { direction: rtl; text-align: left; }
+.semester-design .cc-go { width: 38px; height: 38px; background: linear-gradient(140deg,var(--color-secondary),var(--color-petrol-strong)); }
+.semester-design .course-card > .fav { left: var(--space-1); right: auto; top: 0; z-index: 2; width: 32px; height: 32px; opacity: .7; }
+.mobile-dock { display: none; }
+@media(min-width:721px) and (max-width:1199px) { .semester-design .course-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(min-width:1200px) { .semester-design .course-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:720px) {
+ .semester-design { --brand-size: 27px; --hero-height: 160px; --course-height: 142px; --gutter: 14px; padding-bottom: 80px; }
+ .semester-design .header-inner { gap: var(--space-2); }
+ .semester-design .semester-brand { order: 0; margin-inline-start: 0; margin-inline-end: auto; }
+ .semester-design .search-pill { flex: none; width: 38px; padding: 0; justify-content: center; background: transparent; }
+ .semester-design .search-pill span,.semester-design #favLink { display: none; }
+ .semester-design .lang-sel { width: 56px; font-size: 11px; }
+ .semester-design .sem-title { font-size: 25px; }
+ .semester-design .sem-count { font-size: var(--text-sm); }
+ .semester-design .banner { padding: var(--space-4); background-position: 36% center; }
+ .semester-design .banner > div { width: 57%; }
+ .semester-design .banner-title { font-size: 23px; line-height: 1.35; }
+ .semester-design .banner-tag { display: none; }
+ .semester-design .banner-sub { font-size: 12px; line-height: 1.6; }
+ .semester-design .sem-filter { margin-block: var(--space-4); }
+ .semester-design .sem-filter-head h2 { font-size: 20px; }
+ .semester-design .chips { flex-wrap: nowrap; width: 100%; overflow-x: auto; padding-bottom: var(--space-1); }
+ .semester-design .chip { flex: none; min-height: 36px; padding: var(--space-1) var(--space-3); font-size: 11px; border-radius: var(--radius-pill); }
+ .semester-design .course-grid { grid-template-columns: minmax(0,1fr); gap: var(--space-3); }
+ .semester-design .course-card { grid-template-columns: var(--mobile-art) minmax(0,1fr); grid-template-rows: 1fr auto; }
+ .semester-design .cc-media { grid-row: 1 / 3; min-height: 0; padding: var(--space-2); }
+ .semester-design .cc-img { max-height: 160px; }
+ .semester-design .cc-info { padding: var(--space-3) var(--space-3) 0 var(--space-1); justify-content: center; }
+ .semester-design .cc-title { font-size: 15px; }
+ .semester-design .cc-ar { font-size: 12px; }
+ .semester-design .cc-kicker,.semester-design .cc-profs,.semester-design .cc-more { display: none; }
+ .semester-design .cc-foot { grid-column: 2; padding: var(--space-2) var(--space-3) var(--space-2) var(--space-1); min-height: 46px; }
+ .semester-design .cc-state { font-size: 10px; }
+ .semester-design .cc-go { width: 34px; height: 34px; }
+ .semester-design .group-title { font-size: 13px; }
+ .mobile-dock { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; display: flex; justify-content: space-around; background: var(--color-surface); border-top: 1px solid var(--color-border); padding: var(--space-2) var(--space-1) calc(var(--space-2) + env(safe-area-inset-bottom)); }
+ .mobile-dock a,.mobile-dock button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1); color: var(--color-muted); border: 0; background: transparent; font: inherit; font-size: 10px; min-height: 44px; min-width: 48px; }
+ .mobile-dock [aria-current] { color: var(--color-secondary-ink); font-weight: 700; }
+ .semester-design .footer { margin-top: var(--space-5); }
+}
+@media(prefers-reduced-motion:no-preference) { .semester-design .course-card:hover { transform: translateY(-2px); transition: transform .15s ease; } }

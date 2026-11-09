@@ -1,0 +1,98 @@
+/* css/upload.css — صفحة رفع المحاضرات (للمشرفين فقط)
+   كل القيم من متغيرات style.css؛ لا ألوان ولا مسافات مباشرة. */
+
+.up-top { background: var(--band-bg); border-bottom: 1px solid var(--band-line); }
+.up-top-in { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--header-h); }
+
+.up-main { max-width: 860px; padding-block: var(--space-6) var(--space-8); }
+.up-title { font-size: var(--text-xl); font-weight: 800; }
+.up-lead { margin-top: var(--space-1); color: var(--color-muted); }
+.up-card { margin-top: var(--space-5); padding: var(--space-5); }
+.up-sub { margin-bottom: var(--space-3); font-size: var(--text-lg); font-weight: 700; }
+
+.up-form { display: grid; gap: var(--space-4); }
+.up-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 600; }
+.up-hint { margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-xs); }
+.up-ltr { direction: ltr; text-align: left; }
+.up-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.up-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  .up-grid, .up-grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+.up-msg { margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-danger-soft); color: var(--color-danger); font-size: var(--text-sm); }
+.up-msg.is-ok { background: var(--color-success-soft); color: var(--color-success); }
+.up-msg a { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+
+.up-who { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-weight: 600; }
+.up-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+.up-form .up-actions { margin-top: 0; }
+
+.up-check { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; }
+.up-check input { margin-top: var(--space-1); flex: none; }
+.up-options { margin-top: var(--space-4); }
+
+/* لوحة المادة */
+.up-board { margin-top: var(--space-3); }
+.up-board-title { margin-bottom: var(--space-2); font-size: var(--text-sm); font-weight: 700; }
+.up-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.up-chip { padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-size: var(--text-xs); font-weight: 600; }
+.up-chip.is-have { border-color: var(--color-secondary); background: var(--color-secondary-soft); color: var(--color-secondary-ink); }
+.up-chip.is-gap { border-style: dashed; border-color: var(--color-danger); background: var(--color-surface); color: var(--color-danger); cursor: pointer; }
+.up-chip.is-gap:hover { background: var(--color-danger-soft); }
+.up-wanted { margin-top: var(--space-2); color: var(--color-secondary-ink); font-size: var(--text-sm); font-weight: 600; }
+
+/* كل المواد */
+.up-overview { margin-top: var(--space-4); border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+.up-overview summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+.up-ov-title { margin: var(--space-4) 0 var(--space-2); color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; }
+.up-ov-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; padding: var(--space-2) var(--space-3); border: 0; border-top: 1px solid var(--color-border); background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.up-ov-row:hover { background: var(--color-secondary-soft); }
+.up-ov-names { display: grid; min-width: 0; }
+.up-ov-names small { color: var(--color-muted); }
+.up-ov-state { flex: none; max-width: 55%; color: var(--color-secondary-ink); font-size: var(--text-xs); text-align: end; }
+.up-ov-state.is-empty { color: var(--color-muted); }
+
+/* منطقة الإفلات */
+.up-drop { display: grid; gap: var(--space-1); padding: var(--space-5); border: 2px dashed var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); text-align: center; cursor: pointer; }
+.up-drop span { color: var(--color-muted); font-size: var(--text-xs); }
+.up-drop:hover, .up-drop.is-over { border-color: var(--color-secondary); background: var(--color-secondary-soft); }
+.up-drop:focus-within { border-color: var(--color-secondary); }
+.up-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* صفوف قائمة الانتظار */
+.up-queue { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+.up-row { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.up-row.is-error { border-color: var(--color-danger); }
+.up-row.is-done { opacity: 0.6; }
+.up-row-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.up-row-file { min-width: 0; font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+.up-row-status { margin-top: var(--space-1); color: var(--color-danger); font-size: var(--text-xs); font-weight: 600; }
+.up-row.is-done .up-row-status { color: var(--color-success); }
+
+/* المرفوعات */
+.up-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-4); }
+.up-filters > div { min-width: 160px; flex: 1; }
+.up-filter-check { padding-bottom: var(--space-2); }
+
+.up-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-3); border-top: 1px solid var(--color-border); }
+.up-item:first-child { border-top: 0; }
+.up-item-main { min-width: 0; }
+.up-item-name { font-weight: 600; overflow-wrap: anywhere; }
+.up-item-sub { color: var(--color-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.up-url { color: var(--color-secondary-ink); }
+.up-item-actions { display: flex; flex: none; gap: var(--space-2); }
+.up-del { background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
+.up-del:hover { background: var(--color-danger-soft); }
+.up-type { display: inline-block; padding: 0 var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-pill); font-weight: 600; }
+.up-type.is-quiz { border-color: var(--color-secondary); background: var(--color-secondary-soft); color: var(--color-secondary-ink); }
+.up-type.is-exam { border-color: var(--color-primary); color: var(--color-primary); }
+
+.up-edit-form { display: block; }
+.up-edit-body { display: grid; gap: var(--space-3); }
+@media (max-width: 640px) {
+  .up-item { flex-direction: column; align-items: stretch; }
+  .up-item-actions { justify-content: flex-start; }
+  .up-ov-row { flex-direction: column; align-items: flex-start; }
+  .up-ov-state { max-width: none; text-align: start; }
+}

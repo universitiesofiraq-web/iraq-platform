@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>رفع المحاضرات | المنصة العراقية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <link rel="stylesheet" href="css/upload.css?v=p3-23">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+  </script>
+</head>
+<body>
+  <noscript>
+    <p class="load-error">هذه الصفحة تحتاج إلى تفعيل JavaScript.</p>
+  </noscript>
+
+  <header class="up-top">
+    <div class="container up-top-in">
+      <a class="brand" href="index.html">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
+        <span data-site-title></span>
+      </a>
+      <a class="btn btn-secondary btn-sm" href="index.html">العودة إلى الموقع</a>
+    </div>
+  </header>
+
+  <main class="container up-main" id="main">
+    <h1 class="up-title">رفع المحاضرات</h1>
+    <p class="up-lead">هذه الصفحة للمشرفين فقط. أدخل الرمز الخاص بك لتبدأ.</p>
+
+    <section class="card up-card" id="loginCard" aria-label="الدخول">
+      <form id="loginForm" autocomplete="off">
+        <label class="up-label" for="code">رمز الرفع</label>
+        <input class="field up-ltr" id="code" type="password" autocomplete="current-password" required>
+        <p class="up-msg" id="loginMsg" role="alert" hidden></p>
+        <div class="up-actions">
+          <button class="btn btn-primary" type="submit" id="loginBtn">دخول</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="appArea" hidden>
+      <section class="card up-card" aria-label="المادة">
+        <div class="up-who">
+          <p id="who"></p>
+          <button class="btn btn-secondary btn-sm" type="button" id="logout">خروج</button>
+        </div>
+
+        <label class="up-label" for="course">المادة</label>
+        <select class="field" id="course"></select>
+        <p class="up-hint up-ltr" id="courseEn"></p>
+        <div id="board" class="up-board" aria-live="polite"></div>
+
+        <details class="up-overview">
+          <summary>كل المواد وما رُفع لها</summary>
+          <div id="overview"></div>
+        </details>
+      </section>
+
+      <section class="card up-card" aria-label="رفع ملفات">
+        <h2 class="up-sub">رفع ملفات PDF</h2>
+        <p class="up-hint">اختر ملفاً واحداً أو عدة ملفات للمادة المختارة أعلاه. تُقترح الأرقام والأسماء من اسم الملف وتستطيع تعديلها.</p>
+
+        <label class="up-drop" id="drop" for="file">
+          <strong>اضغط لاختيار ملفات PDF أو اسحبها إلى هنا</strong>
+          <span>كل ملف حتى 20 ميغا</span>
+        </label>
+        <input class="up-file-input" id="file" type="file" accept="application/pdf,.pdf" multiple>
+
+        <div id="queue" class="up-queue"></div>
+        <datalist id="labelSuggest">
+          <option value="Slides"></option>
+          <option value="Lecture notes"></option>
+          <option value="Summary"></option>
+          <option value="Handout"></option>
+          <option value="Practical"></option>
+          <option value="Past questions"></option>
+          <option value="Interactive quiz"></option>
+        </datalist>
+
+        <div class="up-options" id="queueOptions" hidden>
+          <label class="up-check">
+            <input type="checkbox" id="latest">
+            <span>اعرض هذه المحاضرات في «أحدث المحاضرات» بالصفحة الرئيسية</span>
+          </label>
+          <p class="up-hint" id="latestHint"></p>
+        </div>
+
+        <div id="progress" hidden>
+          <div class="bar"><i id="progressFill"></i></div>
+          <p class="bar-label" id="progressLabel"></p>
+        </div>
+        <p class="up-msg" id="formMsg" role="alert" hidden></p>
+
+        <div class="up-actions">
+          <button class="btn btn-primary" type="button" id="send" disabled>رفع الملفات</button>
+          <button class="btn btn-secondary" type="button" id="clearQueue" hidden>مسح القائمة</button>
+          <span class="up-hint">لا تغلق الصفحة أثناء الرفع.</span>
+        </div>
+      </section>
+
+      <section class="card up-card" aria-label="إضافة رابط">
+        <h2 class="up-sub">إضافة رابط أو اختبار تفاعلي</h2>
+        <p class="up-hint">لاختبار موجود على موقع آخر، أو أسئلة سنوات سابقة، أو أي مصدر على الإنترنت. للمادة المختارة أعلاه.</p>
+        <form class="up-form" id="linkForm" autocomplete="off" novalidate>
+          <div class="up-grid">
+            <div>
+              <label class="up-label" for="linkType">النوع</label>
+              <select class="field" id="linkType">
+                <option value="quiz">اختبار تفاعلي</option>
+                <option value="exam">أسئلة السنوات السابقة</option>
+                <option value="lecture">رابط محاضرة أو مصدر</option>
+              </select>
+            </div>
+            <div>
+              <label class="up-label" for="linkNumber">رقم المحاضرة (اتركه فارغاً للمادة كلها)</label>
+              <input class="field up-ltr" id="linkNumber" type="number" inputmode="numeric" min="1" max="999" step="1">
+            </div>
+          </div>
+          <div>
+            <label class="up-label" for="linkUrl">الرابط</label>
+            <input class="field up-ltr" id="linkUrl" type="url" inputmode="url" placeholder="https://">
+          </div>
+          <div>
+            <label class="up-label" for="linkLabel">الاسم الذي يظهر للطلاب</label>
+            <input class="field up-ltr" id="linkLabel" type="text" maxlength="120" list="labelSuggest">
+            <p class="up-hint" id="linkLabelHint"></p>
+          </div>
+          <div id="linkTitleBox" hidden>
+            <label class="up-label" for="linkTitle">عنوان المحاضرة (بالإنجليزية)</label>
+            <input class="field up-ltr" id="linkTitle" type="text" maxlength="200">
+            <p class="up-hint" id="linkLecHint"></p>
+          </div>
+          <label class="up-check" id="linkLatestBox" hidden>
+            <input type="checkbox" id="linkLatest">
+            <span>اعرضها في «أحدث المحاضرات»</span>
+          </label>
+          <p class="up-msg" id="linkMsg" role="alert" hidden></p>
+          <div class="up-actions">
+            <button class="btn btn-primary" type="submit" id="linkSend">إضافة الرابط</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card up-card" aria-label="المرفوعات">
+        <h2 class="up-sub">ما رُفع من الموقع</h2>
+        <div class="up-filters">
+          <div>
+            <label class="up-label" for="filterBy">المساعد</label>
+            <select class="field" id="filterBy"></select>
+          </div>
+          <div>
+            <label class="up-label" for="filterType">النوع</label>
+            <select class="field" id="filterType">
+              <option value="">الكل</option>
+              <option value="lecture">محاضرات</option>
+              <option value="quiz">اختبارات تفاعلية</option>
+              <option value="exam">أسئلة السنوات السابقة</option>
+            </select>
+          </div>
+          <label class="up-check up-filter-check">
+            <input type="checkbox" id="filterCourse">
+            <span>المادة المختارة فقط</span>
+          </label>
+        </div>
+        <div id="list"></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=p3-23"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/upload-names.js?v=p3-23"></script>
+  <script src="js/upload.js?v=p3-23"></script>
+</body>
+</html>

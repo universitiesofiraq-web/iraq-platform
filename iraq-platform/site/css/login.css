@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
+:root{font-family:Cairo,Tahoma,Arial,sans-serif;color:#07183f;background:#eaf3ff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(115deg,#f9fcff 0%,#e5f3ff 60%,#a6cce9 100%)}.topbar{height:80px;display:flex;direction:ltr;align-items:center;justify-content:space-between;gap:20px;padding:0 5%;background:#ffffffb8;border-bottom:1px solid #d7e3f1;position:relative;z-index:5}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#07183f;font:800 32px Arial}.brand-mark{font:800 45px Arial;color:#058da9;position:relative;line-height:1}.brand-mark sup{font:800 18px Arial;position:absolute;bottom:-7px;left:14px;top:auto}.topbar nav{display:flex;align-items:center;align-self:stretch;direction:rtl;gap:36px}.topbar nav a{display:flex;align-items:center;color:#4c607e;text-decoration:none;font-weight:700;position:relative}.topbar nav a.active{color:#086af5}.topbar nav a.active:after{content:"";height:4px;background:#086af5;position:absolute;bottom:-24px;left:-9px;right:-9px;border-radius:5px}.back{border-radius:30px;background:white;padding:10px 24px;text-decoration:none;color:#07183f;font-weight:800;white-space:nowrap}main{direction:ltr;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(380px,.9fr);gap:28px;padding:34px 3.3% 45px;min-height:calc(100vh - 80px)}.intro{direction:rtl;position:relative;min-height:780px;overflow:hidden;border-radius:24px}.intro-copy{position:relative;z-index:3;max-width:580px;text-align:right}.intro h1{display:flex;flex-direction:column;align-items:flex-end;font-size:clamp(33px,3.55vw,59px);font-weight:900;line-height:1.35;margin:0}.intro h1 .latin{font:800 clamp(55px,5vw,79px)/1.2 Arial;letter-spacing:-2px}.intro h1 em{font-style:normal;color:#086af5}.intro-copy p{max-width:580px;color:#657c9d;font-size:18px;font-weight:600;line-height:1.9;margin:20px 0}.campus-scene{position:absolute;inset:355px 0 95px;pointer-events:none;z-index:1}.campus-scene img{position:absolute;object-fit:cover;filter:saturate(.85)}.campus-scene .gate{left:0;bottom:0;width:57%;height:100%;object-position:center 38%;mask-image:linear-gradient(to bottom,transparent 0%,black 26%,black 70%,transparent 100%);opacity:.63}.campus-scene .building{right:0;bottom:0;width:56%;height:90%;object-position:center;mask-image:radial-gradient(ellipse at center,black 20%,transparent 75%);opacity:.4}.medical-ornament{position:absolute;z-index:2;right:0;top:85px;width:36%;height:330px;pointer-events:none;opacity:.7}.orbit{position:absolute;inset:35px;border:2px solid #85c8ff;border-radius:50%;transform:rotate(-25deg);box-shadow:0 0 25px #8bd0ff}.med-icon{position:absolute;display:grid;place-items:center;width:64px;height:64px;background:#d4ecffb5;border:2px solid white;border-radius:18px;color:#0875ed;box-shadow:0 0 20px #69b8ff6b;font:39px Arial}.brain{top:0;left:10%}.heart{top:145px;left:0}.lungs{top:105px;right:0}.dna{top:235px;right:7%}.features{position:absolute;bottom:35px;left:0;right:0;z-index:3;display:flex;direction:ltr;gap:13px;justify-content:flex-start}.feature{width:135px;min-height:124px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ffffffe6;border:1px solid #ffffffd9;backdrop-filter:blur(15px);border-radius:18px;text-decoration:none;color:#07183f;text-align:center;box-shadow:0 8px 24px #729bc322}.feature b{font-size:14px}.feature small{font-size:11px;color:#768ba8}.symbol{font:800 31px Arial;margin-bottom:9px}.blue{color:#0877fa}.purple{color:#8d3cef}.green{color:#06a88c}.pink{color:#f23573}.login{direction:rtl;align-self:start;position:relative;z-index:4;background:linear-gradient(155deg,#fffffff5,#f9fbfff0);border:1px solid white;border-radius:30px;padding:26px clamp(22px,3vw,42px);text-align:center;box-shadow:0 18px 65px #2b54852b;min-height:790px}.logo-holder{display:flex;flex-direction:column;align-items:center;font:800 34px Arial}.brand-mark.large{font-size:76px}.brand-mark.large sup{font-size:29px;left:27px;bottom:-8px}.university{font:600 16px/1.55 Arial;color:#7487a6;margin:10px 0 22px}.login h2{font-size:clamp(25px,2.4vw,37px);margin:0;font-weight:900}.login h2 span{color:#086bfa}.subtitle{font-size:16px;color:#7185a3;line-height:1.9;font-weight:600;margin:10px 0 20px}.actions button{width:100%;min-height:64px;border:1px solid #d4e0ef;border-radius:16px;background:#ffffffa0;display:grid;grid-template-columns:38px 1fr 24px;align-items:center;padding:8px 17px;cursor:pointer;color:#091c47;font:800 16px Cairo,Tahoma,sans-serif;margin:13px 0}.actions button:hover{background:#e9f4ff}.glyph{font:30px Arial;color:#0875ee}.google{font-weight:800;background:conic-gradient(#4285f4 0 25%,#34a853 25% 45%,#fbbc05 45% 65%,#ea4335 65% 85%,#4285f4 85%);background-clip:text;color:transparent}.or{display:flex;align-items:center;gap:15px;color:#7b8da8;font-weight:700}.or:before,.or:after{content:"";height:1px;background:#d5e0ed;flex:1}.security{display:flex;gap:16px;align-items:center;text-align:right;background:#e9f4ff;border-radius:18px;padding:16px;margin-top:22px}.security p{margin:2px 0;color:#6e82a1;font-size:12px;line-height:1.7}.shield{font-size:43px;color:#0875ee}.terms{font-size:11px;color:#778aa6;margin:20px 0 0}.terms a{color:#0869f8}#notice{font-size:12px;color:#2764ad;min-height:12px}@media(max-width:1100px){.topbar nav{gap:18px}main{grid-template-columns:1fr 400px;padding:22px}.intro h1{font-size:39px}.intro h1 .latin{font-size:62px}.intro-copy p{font-size:15px}.features{flex-wrap:wrap}.feature{width:calc(50% - 8px)}}@media(max-width:780px){.topbar{height:70px;padding:0 17px}.topbar nav{display:none}.brand{font-size:25px}.brand-mark{font-size:34px}.back{font-size:12px;padding:9px 12px}main{display:flex;flex-direction:column;padding:16px;gap:16px}.intro{min-height:550px}.intro-copy{text-align:center;max-width:100%}.intro h1{align-items:center;font-size:clamp(29px,8vw,43px)}.intro h1 .latin{font-size:55px}.intro-copy p{font-size:13px;line-height:1.8;margin:10px auto}.campus-scene{inset:230px 0 95px}.medical-ornament{display:none}.features{bottom:0;gap:7px;justify-content:center}.feature{width:24%;min-height:89px;border-radius:13px}.feature b{font-size:11px}.feature small{font-size:9px}.symbol{font-size:24px;margin-bottom:4px}.login{min-height:0;width:100%;max-width:500px;margin:auto;border-radius:22px}.login h2{font-size:27px}.subtitle{font-size:14px}.university{font-size:13px}.actions button{font-size:14px;min-height:57px}}
+/* v3: clean positioning and original branding */
+.real-logo{display:block;object-fit:contain;object-position:center}.header-logo{width:170px;height:60px}.login-logo{width:185px;height:120px}.logo-holder{min-height:120px;justify-content:center}.logo-holder strong{display:none}
+.intro-copy{max-width:620px;position:relative;z-index:4}.medical-ornament{right:0;left:auto;top:315px;width:33%;height:235px;opacity:.8}.med-icon{width:59px;height:59px}.med-icon svg{width:36px;height:36px}.medical-ornament .heart{top:115px;left:0}.medical-ornament .lungs{top:80px;right:0}.medical-ornament .dna{top:180px;right:8%}
+.campus-scene .gate{left:0;width:65%;mask-image:linear-gradient(to right,black 0%,black 40%,transparent 98%);opacity:.65}.campus-scene .building{right:0;width:65%;mask-image:linear-gradient(to right,transparent 0%,black 55%,transparent 100%);opacity:.42}.symbol svg{width:34px;height:34px}.glyph svg{width:28px;height:28px}.feature{transition:transform .2s,box-shadow .2s}.feature:hover{transform:translateY(-3px);box-shadow:0 12px 28px #729bc344}
+@media(min-width:781px){.intro-copy{padding-right:clamp(20px,4vw,80px)}.intro h1{align-items:flex-start}.intro-copy p{max-width:540px}.medical-ornament{top:310px;right:0}}
+@media(max-width:1100px) and (min-width:781px){.medical-ornament{top:340px;opacity:.45}.intro-copy{padding-right:8px}.intro-copy p{max-width:470px}}
+@media(max-width:780px){.header-logo{width:125px;height:53px}.login-logo{width:165px;height:105px}.intro-copy{padding-right:0}.intro h1{align-items:center}.medical-ornament{display:none}.campus-scene .gate{width:68%}.campus-scene .building{width:66%}}
+
+/* V4: prevent desktop description/ornament overlap and enforce 2×2 on mobile */
+@media (min-width: 781px) {
+  .intro-copy p { max-width: min(490px, 66%); font-size: clamp(14px, 1.12vw, 17px); line-height: 1.8; }
+  .medical-ornament { top: 385px; right: 0; width: 29%; opacity: .65; }
+}
+@media (min-width: 781px) and (max-width: 1100px) {
+  .intro-copy p { max-width: 62%; font-size: 14px; }
+  .medical-ornament { top: 400px; opacity: .45; }
+}
+@media (max-width: 780px) {
+  .features { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; width: min(100%,340px); left: 50%; right: auto; transform: translateX(-50%); direction: rtl; }
+  .feature { width: 100%; min-width: 0; min-height: 92px; }
+  .intro { min-height: 670px; }
+  .campus-scene { bottom: 185px; }
+}
+
+.doc-body{background:#f4f8fd;color:#0b1a3a}
+.doc{max-width:720px;margin:32px auto;padding:32px 24px;background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(20,60,120,.08);line-height:1.9}
+.doc h1{font-size:1.8rem;margin:0 0 4px}
+.doc h2{font-size:1.1rem;margin:24px 0 4px;color:#0a5fd8}
+.doc p{margin:0;color:#3d4b66}
+.doc .doc-date{color:#7a879c;font-size:.85rem}
+@media (max-width:600px){.doc{margin:16px;padding:24px 18px}}
+
+.tools{display:flex;align-items:center;gap:10px}
+.lang{border:1px solid #d4e0ef;border-radius:30px;background:#fff;color:#07183f;font:700 13px Cairo,Tahoma,sans-serif;padding:9px 12px;cursor:pointer}
+html[lang=en] .intro,html[lang=en] .login{direction:ltr}
+html[lang=en] .intro-copy,html[lang=en] .security{text-align:left}
+html[lang=en] .intro h1{align-items:flex-start}
+html[lang=en] .doc{direction:ltr}
+@media(max-width:780px){html[lang=en] .intro-copy{text-align:center}html[lang=en] .intro h1{align-items:center}.lang{padding:8px 8px;font-size:12px}}
+
+html[lang=en] .intro h1{font-size:clamp(26px,2.7vw,44px)}
+html[lang=en] .intro-copy p{font-size:16px;max-width:520px}
+html[lang=fa] .intro-copy p{font-size:16px}
+@media(max-width:780px){html[lang=en] .intro h1{font-size:clamp(25px,7vw,36px)}}
+
+.contact-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border:1px solid #d4e0ef;border-radius:30px;background:#fff;color:#086af5;font:800 14px Cairo,Tahoma,sans-serif;padding:9px 20px;cursor:pointer}
+.contact-btn:hover{background:#e9f4ff}
+.contact{width:min(440px,calc(100% - 32px));border:0;border-radius:24px;padding:22px;background:#fff;color:#07183f;box-shadow:0 20px 70px #1b3a6a55;direction:rtl}
+.contact::backdrop{background:#0a1a3a66}
+.c-head{display:flex;align-items:center;justify-content:space-between}.c-head h2{margin:0;font-size:22px}
+.c-close{border:0;background:#eef4fb;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:#07183f}.c-close svg{width:18px;height:18px}
+.c-lead{color:#6a7d9c;font-size:14px;margin:6px 0 14px}
+.c-list{display:grid;gap:8px;max-height:60vh;overflow:auto}
+.c-row{display:grid;grid-template-columns:40px 1fr 18px;align-items:center;gap:12px;border:1px solid #dbe6f3;border-radius:14px;padding:10px 12px;text-decoration:none;color:#07183f;background:#fafcff}
+.c-row:hover{background:#e9f4ff}
+.c-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#e3f0ff;color:#086af5}.c-ico svg{width:22px;height:22px}
+.c-txt{display:flex;flex-direction:column;min-width:0;text-align:start}.c-txt b{font-size:14px}.c-txt small{font-size:12px;color:#6a7d9c;overflow-wrap:anywhere;text-align:start}
+.c-go{color:#8aa0bd;font-size:20px}
+html[lang=en] .contact{direction:ltr}
+.doc-contact{margin-top:28px}.doc-contact a{color:#0869f8;font-weight:700}
+.g-slot{display:flex;justify-content:center;margin:13px 0;min-height:44px}
+.actions .subtitle{margin:0 0 6px}
+.g-slot[hidden],.actions button[hidden]{display:none}
