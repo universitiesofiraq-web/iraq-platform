@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الجامعات والكليات | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <style>
+    .cg{max-width:760px;margin:24px auto;padding:0 16px}
+    .cg h1{font-size:1.5rem;margin:8px 0 16px}
+    .cg-path{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;font-size:.9rem}
+    .cg-path button{background:none;border:0;color:var(--accent,#2b6cb0);cursor:pointer;padding:0;font:inherit}
+    .cg-list{display:grid;gap:10px}
+    .cg-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border:1px solid rgba(128,128,128,.3);border-radius:12px;cursor:pointer;background:var(--card,transparent)}
+    .cg-item:hover{border-color:var(--accent,#2b6cb0)}
+    .cg-item small{opacity:.7}
+    .cg-add{margin-top:20px;padding:14px;border:1px dashed rgba(128,128,128,.5);border-radius:12px;display:grid;gap:8px}
+    .cg-add input,.cg-add select{padding:10px;border-radius:8px;border:1px solid rgba(128,128,128,.4);font:inherit;background:transparent;color:inherit}
+    .cg-row{display:flex;gap:8px}.cg-row>*{flex:1}
+    .cg-empty{opacity:.7;padding:20px;text-align:center}
+    .cg-msg{color:#c53030;min-height:1.2em}
+  </style>
+</head>
+<body>
+  <main class="cg">
+    <h1 id="title">اختر جامعتك</h1>
+    <nav class="cg-path" id="path" aria-label="المسار"></nav>
+    <div class="cg-list" id="list"></div>
+    <form class="cg-add" id="add" hidden>
+      <strong id="addTitle"></strong>
+      <input id="fName" placeholder="الاسم بالعربية" required maxlength="120">
+      <input id="fEn" placeholder="الاسم بالإنجليزية (اختياري)" maxlength="120">
+      <div class="cg-row" id="subExtra" hidden>
+        <select id="fStage"></select><select id="fTerm"></select>
+      </div>
+      <input id="fProf" placeholder="اسم الأستاذ (اختياري)" maxlength="120" hidden>
+      <button class="btn btn-primary" type="submit">إضافة</button>
+      <div class="cg-msg" id="msg" role="alert"></div>
+    </form>
+  </main>
+  <script>
+  (function () {
+    var LV = ["university", "college", "department", "subject"];
+    var API = { university: "universities", college: "colleges", department: "departments", subject: "subjects" };
+    var TITLES = ["اختر جامعتك", "اختر الكلية", "اختر القسم", "المواد الدراسية"];
+    var PARENT = { college: "university_id", department: "college_id", subject: "department_id" };
+    var ADDT = ["إضافة جامعة", "إضافة كلية", "إضافة قسم", "إضافة مادة"];
+    var stack = [];     // [{type,id,name}] العناصر المختارة
+    var admin = false;
+    var $ = function (i) { return document.getElementById(i); };
+
+    function fillSelect(sel, n, label) {
+      sel.innerHTML = "";
+      for (var i = 1; i <= n; i++) { var o = document.createElement("option"); o.value = i; o.textContent = label + " " + i; sel.appendChild(o); }
+    }
+    fillSelect($("fStage"), 8, "المرحلة"); fillSelect($("fTerm"), 2, "الكورس");
+
+    function api(p, body) {
+      return fetch("/api/catalog/" + p, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {})
+        .then(function (r) { return r.json(); });
+    }
+    function level() { return stack.length; }
+
+    function renderPath() {
+      var p = $("path"); p.innerHTML = "";
+      var root = document.createElement("button"); root.textContent = "الجامعات"; root.onclick = function () { stack = []; load(); }; p.appendChild(root);
+      stack.forEach(function (s, i) {
+        p.appendChild(document.createTextNode(" / "));
+        var b = document.createElement("button"); b.textContent = s.name;
+        b.onclick = function () { stack = stack.slice(0, i + 1); load(); }; p.appendChild(b);
+      });
+    }
+
+    function load() {
+      var lv = level();
+      $("title").textContent = TITLES[lv];
+      renderPath();
+      var type = LV[lv];
+      var qs = lv ? "?" + PARENT[type] + "=" + stack[lv - 1].id : "";
+      $("list").innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';
+      api(API[type] + qs).then(function (d) {
+        var list = $("list"); list.innerHTML = "";
+        var items = (d && d.items) || [];
+        if (!items.length) { list.innerHTML = '<div class="cg-empty">لا توجد عناصر بعد.</div>'; }
+        var lastGroup = "";
+        items.forEach(function (it) {
+          if (type === "subject") {
+            var g = "المرحلة " + it.stage + " — الكورس " + it.term;
+            if (g !== lastGroup) { var h = document.createElement("h3"); h.textContent = g; list.appendChild(h); lastGroup = g; }
+          }
+          var row = document.createElement("div"); row.className = "cg-item";
+          var name = document.createElement("span"); name.textContent = it.name_ar;
+          row.appendChild(name);
+          var sub = it.professor || it.city || it.name_en;
+          if (sub) { var s = document.createElement("small"); s.textContent = sub; row.appendChild(s); }
+          if (admin) {
+            var del = document.createElement("button"); del.className = "btn btn-secondary btn-sm"; del.textContent = "حذف";
+            del.onclick = function (e) {
+              e.stopPropagation();
+              if (!confirm("حذف «" + it.name_ar + "»؟")) return;
+              api("delete", { type: type, id: it.id }).then(function (r) { if (r.ok) load(); else alert(r.error === "not_empty" ? "احذف محتوياته أولاً" : "تعذّر الحذف"); });
+            };
+            row.appendChild(del);
+          }
+          if (type !== "subject") row.onclick = function () { stack.push({ type: type, id: it.id, name: it.name_ar }); load(); };
+          list.appendChild(row);
+        });
+        var f = $("add"); f.hidden = !admin;
+        $("addTitle").textContent = ADDT[lv];
+        $("subExtra").hidden = type !== "subject"; $("fProf").hidden = type !== "subject";
+        $("msg").textContent = "";
+      }).catch(function () { $("list").innerHTML = '<div class="cg-empty">تعذّر التحميل.</div>'; });
+    }
+
+    $("add").onsubmit = function (e) {
+      e.preventDefault();
+      var type = LV[level()];
+      var body = { type: type, name_ar: $("fName").value, name_en: $("fEn").value };
+      if (level()) body[PARENT[type]] = stack[level() - 1].id;
+      if (type === "subject") { body.stage = $("fStage").value; body.term = $("fTerm").value; body.professor = $("fProf").value; }
+      api("add", body).then(function (r) {
+        if (r.ok) { $("fName").value = ""; $("fEn").value = ""; $("fProf").value = ""; load(); }
+        else $("msg").textContent = r.error === "forbidden" ? "للمشرف فقط" : "تعذّرت الإضافة";
+      });
+    };
+
+    fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+      var u = d && (d.user || d);
+      admin = !!(u && u.role === "admin");
+    }).catch(function () {}).then(load);
+  })();
+  </script>
+</body>
+</html>
