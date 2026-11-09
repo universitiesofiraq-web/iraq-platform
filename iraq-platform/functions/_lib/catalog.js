@@ -40,6 +40,22 @@ export async function handleCatalog(req, env) {
 
   try {
     if (req.method === "GET") {
+      if (part === "index") {
+        const [u, c, d] = await Promise.all([
+          all(env, "SELECT id, name_ar, name_en, city FROM universities ORDER BY name_ar"),
+          all(env, "SELECT id, university_id, name_ar, name_en FROM colleges ORDER BY name_ar"),
+          all(env, "SELECT id, college_id, name_ar FROM departments ORDER BY name_ar")
+        ]);
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city]),
+            c: c.map((r) => [r.id, r.university_id, r.name_ar, r.name_en]),
+            d: d.map((r) => [r.id, r.college_id, r.name_ar])
+          }),
+          { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=120" } }
+        );
+      }
       if (part === "universities")
         return json({ ok: true, items: await all(env, "SELECT id, slug, name_ar, name_en, city FROM universities ORDER BY name_ar") });
       if (part === "colleges") {
