@@ -4,84 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>المنصة العراقية | ملازم وأسئلة جامعات العراق</title>
-  <meta name="description" content="ملازم ومحاضرات وأسئلة سنوات سابقة لطلبة جميع الجامعات والكليات العراقية.">
+  <meta name="description" content="ابحث عن جامعتك أو كليتك أو قسمك، وحمّل الملازم والمحاضرات وأسئلة السنوات السابقة.">
+  <meta name="theme-color" content="#0A1C4E">
   <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <meta name="theme-color" content="#13294B">
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;font-family:"IBM Plex Sans Arabic",system-ui,Tahoma,sans-serif;background:#f4f7fb;color:#13294B;min-height:100vh}
-    .top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}
-    .top b{font-size:1.1rem}
-    .top a{color:#13294B;text-decoration:none;font-size:.9rem;border:1px solid #13294B55;padding:6px 12px;border-radius:8px}
-    .hero{max-width:640px;margin:7vh auto 0;padding:0 18px;text-align:center}
-    .hero h1{font-size:2rem;margin:0 0 8px}
-    .hero p{margin:0 0 24px;opacity:.75}
-    .box{position:relative;text-align:right}
-    .box input{width:100%;padding:16px 18px;font:inherit;font-size:1.05rem;border-radius:14px;border:2px solid #13294B33;background:#fff;color:inherit}
-    .box input:focus{outline:none;border-color:#2b6cb0}
-    .res{position:absolute;inset-inline:0;top:100%;margin-top:6px;background:#fff;border-radius:14px;box-shadow:0 8px 28px #0002;max-height:55vh;overflow:auto;z-index:5}
-    .res a{display:flex;justify-content:space-between;gap:10px;padding:13px 18px;color:inherit;text-decoration:none;border-bottom:1px solid #0001}
-    .res a:hover,.res a.on{background:#eaf2fb}
-    .res small{opacity:.6}
-    .res .none{padding:16px;text-align:center;opacity:.6}
-    .all{display:inline-block;margin-top:22px;padding:12px 22px;border-radius:12px;background:#13294B;color:#fff;text-decoration:none}
-    .stats{margin-top:30px;opacity:.6;font-size:.9rem}
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
 </head>
 <body>
-  <div class="top"><b>المنصة العراقية</b><a href="login.html">تسجيل الدخول</a></div>
-  <main class="hero">
-    <h1>ابحث عن جامعتك</h1>
-    <p>ملازم ومحاضرات وأسئلة سنوات سابقة لكل الجامعات والكليات العراقية</p>
-    <div class="box">
-      <input id="q" type="search" placeholder="اكتب اسم الجامعة أو المدينة…" autocomplete="off" autofocus>
-      <div class="res" id="res" hidden></div>
+  <header class="iq-top">
+    <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a href="contribute.html">رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
+  </header>
+
+  <section class="iq-hero">
+    <div class="iq-hero-in">
+      <h1>ابحث عن جامعتك أو كليتك أو قسمك</h1>
+      <p class="sub">ملازم ومحاضرات وأسئلة سنوات سابقة لكل الجامعات العراقية، في مكان واحد.</p>
+      <div class="iq-search" id="box" role="search">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <label class="iq-sr" for="q">ابحث عن جامعة أو كلية أو قسم</label>
+        <input id="q" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="اكتب مثلاً: طب الزهراء"
+               role="combobox" aria-expanded="false" aria-controls="res" aria-autocomplete="list" autofocus>
+        <button class="iq-clear" id="clr" type="button" aria-label="مسح البحث">✕</button>
+        <div class="iq-res" id="res" role="listbox" aria-label="نتائج البحث" hidden></div>
+      </div>
+      <div class="iq-ex" id="ex" aria-label="أمثلة للبحث"></div>
+      <div class="iq-stats" id="stats" aria-live="polite"></div>
     </div>
-    <a class="all" href="catalog.html">تصفح كل الجامعات</a>
-    <div class="stats" id="stats"></div>
+  </section>
+
+  <main class="iq-main">
+    <section class="iq-sec" aria-labelledby="allh">
+      <h2 id="allh">كل الجامعات</h2>
+      <p class="hint">أو اختر جامعتك من القائمة لتصل إلى كلياتها وأقسامها.</p>
+      <div class="iq-grid" id="grid"><div class="cg-empty">جارٍ التحميل…</div></div>
+    </section>
   </main>
+
+  <footer class="iq-foot"><a href="privacy.html">الخصوصية</a><a href="terms.html">الشروط</a></footer>
+
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
-    var items = [], cur = -1;
+    var DB = null, hits = [], cur = -1, KIND = { u: "جامعة", c: "كلية", d: "قسم" };
+
     function norm(s) {
       return String(s || "").toLowerCase()
-        .replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه");
+        .replace(/[ً-ْـ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+        .replace(/[^ء-يa-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
     }
-    function render(list) {
-      var r = $("res"); r.innerHTML = ""; cur = -1;
-      if (!list.length) { var n = document.createElement("div"); n.className = "none"; n.textContent = "لا توجد نتائج"; r.appendChild(n); r.hidden = false; return; }
-      list.slice(0, 30).forEach(function (u) {
+    function words(s) { return norm(s).split(" ").filter(Boolean).map(function (w) { return w.length > 3 && w.indexOf("ال") === 0 ? w.slice(2) : w; }); }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+    function build(d) {
+      var U = {}, C = {}, items = [];
+      d.u.forEach(function (r) { U[r[0]] = { id: r[0], name: r[1], en: r[2] || "", city: r[3] || "" }; });
+      d.c.forEach(function (r) { C[r[0]] = { id: r[0], u: r[1], name: r[2], en: r[3] || "" }; });
+      Object.keys(U).forEach(function (k) {
+        var u = U[k];
+        items.push({ k: "u", id: u.id, title: u.name, path: u.city || u.en, own: words(u.name + " " + u.en), all: words(u.name + " " + u.en + " " + u.city), href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) });
+      });
+      d.c.forEach(function (r) {
+        var c = C[r[0]], u = U[c.u]; if (!u) return;
+        items.push({ k: "c", id: c.id, title: c.name, path: u.name, own: words(c.name + " " + c.en), all: words(c.name + " " + c.en + " " + u.name + " " + u.en + " " + u.city),
+          href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) + "&c=" + c.id + "&cn=" + encodeURIComponent(c.name) });
+      });
+      d.d.forEach(function (r) {
+        var c = C[r[1]]; if (!c) return; var u = U[c.u]; if (!u) return;
+        items.push({ k: "d", id: r[0], title: r[2], path: c.name + " · " + u.name, own: words(r[2]), all: words(r[2] + " " + c.name + " " + u.name + " " + u.en),
+          href: "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name) + "&c=" + c.id + "&cn=" + encodeURIComponent(c.name) + "&d=" + r[0] + "&dn=" + encodeURIComponent(r[2]) });
+      });
+      return { U: U, items: items };
+    }
+
+    function match(tokens, hay, loose) {
+      return tokens.every(function (t) {
+        return hay.some(function (w) { return loose ? w.indexOf(t) >= 0 : w.indexOf(t) === 0; });
+      });
+    }
+    function score(tokens, it) {
+      var s = 0;
+      tokens.forEach(function (t) { if (it.own.some(function (w) { return w.indexOf(t) === 0; })) s += 3; else s += 1; });
+      s += { u: 0.6, c: 0.4, d: 0 }[it.k];
+      return s - it.title.length / 400;
+    }
+    function find(q) {
+      var tokens = words(q); if (!tokens.length) return [];
+      var out = DB.items.filter(function (it) { return match(tokens, it.all, false); });
+      if (!out.length) out = DB.items.filter(function (it) { return match(tokens, it.all, true); });
+      return out.map(function (it) { return { it: it, s: score(tokens, it) }; })
+        .sort(function (a, b) { return b.s - a.s; }).slice(0, 12).map(function (x) { return x.it; });
+    }
+    function mark(text, tokens) {
+      return text.split(/(\s+|·)/).map(function (w) {
+        var n = words(w)[0];
+        return n && tokens.some(function (t) { return n.indexOf(t) === 0; }) ? "<mark>" + esc(w) + "</mark>" : esc(w);
+      }).join("");
+    }
+
+    function show(list, q) {
+      var r = $("res"), tokens = words(q); r.innerHTML = ""; cur = -1; hits = list;
+      if (!list.length) { r.innerHTML = '<div class="iq-none">لا توجد نتائج لـ «' + esc(q) + '». جرّب كلمة أقصر أو اسم الجامعة فقط.</div>'; }
+      list.forEach(function (it, i) {
         var a = document.createElement("a");
-        a.href = "catalog.html?u=" + u.id + "&n=" + encodeURIComponent(u.name_ar);
-        var s = document.createElement("span"); s.textContent = u.name_ar; a.appendChild(s);
-        var sub = u.city || u.name_en;
-        if (sub) { var m = document.createElement("small"); m.textContent = sub; a.appendChild(m); }
+        a.className = "iq-hit"; a.href = it.href; a.id = "hit" + i; a.setAttribute("role", "option"); a.setAttribute("aria-selected", "false");
+        a.innerHTML = '<span class="iq-kind">' + KIND[it.k] + '</span><span><span class="t">' + mark(it.title, tokens) + '</span>' +
+          (it.path ? '<span class="p">' + mark(it.path, tokens) + '</span>' : "") + "</span>";
         r.appendChild(a);
       });
-      r.hidden = false;
+      r.hidden = false; $("q").setAttribute("aria-expanded", "true");
     }
-    function search() {
-      var q = norm($("q").value.trim());
-      if (!q) { $("res").hidden = true; return; }
-      render(items.filter(function (u) { return norm(u.name_ar + " " + (u.name_en || "") + " " + (u.city || "")).indexOf(q) >= 0; }));
+    function hide() { $("res").hidden = true; $("q").setAttribute("aria-expanded", "false"); $("q").removeAttribute("aria-activedescendant"); }
+    function run() {
+      var v = $("q").value; $("box").classList.toggle("has", !!v);
+      if (!v.trim()) return hide();
+      if (!DB) return;
+      show(find(v), v.trim());
     }
-    $("q").addEventListener("input", search);
-    $("q").addEventListener("focus", search);
+    function move(d) {
+      var links = $("res").querySelectorAll(".iq-hit"); if (!links.length) return;
+      cur = (cur + d + links.length) % links.length;
+      links.forEach(function (l, i) { l.setAttribute("aria-selected", i === cur ? "true" : "false"); });
+      $("q").setAttribute("aria-activedescendant", links[cur].id); links[cur].scrollIntoView({ block: "nearest" });
+    }
+
+    $("q").addEventListener("input", run);
+    $("q").addEventListener("focus", run);
     $("q").addEventListener("keydown", function (e) {
-      var links = $("res").querySelectorAll("a");
-      if (!links.length) return;
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        cur = (cur + (e.key === "ArrowDown" ? 1 : -1) + links.length) % links.length;
-        links.forEach(function (l, i) { l.className = i === cur ? "on" : ""; });
-      } else if (e.key === "Enter") { location.href = links[cur < 0 ? 0 : cur].href; }
+      if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+      else if (e.key === "Escape") hide();
+      else if (e.key === "Enter" && hits.length) { e.preventDefault(); location.href = hits[cur < 0 ? 0 : cur].href; }
     });
-    document.addEventListener("click", function (e) { if (!e.target.closest(".box")) $("res").hidden = true; });
-    fetch("/api/catalog/universities").then(function (r) { return r.json(); }).then(function (d) {
-      items = d.items || [];
-      $("stats").textContent = items.length ? items.length + " جامعة ومؤسسة تعليمية" : "";
-    }).catch(function () {});
+    $("clr").addEventListener("click", function () { $("q").value = ""; run(); $("q").focus(); });
+    document.addEventListener("click", function (e) { if (!e.target.closest("#box")) hide(); });
+
+    ["طب الزهراء", "هندسة بغداد", "صيدلة الموصل"].forEach(function (t) {
+      var b = document.createElement("button"); b.type = "button"; b.textContent = t;
+      b.onclick = function () { $("q").value = t; $("q").focus(); run(); };
+      $("ex").appendChild(b);
+    });
+
+    fetch("/api/catalog/index").then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) throw 0;
+      DB = build(d);
+      $("stats").textContent = d.u.length + " جامعة · " + d.c.length + " كلية" + (d.d.length ? " · " + d.d.length + " قسم" : "");
+      var g = $("grid"); g.innerHTML = "";
+      d.u.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ar"); }).forEach(function (r) {
+        var a = document.createElement("a"); a.className = "iq-u"; a.href = "catalog.html?u=" + r[0] + "&n=" + encodeURIComponent(r[1]);
+        var b = document.createElement("b"); b.textContent = r[1]; a.appendChild(b);
+        if (r[3] || r[2]) { var s = document.createElement("small"); s.textContent = r[3] || r[2]; a.appendChild(s); }
+        g.appendChild(a);
+      });
+      run();
+    }).catch(function () {
+      $("grid").innerHTML = '<div class="cg-empty">تعذّر تحميل القائمة. حدّث الصفحة وحاول مرة أخرى.</div>';
+    });
   })();
   </script>
 </body>
