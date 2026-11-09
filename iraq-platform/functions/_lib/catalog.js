@@ -6,6 +6,7 @@
 //   subject {department_id,stage,term,name_ar,name_en?,professor?}
 // حذف (للمشرف): POST /api/catalog/delete { type, id }  (university|college|department|subject)
 import { currentUser } from "./auth.js";
+import { policy } from "./scope.js";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -88,17 +89,34 @@ export async function handleCatalog(req, env) {
            FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
            JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
            JOIN universities u ON u.id=c.university_id WHERE sb.id=?`).bind(id).first();
-        return row ? json({ ok: true, item: row }) : fail("not_found", 404);
+        if (!row) return fail("not_found", 404);
+        const me = await currentUser(req, env);
+        const pol = me ? await policy(env, me) : null;
+        return json({ ok: true, item: row, can: !!(pol && (await pol.manageCourse("s" + id))), can_upload: !!(pol && (await pol.upload("s" + id))) });
       }
       return fail("not_found", 404);
     }
 
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
-    if (!(await isAdmin(req, env))) return fail("forbidden", 403);
+    const me = await currentUser(req, env);
+    if (!me) return fail("forbidden", 403);
+    const admin = await isAdmin(req, env);
     let b;
     try { b = await req.json(); } catch { return fail("bad_request", 400); }
     const type = String(b.type || "");
-    if (part === "import") return await importData(env, b);
+    if (part === "import") return admin ? await importData(env, b) : fail("forbidden", 403);
+    if (!admin) { // ممثل نطاق: يضيف/يحذف داخل نطاقه فقط
+      const pol = await policy(env, me);
+      let ok = false;
+      if (part === "add") {
+        const par = { college: ["university", num(b.university_id)], department: ["college", num(b.college_id)], subject: ["department", num(b.department_id)] }[type];
+        ok = !!par && !!par[1] && (await pol.manage(par[0], par[1]));
+      } else if (["college", "department", "subject"].includes(type)) {
+        ok = !!num(b.id) && (await pol.manage(type, num(b.id), type)); // الحذف يتطلب نطاقاً أعلى من العقدة نفسها
+        if (type === "subject") ok = !!num(b.id) && (await pol.manage("subject", num(b.id)));
+      }
+      if (!ok) return fail("forbidden", 403);
+    }
 
     if (part === "delete") {
       const id = num(b.id);
