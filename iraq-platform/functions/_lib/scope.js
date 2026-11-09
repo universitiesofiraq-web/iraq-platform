@@ -19,7 +19,17 @@ export async function ensureScopes(env) {
   await env.DB.prepare(
     "CREATE TABLE IF NOT EXISTS rep_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type TEXT NOT NULL, node_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL)"
   ).run();
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS scope_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_id INTEGER NOT NULL, target_user_id INTEGER NOT NULL, action TEXT NOT NULL, type TEXT, node_id INTEGER, created_at TEXT NOT NULL)"
+  ).run();
   ready = true;
+}
+
+/* سجل تدقيق لكل منح أو سحب أو قرار على طلب (C3) */
+export async function audit(env, actorId, targetUserId, action, type, nodeId) {
+  await env.DB.prepare(
+    "INSERT INTO scope_audit (actor_id, target_user_id, action, type, node_id, created_at) VALUES (?,?,?,?,?,?)"
+  ).bind(actorId, targetUserId, action, type ?? null, nodeId ?? null, new Date().toISOString()).run();
 }
 
 export function isAdminUser(u, env) {
@@ -31,9 +41,9 @@ export function isAdminUser(u, env) {
 /* سلسلة العقدة: { university, college, department } */
 export async function chainOf(env, type, id) {
   const sql = {
-    subject: `SELECT d.id AS department, c.id AS college, c.university_id AS university FROM subjects sb
-              JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
-              JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE sb.id=?`,
+    subject: "SELECT d.id AS department, c.id AS college, c.university_id AS university FROM subjects sb " +
+              "JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id " +
+              "JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE sb.id=?",
     department: "SELECT d.id AS department, c.id AS college, c.university_id AS university FROM departments d JOIN colleges c ON c.id=d.college_id WHERE d.id=?",
     college: "SELECT NULL AS department, c.id AS college, c.university_id AS university FROM colleges c WHERE c.id=?",
     university: "SELECT NULL AS department, NULL AS college, u.id AS university FROM universities u WHERE u.id=?"
@@ -88,7 +98,7 @@ export async function policy(env, user) {
 }
 
 async function nodeName(env, type, id) {
-  const r = await env.DB.prepare(`SELECT name_ar FROM ${TBL[type]} WHERE id=?`).bind(id).first();
+  const r = await env.DB.prepare("SELECT name_ar FROM " + TBL[type] + " WHERE id=?").bind(id).first();
   return r ? r.name_ar : "";
 }
 
@@ -123,11 +133,13 @@ export async function handleScopes(req, env, user, p) {
     if (!t) return fail("user_not_found", 404);
     if (action === "remove") {
       await env.DB.prepare("DELETE FROM scopes WHERE user_id=? AND type=? AND node_id=?").bind(t.id, type, id).run();
+      await audit(env, user.id, t.id, "revoke", type, id);
     } else {
       if (!(await nodeName(env, type, id))) return fail("not_found", 404);
       await env.DB.prepare(
         "INSERT INTO scopes (user_id, type, node_id, level) VALUES (?,?,?,?) ON CONFLICT(user_id, type, node_id) DO UPDATE SET level=excluded.level"
       ).bind(t.id, type, id, level).run();
+      await audit(env, user.id, t.id, "grant", type, id);
     }
     return json({ ok: true });
   }
@@ -166,6 +178,7 @@ export async function handleScopes(req, env, user, p) {
       await env.DB.prepare("INSERT INTO scopes (user_id, type, node_id, level) VALUES (?,?,?,'rep') ON CONFLICT(user_id, type, node_id) DO UPDATE SET level='rep'").bind(r.user_id, r.type, r.node_id).run();
     }
     await env.DB.prepare("UPDATE rep_requests SET status=? WHERE id=?").bind(action === "approve" ? "approved" : "rejected", id).run();
+    await audit(env, user.id, r.user_id, action === "approve" ? "approve" : "reject", r.type, r.node_id);
     return json({ ok: true });
   }
   return null;
