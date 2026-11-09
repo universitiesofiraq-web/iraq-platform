@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>إدارة الفريق | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <style>
+    .tm-list{display:grid;gap:8px;margin:12px 0 24px}
+    .tm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line,#2a3a6a);border-radius:12px;flex-wrap:wrap}
+    .tm-row b{display:block}.tm-row small{opacity:.75}
+    .tm-lvl{padding:2px 10px;border-radius:99px;font-size:.8rem;background:rgba(224,169,59,.18);color:#E0A93B}
+    .tm-form{display:grid;gap:8px;max-width:520px}
+    .tm-form select,.tm-form input{width:100%;min-height:44px}
+  </style>
+</head>
+<body>
+  <header class="iq-top">
+    <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a href="contribute.html">رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
+  </header>
+  <main class="ct">
+    <a class="back" href="catalog.html">← الجامعات</a>
+    <h1>إدارة الفريق</h1>
+    <p class="ct-note" id="gate">جارٍ التحقق من حسابك…</p>
+    <div id="body" hidden>
+      <h2>فريقك</h2>
+      <div class="tm-list" id="list"></div>
+      <h2>إضافة عضو</h2>
+      <p class="ct-note">يجب أن يكون الشخص قد سجّل دخوله إلى المنصة مرة واحدة على الأقل.</p>
+      <div class="tm-form">
+        <label for="em">بريد الشخص (Gmail)</label><input id="em" type="email" dir="ltr" placeholder="name@gmail.com">
+        <label for="lv">الصلاحية</label>
+        <select id="lv"><option value="uploader">رافع: ملفاته تظهر بعد موافقتك</option><option value="rep">ممثل: إدارة كاملة لهذا النطاق</option></select>
+        <label for="u">الجامعة</label><select id="u"></select>
+        <label for="c">الكلية (اتركها فارغة لنطاق الجامعة كلها)</label><select id="c"></select>
+        <label for="d">القسم (اتركه فارغاً لنطاق الكلية كلها)</label><select id="d"></select>
+        <button class="btn btn-primary" id="add" type="button">إضافة</button>
+        <p class="ct-msg" id="msg" role="alert"></p>
+      </div>
+    </div>
+  </main>
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    var TY = { university: "جامعة", college: "كلية", department: "قسم" }, LV = { rep: "ممثل", uploader: "رافع" };
+    function get(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
+    function post(b) { return fetch("/api/auth/scope", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); }
+    function fill(sel, items, ph) { sel.innerHTML = ""; sel.appendChild(new Option(ph, "")); items.forEach(function (x) { sel.appendChild(new Option(x.name_ar, x.id)); }); }
+    function msg(t, ok) { var m = $("msg"); m.textContent = t; m.style.color = ok ? "#2f855a" : "#c53030"; }
+    var ERR = { user_not_found: "هذا البريد لم يسجّل دخوله إلى المنصة بعد.", forbidden: "لا تملك صلاحية على هذا النطاق.", bad_request: "تحقق من البريد والنطاق." };
+
+    function load() {
+      fetch("/api/auth/scopes").then(function (r) { return r.json(); }).then(function (d) {
+        var box = $("list"); box.innerHTML = "";
+        if (!d.items || !d.items.length) { box.textContent = "لا يوجد أعضاء بعد."; return; }
+        d.items.forEach(function (it) {
+          var r = document.createElement("div"); r.className = "tm-row";
+          var l = document.createElement("div");
+          var b = document.createElement("b"); b.textContent = it.name || it.email; l.appendChild(b);
+          var s = document.createElement("small"); s.textContent = it.email + " — " + TY[it.type] + ": " + it.node; l.appendChild(s);
+          r.appendChild(l);
+          var t = document.createElement("span"); t.className = "tm-lvl"; t.textContent = LV[it.level]; r.appendChild(t);
+          if (it.can_edit) {
+            var x = document.createElement("button"); x.textContent = "إزالة";
+            x.onclick = function () { post({ email: it.email, type: it.type, id: it.node_id, level: it.level, action: "remove" }).then(load); };
+            r.appendChild(x);
+          }
+          box.appendChild(r);
+        });
+      });
+    }
+
+    var U = $("u"), C = $("c"), D = $("d");
+    U.addEventListener("change", function () { D.innerHTML = ""; C.innerHTML = ""; if (U.value) get("colleges?university_id=" + U.value).then(function (a) { fill(C, a, "— كل الجامعة —"); }); });
+    C.addEventListener("change", function () { D.innerHTML = ""; if (C.value) get("departments?college_id=" + C.value).then(function (a) { fill(D, a, "— كل الكلية —"); }); });
+    $("add").onclick = function () {
+      var email = $("em").value.trim();
+      if (!email || !U.value) return msg("اكتب البريد واختر الجامعة.");
+      var type = D.value ? "department" : C.value ? "college" : "university";
+      var id = Number(D.value || C.value || U.value);
+      post({ email: email, type: type, id: id, level: $("lv").value, action: "add" }).then(function (d) {
+        if (d.ok) { msg("تمت الإضافة.", true); $("em").value = ""; load(); } else msg(ERR[d.error] || "تعذّرت الإضافة.");
+      });
+    };
+
+    fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+      var u = d && d.user;
+      if (!u) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
+      var rep = u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; });
+      if (!rep) { $("gate").textContent = "هذه الصفحة لممثلي الأقسام والكليات والجامعات فقط."; return; }
+      $("gate").hidden = true; $("body").hidden = false;
+      get("universities").then(function (a) { fill(U, a, "اختر الجامعة"); });
+      load();
+    }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
+  })();
+  </script>
+</body>
+</html>
