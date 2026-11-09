@@ -37,6 +37,478 @@
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
       <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="platform.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- رأس الصفحة: مسار التنقل + بيانات المادة -->
+  <section class="page-hero band">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسار التنقل">
+        <ol>
+          <li><a href="platform.html">الرئيسية</a></li>
+          <li><a id="crumbSem" href="platform.html#semesters">المواد الدراسية</a></li>
+          <li><span aria-current="page" class="en" id="crumbCurrent">المادة</span></li>
+        </ol>
+      </nav>
+      <div class="c-body" id="courseHead"></div>
+    </div>
+  </section>
+
+  <main class="container" id="content"></main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a class="brand" href="platform.html">
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
+          <span data-site-title></span>
+        </a>
+        <p class="foot-uni" id="footUni" hidden></p>
+        <p id="footNotice" hidden></p>
+      </div>
+      <nav class="footer-links" aria-label="روابط التذييل">
+        <a href="platform.html#semesters">المواد</a>
+        <a href="platform.html#latest">المحاضرات</a>
+        <a href="platform.html#professors">الأساتذة</a>
+        <a href="platform.html#tools">أدوات الطالب</a>
+        <a href="platform.html#faq">الأسئلة الشائعة</a>
+      </nav>
+    </div>
+    <div class="container footer-bottom" id="footBottom"></div>
+  </footer>
+
+  <dialog class="viewer" id="viewer" aria-labelledby="viewerTitle">
+    <div class="viewer-bar">
+      <div class="viewer-title en" id="viewerTitle"></div>
+      <a class="btn btn-secondary btn-sm" id="viewerOpen" target="_blank" rel="noopener">فتح في تبويب</a>
+      <a class="btn btn-secondary btn-sm" id="viewerDl" download>تنزيل</a>
+      <button class="icon-btn" id="viewerClose" type="button" aria-label="إغلاق"></button>
+    </div>
+    <div class="viewer-stage">
+      <p class="viewer-loading" id="viewerLoading" role="status">جارٍ تحميل الملف…</p>
+      <iframe class="viewer-frame" id="viewerFrame" title="عارض الملف"></iframe>
+    </div>
+    <p class="viewer-note">إن لم يظهر الملف هنا، افتحه في تبويب مستقل.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=p3-23"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/i18n.js?v=p3-23"></script>
+  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/auth.js?v=p3-23"></script>
+  <script src="js/nav.js?v=p3-23"></script>
+  <script>
+    (function () {
+      var $ = MS.$, el = MS.el;
+
+      if (MS.dataError()) return;
+      MS.initShared();
+      MS.initHeader();
+
+      var head = $("courseHead");
+      var root = $("content");
+      var id = new URLSearchParams(location.search).get("id");
+      var course = MS.course(id);
+
+      $("footBottom").textContent = "© " + new Date().getFullYear() + " " + SITE.title;
+
+      if (!course) {
+        $("crumbCurrent").textContent = "لم نجد هذه المادة";
+        $("crumbCurrent").classList.remove("en");
+        head.appendChild(el("h1", "course-title", "لم نجد هذه المادة"));
+        var miss = el("div", "empty");
+        miss.appendChild(el("strong", "", "الرابط غير صحيح أو أن المادة غير موجودة"));
+        miss.appendChild(el("p", "", "ارجع إلى كل المواد واختر المادة من القائمة."));
+        root.appendChild(miss);
+        return;
+      }
+
+      MS.setLast(course.id);
+      document.title = course.name + " | " + SITE.title;
+      $("crumbCurrent").textContent = course.name;
+
+      /* ---------- رأس المادة ---------- */
+      var semester = SEMESTERS.filter(function (s) { return s.id === course.semester; })[0];
+      var category = MS.category(course);
+      if (semester) { $("crumbSem").textContent = semester.name; $("crumbSem").href = "semester.html?id=" + semester.id; }
+      var crumb = [semester && semester.name, category && category.name].filter(Boolean).join("، ");
+
+      var top = el("div", "c-top");
+      var tile = el("span", "tile");
+      tile.appendChild(MS.icon(course.icon, 30));
+      top.appendChild(tile);
+      var titles = el("div");
+      titles.appendChild(el("p", "course-crumb", crumb));
+      titles.appendChild(el("h1", "course-title en", course.name));
+      titles.appendChild(el("p", "course-title-ar", course.nameAr));
+      top.appendChild(titles);
+      head.appendChild(top);
+
+      // أزرار: المفضلة والمشاركة
+      var actions = el("div", "c-actions");
+      var favBtn = el("button", "btn btn-secondary btn-sm btn-fav");
+      favBtn.type = "button";
+      var favLabel = el("span");
+      favBtn.appendChild(MS.icon("star", 18));
+      favBtn.appendChild(favLabel);
+      function paintFav() {
+        var on = MS.favs.has(course.id);
+        favBtn.classList.toggle("is-fav", on);
+        favBtn.setAttribute("aria-pressed", String(on));
+        favLabel.textContent = on ? "في المفضلة" : "أضف إلى المفضلة";
+      }
+      paintFav();
+      favBtn.addEventListener("click", function () {
+        var on = MS.favs.toggle(course.id);
+        paintFav();
+        MS.toast(on ? "أُضيفت المادة إلى المفضلة" : "أُزيلت المادة من المفضلة");
+      });
+      actions.appendChild(favBtn);
+
+      var shareBtn = el("button", "btn btn-secondary btn-sm");
+      shareBtn.type = "button";
+      shareBtn.appendChild(MS.icon("share", 18));
+      shareBtn.appendChild(el("span", "", "شارك رابط المادة"));
+      shareBtn.addEventListener("click", function () {
+        var url = location.href;
+        if (navigator.share) {
+          navigator.share({ title: course.name, url: url }).catch(function () {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(
+            function () { MS.toast("تم نسخ رابط المادة"); },
+            function () { MS.toast("انسخ الرابط من شريط العنوان"); }
+          );
+        } else {
+          MS.toast("انسخ الرابط من شريط العنوان");
+        }
+      });
+      actions.appendChild(shareBtn);
+      head.appendChild(actions);
+
+      // الحقائق
+      var facts = el("dl", "facts");
+      function fact(label, value, cls) {
+        var d = el("div");
+        d.appendChild(el("dt", "", label));
+        d.appendChild(el("dd", cls || "", String(value)));
+        facts.appendChild(d);
+      }
+      if (course.code) fact("رمز المادة", course.code, "en-val");
+      if (course.credits) {
+        fact("الدرجة", course.credits.total);
+        if (course.credits.theory != null) fact("درجة النظري", course.credits.theory);
+        if (course.credits.practical != null) fact("درجة العملي", course.credits.practical);
+      }
+
+      var profBox = el("div");
+      profBox.appendChild(el("dt", "", course.professors.length > 1 ? "الأساتذة" : "الأستاذ"));
+      var profDd = el("dd");
+      course.professors.forEach(function (p) {
+        var line = el("span", "prof", p.name);
+        if (p.role) {
+          line.appendChild(document.createTextNode(" "));
+          line.appendChild(el("small", "", "(" + p.role + ")"));
+        }
+        profDd.appendChild(line);
+      });
+      profBox.appendChild(profDd);
+      if (course.professors.length) facts.appendChild(profBox);
+      head.appendChild(facts);
+
+      // حلقة التقدم (عند وجود محاضرات)
+      var CIRC = 138.23;
+      var ringValue, ringMain, ringSub;
+      if (course.lectures.length) {
+        var wrap = el("div", "ring-wrap");
+        var ring = el("div", "ring");
+        ring.innerHTML =
+          '<svg viewBox="0 0 56 56" aria-hidden="true"><circle class="track" cx="28" cy="28" r="22"/><circle class="value" cx="28" cy="28" r="22" stroke-dasharray="0 ' + CIRC + '"/></svg>';
+        ringValue = ring.querySelector(".value");
+        wrap.appendChild(ring);
+        var rt = el("div", "ring-text");
+        ringMain = el("span");
+        ringSub = el("small");
+        rt.appendChild(ringMain);
+        rt.appendChild(ringSub);
+        wrap.appendChild(rt);
+        head.appendChild(wrap);
+      }
+      function updateRing() {
+        if (!ringValue) return;
+        var total = course.lectures.length;
+        var done = MS.progress.done(course);
+        ringValue.setAttribute("stroke-dasharray", (done / total * CIRC) + " " + CIRC);
+        ringMain.textContent = "قرأت " + done + " من " + MS.lecturesLabel(total, true);
+        ringSub.textContent = done === total ? "أنهيت كل محاضرات المادة" : "تقدمك محفوظ على هذا الجهاز";
+      }
+      updateRing();
+
+      /* ---------- المحاضرات ---------- */
+      var listHead = el("div", "list-head");
+      listHead.appendChild(el("h2", "", "المحاضرات"));
+      if (course.lectures.length) listHead.appendChild(el("span", "", MS.lecturesLabel(course.lectures.length)));
+      root.appendChild(listHead);
+
+      /* ---------- عارض الـ PDF ---------- */
+      var dlg = $("viewer"), frame = $("viewerFrame");
+      $("viewerClose").appendChild(MS.icon("close", 22));
+            function showViewer(url, title) {
+        $("viewerTitle").textContent = title;
+        $("viewerOpen").href = url;
+        $("viewerDl").href = url;
+        if (dlg.showModal) {
+          $("viewerLoading").hidden = false;
+          frame.src = url;
+          dlg.showModal();
+        } else {
+          window.open(url, "_blank");
+        }
+      }
+      frame.addEventListener("load", function () { $("viewerLoading").hidden = true; });
+      // حالة الخطأ: نتأكد أن الملف موجود قبل فتحه (على الخادم فقط؛ بلا اتصال يُفتح مباشرة)
+      function openViewer(url, title) {
+        if (!/^https?:/.test(location.protocol) || !window.fetch) { showViewer(url, title); return; }
+        fetch(url, { method: "HEAD" }).then(function (r) {
+          if (r.ok) showViewer(url, title);
+          else MS.toast(I18N.t("الملف غير متاح حالياً"));
+        }).catch(function () { showViewer(url, title); });
+      }
+      $("viewerClose").addEventListener("click", function () { dlg.close(); });
+      dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener("close", function () { frame.src = "about:blank"; });
+
+      function fileUrl(path) {
+        return SITE.filesBase + path.split("/").map(encodeURIComponent).join("/");
+      }
+
+      /* عنصر ملف أو رابط: المحاضرات والاختبارات وأسئلة السنوات السابقة تستعمل الشكل نفسه.
+         الرابط الخارجي يُفتح في تبويب جديد، والـ PDF في العارض. */
+      var DATE_LOCALE = MS.lang === "en" ? "en-GB" : MS.lang === "fa" ? "fa-IR-u-nu-latn" : "ar-u-nu-latn";
+      function fileItem(f) {
+        var li = el("li");
+        var a = el("a", "file-link");
+        var url = f.url || fileUrl(f.path);
+        var kind = MS.fileKind(f);
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.appendChild(el("span", "file-ico " + kind.cls, kind.ico));
+        var fm = el("span", "file-main");
+        fm.appendChild(el("span", "file-name en", f.label));
+        if (f.added) {
+          var t = el("time", "file-date", new Date(f.added + "T00:00:00").toLocaleDateString(DATE_LOCALE, { day: "numeric", month: "long", year: "numeric" }));
+          t.setAttribute("datetime", f.added);
+          fm.appendChild(t);
+        }
+        a.appendChild(fm);
+        a.appendChild(el("span", "file-open", kind.open));
+        if (!f.external) {
+          a.addEventListener("click", function (e) {
+            e.preventDefault();
+            openViewer(url, course.name + " / " + f.label);
+          });
+        }
+        li.appendChild(a);
+        return li;
+      }
+
+      /* اختبارات تفاعلية وأسئلة السنوات السابقة الخاصة بالمادة كلها (من صفحة الرفع) */
+      var extras = (course.extras || []).slice().sort(function (a, b) {
+        var order = { quiz: 0, exam: 1 };
+        return (order[a.type] - order[b.type]) || (b.added || "").localeCompare(a.added || "");
+      });
+      if (extras.length) {
+        var xHead = el("div", "list-head");
+        xHead.appendChild(el("h2", "", "الاختبارات وأسئلة السنوات السابقة"));
+        root.insertBefore(xHead, listHead);
+        var xList = el("ul", "files");
+        extras.forEach(function (f) { xList.appendChild(fileItem(f)); });
+        root.insertBefore(xList, listHead);
+      }
+
+      if (!course.lectures.length) {
+        if (!extras.length) {
+          var empty = el("div", "empty");
+          empty.appendChild(el("strong", "", "لم تُرفع ملفات هذه المادة بعد"));
+          empty.appendChild(el("p", "", "ستظهر المحاضرات هنا فور رفعها."));
+          root.appendChild(empty);
+        } else {
+          root.removeChild(listHead);
+        }
+      } else {
+        var sorted = course.lectures.slice().sort(function (a, b) { return a.number - b.number; });
+        sorted.forEach(function (lec, i) {
+          var d = el("details", "lecture card");
+          d.id = "lec-" + lec.number;
+          if (i === 0) d.open = true;
+
+          var sum = el("summary");
+          sum.appendChild(el("span", "lecture-num", String(lec.number)));
+          var t = el("div", "lecture-title");
+          t.appendChild(el("div", "t-en en", lec.title));
+          if (lec.titleAr) t.appendChild(el("div", "t-ar", lec.titleAr));
+          if (lec.pron) t.appendChild(el("div", "t-pron", "النطق: " + lec.pron));
+          sum.appendChild(t);
+
+          var badge = el("span", "lecture-badge");
+          badge.appendChild(MS.icon("check", 16));
+          badge.appendChild(el("span", "", "مقروءة"));
+          sum.appendChild(badge);
+          sum.appendChild(el("span", "lecture-count", MS.filesLabel(lec.files.length)));
+          d.appendChild(sum);
+
+          var body = el("div", "lecture-body");
+
+          var tools = el("div", "lecture-tools");
+          var mark = el("button", "mark-btn");
+          mark.type = "button";
+          var markLabel = el("span");
+          mark.appendChild(MS.icon("check", 18));
+          mark.appendChild(markLabel);
+          function paintMark() {
+            var on = MS.progress.isRead(course.id, lec.number);
+            mark.classList.toggle("is-on", on);
+            mark.setAttribute("aria-pressed", String(on));
+            markLabel.textContent = on ? "تمت القراءة" : "علّم كمقروءة";
+            d.classList.toggle("is-read", on);
+          }
+          paintMark();
+          mark.addEventListener("click", function () {
+            var on = MS.progress.toggle(course.id, lec.number);
+            paintMark();
+            updateRing();
+            MS.toast(on ? "تم تعليم المحاضرة كمقروءة" : "أُزيل تعليم القراءة");
+          });
+          tools.appendChild(mark);
+
+          var rv = el("button", "mark-btn review");
+          rv.type = "button";
+          var rvLabel = el("span");
+          rv.appendChild(MS.icon("star", 18));
+          rv.appendChild(rvLabel);
+          function paintReview() {
+            var on = MS.review.has(course.id, lec.number);
+            rv.classList.toggle("is-on", on);
+            rv.setAttribute("aria-pressed", String(on));
+            rvLabel.textContent = on ? "في قائمة المراجعة" : "راجعها لاحقاً";
+            d.classList.toggle("is-review", on);
+          }
+          paintReview();
+          rv.addEventListener("click", function () {
+            var on = MS.review.toggle(course.id, lec.number);
+            paintReview();
+            MS.toast(on ? "أُضيفت المحاضرة إلى قائمة المراجعة" : "أُزيلت من قائمة المراجعة");
+          });
+          tools.appendChild(rv);
+
+          // وضع الدراسة: يظهر فقط للمحاضرات التي جُهّز لها محتوى (study: true في courses.js)
+          if (lec.study) {
+            var sl = el("a", "mark-btn study-link");
+            sl.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number;
+            sl.appendChild(MS.icon("book", 18));
+            sl.appendChild(el("span", "", "ذاكرها خطوة بخطوة"));
+            tools.insertBefore(sl, tools.firstChild);
+          }
+          body.appendChild(tools);
+
+          var list = el("ul", "files");
+          lec.files.forEach(function (f) { list.appendChild(fileItem(f)); });
+          body.appendChild(list);
+          d.appendChild(body);
+          root.appendChild(d);
+        });
+
+        // فتح محاضرة محددة من الرابط (#lec-2)
+        if (/^#lec-\d+$/.test(location.hash)) {
+          var target = document.getElementById(location.hash.slice(1));
+          if (target) {
+            target.open = true;
+            setTimeout(function () { target.scrollIntoView({ block: "start" }); }, 50);
+          }
+        }
+      }
+
+      /* ---------- المادة السابقة والتالية ---------- */
+      var ordered = MS.orderedCourses();
+      var idx = ordered.indexOf(course);
+      var pager = el("nav", "pager");
+      pager.setAttribute("aria-label", "التنقل بين المواد");
+
+      function pagerLink(c, cls, label) {
+        var a = el("a", cls + " card");
+        a.href = "course.html?id=" + encodeURIComponent(c.id);
+        var go = el("span", "go");
+        var txt = el("div");
+        txt.appendChild(el("small", "", label));
+        txt.appendChild(el("div", "name en", c.name));
+        if (cls === "prev") { a.appendChild(go); a.appendChild(txt); }
+        else { a.appendChild(txt); a.appendChild(go); }
+        return a;
+      }
+      if (idx > 0) pager.appendChild(pagerLink(ordered[idx - 1], "prev", "المادة السابقة"));
+      else pager.appendChild(el("span", "pager-spacer"));
+      if (idx < ordered.length - 1) pager.appendChild(pagerLink(ordered[idx + 1], "next", "المادة التالية"));
+      else pager.appendChild(el("span", "pager-spacer"));
+      root.appendChild(pager);
+    })();
+  </script>
+  <script>if (window.I18N) I18N.apply();</script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>المادة | المنصة العراقية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="المنصة العراقية">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body>
+  <noscript>
+    <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
+  </noscript>
+  <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
         <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
           <option value="ar" lang="ar">عربي</option>
