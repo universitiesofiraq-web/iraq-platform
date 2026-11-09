@@ -6,10 +6,12 @@
 //           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
 // الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
+import { handleScopes, policy, userScopes, isAdminUser } from "./scope.js";
+
 export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
 export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
-export const ANNOUNCE_ROLES = ["rep", "admin"];
+export const ANNOUNCE_ROLES = ["admin"]; // التبليغات عامة للمنصة: للمشرف العام فقط (الممثل مقيّد بنطاقه)
 const MAX_TITLE = 120;
 const MAX_BODY = 2000;
 const SESSION_MS = 30 * 24 * 3600 * 1000;
@@ -227,7 +229,16 @@ export function uploadAccount(env) {
     const o = req.headers.get("origin");
     if (req.method !== "GET" && o && o !== new URL(req.url).origin) return null;
     const u = await currentUser(req, env);
-    return u && UPLOAD_ROLES.includes(u.role) ? { name: u.name, role: u.role } : null;
+    if (!u) return null;
+    const pol = await policy(env, u);
+    const anyRep = pol.scopes.some((s) => s.level === "rep");
+    if (!pol.admin && !pol.legacyUploader && !pol.scopes.length) return null;
+    return {
+      name: u.name,
+      role: pol.admin ? "admin" : anyRep ? "rep" : "uploader",
+      can: (courseId) => pol.manageCourse(courseId),
+      canUpload: (courseId) => pol.upload(courseId)
+    };
   };
 }
 
@@ -248,7 +259,11 @@ export async function handleAuth(req, env, opts = {}) {
   if (p === "/api/auth/logout" && req.method === "POST") return logout(req, env);
 
   const user = await currentUser(req, env, now);
-  if (p === "/api/auth/me" && req.method === "GET") return user ? json({ ok: true, user: publicUser(user) }) : fail("unauthorized", 401);
+  if (p === "/api/auth/me" && req.method === "GET") {
+    if (!user) return fail("unauthorized", 401);
+    const sc = await userScopes(env, user.id);
+    return json({ ok: true, user: { ...publicUser(user), scopes: sc, admin: isAdminUser(user, env) } });
+  }
   if (!user) return fail("unauthorized", 401);
 
   if (p === "/api/sync" && req.method === "GET") return syncGet(user, env);
@@ -257,6 +272,11 @@ export async function handleAuth(req, env, opts = {}) {
   if (isAnn && req.method === "POST") {
     if (!ANNOUNCE_ROLES.includes(user.role)) return fail("forbidden", 403);
     return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
+  }
+
+  if (p === "/api/auth/scopes" || p === "/api/auth/scope") {
+    const r = await handleScopes(req, env, user, p);
+    if (r) return r;
   }
 
   if (user.role !== "admin") return fail("forbidden", 403);
