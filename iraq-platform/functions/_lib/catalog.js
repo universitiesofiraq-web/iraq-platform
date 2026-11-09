@@ -42,14 +42,14 @@ export async function handleCatalog(req, env) {
     if (req.method === "GET") {
       if (part === "index") {
         const [u, c, d] = await Promise.all([
-          all(env, "SELECT id, name_ar, name_en, city FROM universities ORDER BY name_ar"),
+          all(env, "SELECT id, name_ar, name_en, city, kind FROM universities ORDER BY name_ar").catch(() => all(env, "SELECT id, name_ar, name_en, city, NULL AS kind FROM universities ORDER BY name_ar")),
           all(env, "SELECT id, university_id, name_ar, name_en FROM colleges ORDER BY name_ar"),
           all(env, "SELECT id, college_id, name_ar FROM departments ORDER BY name_ar")
         ]);
         return new Response(
           JSON.stringify({
             ok: true,
-            u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city]),
+            u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city, r.kind || ""]),
             c: c.map((r) => [r.id, r.university_id, r.name_ar, r.name_en]),
             d: d.map((r) => [r.id, r.college_id, r.name_ar])
           }),
@@ -93,11 +93,12 @@ export async function handleCatalog(req, env) {
       return fail("not_found", 404);
     }
 
-    if (req.method !== "POST" || !["add", "delete"].includes(part)) return fail("not_found", 404);
+    if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
     if (!(await isAdmin(req, env))) return fail("forbidden", 403);
     let b;
     try { b = await req.json(); } catch { return fail("bad_request", 400); }
     const type = String(b.type || "");
+    if (part === "import") return await importData(env, b);
 
     if (part === "delete") {
       const id = num(b.id);
@@ -143,4 +144,60 @@ export async function handleCatalog(req, env) {
     console.error("catalog error", e);
     return fail("server", 500);
   }
+}
+
+// استيراد جماعي (للمشرف): { unis:[[اسم,مدينة,نوع]], renames:[[قديم,جديد]], merges:[[من,إلى]], tree:[{u,colleges:[{n,deps:[..]}]}] }
+const nz = (s) =>
+  String(s || "").replace(/[ً-ْـ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
+async function importData(env, b) {
+  const out = { added: 0, updated: 0, renamed: 0, merged: 0, colleges: 0, departments: 0 };
+  try { await env.DB.prepare("ALTER TABLE universities ADD COLUMN kind TEXT").run(); } catch (e) { /* موجود */ }
+  const chunk = async (stmts) => { for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40)); };
+  const loadU = async () => { const m = new Map(); for (const r of await all(env, "SELECT id, name_ar, city, kind FROM universities")) m.set(nz(r.name_ar), r); return m; };
+  for (const [oldN, newN] of b.renames || []) {
+    const r = await env.DB.prepare("UPDATE universities SET name_ar=? WHERE name_ar=?").bind(txt(newN), txt(oldN)).run();
+    out.renamed += (r.meta && r.meta.changes) || 0;
+  }
+  for (const [from, to] of b.merges || []) {
+    const m = await loadU(); const f = m.get(nz(from)), t = m.get(nz(to));
+    if (f && t && f.id !== t.id) {
+      await env.DB.batch([
+        env.DB.prepare("UPDATE colleges SET university_id=? WHERE university_id=?").bind(t.id, f.id),
+        env.DB.prepare("DELETE FROM universities WHERE id=?").bind(f.id)
+      ]);
+      out.merged++;
+    }
+  }
+  if (b.unis && b.unis.length) {
+    const m = await loadU(); const stmts = [];
+    for (const [name, city, kind] of b.unis) {
+      const n = txt(name), ex = m.get(nz(n));
+      if (ex) {
+        stmts.push(env.DB.prepare("UPDATE universities SET kind=?, city=COALESCE(NULLIF(?, ''), city) WHERE id=?").bind(kind || null, txt(city), ex.id)); out.updated++;
+      } else {
+        stmts.push(env.DB.prepare("INSERT INTO universities (slug,name_ar,city,kind,is_active) VALUES (?,?,?,?,1)").bind(slugify(n + Date.now() + stmts.length), n, txt(city) || null, kind || null)); out.added++;
+      }
+    }
+    await chunk(stmts);
+  }
+  for (const t of b.tree || []) {
+    const m = await loadU(); const u = m.get(nz(t.u)); if (!u) continue;
+    const cols = new Map();
+    for (const r of await all(env, "SELECT id, name_ar FROM colleges WHERE university_id=?", u.id)) cols.set(nz(r.name_ar), r.id);
+    const newCols = [];
+    for (const c of t.colleges || []) if (!cols.has(nz(c.n))) { newCols.push(c); cols.set(nz(c.n), -1); }
+    await chunk(newCols.map((c, i) => env.DB.prepare("INSERT INTO colleges (university_id,slug,name_ar,is_active) VALUES (?,?,?,1)").bind(u.id, slugify(c.n + Date.now() + i), txt(c.n))));
+    out.colleges += newCols.length;
+    const idOf = new Map();
+    for (const r of await all(env, "SELECT id, name_ar FROM colleges WHERE university_id=?", u.id)) idOf.set(nz(r.name_ar), r.id);
+    const have = new Set();
+    for (const r of await all(env, "SELECT d.college_id, d.name_ar FROM departments d JOIN colleges c ON c.id=d.college_id WHERE c.university_id=?", u.id)) have.add(r.college_id + "|" + nz(r.name_ar));
+    const ins = [];
+    for (const c of t.colleges || []) {
+      const cid = idOf.get(nz(c.n)); if (!cid) continue;
+      for (const d of c.deps || []) { const k = cid + "|" + nz(d); if (!have.has(k)) { have.add(k); ins.push(env.DB.prepare("INSERT INTO departments (college_id,name_ar) VALUES (?,?)").bind(cid, txt(d, 160))); } }
+    }
+    await chunk(ins); out.departments += ins.length;
+  }
+  return json({ ok: true, ...out });
 }
