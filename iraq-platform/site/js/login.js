@@ -18,6 +18,18 @@
     return /^[A-Za-z0-9._\-\/?=&%#]+$/.test(n) && n.indexOf("//") === -1 && n.indexOf(":") === -1 ? n.replace(/^\//, "") : savedHome();
   }
 
+  // المتابعة: الوجهة المطلوبة، وإلا قسمك المحفوظ (على الجهاز ثم في الحساب)، وإلا الصفحة الرئيسية
+  function goNext() {
+    if (new URLSearchParams(location.search).get("next")) { location.href = nextUrl(); return; }
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem("iq.dept") || "null"); } catch (e) { /* لا شيء */ }
+    if (s && Number(s.id) > 0) { location.href = "dept.html?id=" + Number(s.id); return; }
+    fetch("/api/sync", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+      var v = d && d.data && d.data["iq.dept"] && d.data["iq.dept"].v;
+      location.href = v && Number(v.id) > 0 ? "dept.html?id=" + Number(v.id) : "index.html";
+    }).catch(function () { location.href = "index.html"; });
+  }
+
   /* ---------- نافذة التواصل ---------- */
   var dlg = $("contact");
   function openContact() { if (dlg && !dlg.open && dlg.showModal) dlg.showModal(); }
@@ -29,7 +41,7 @@
   }
 
   /* ---------- الزائر ---------- */
-  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () { location.href = nextUrl(); });
+  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () { goNext(); });
 
   /* ---------- حالة: مسجّل الدخول ---------- */
   function row(label, glyphHtml) {
@@ -55,7 +67,7 @@
     var strong = document.createElement("strong"); strong.textContent = u.name; who.appendChild(strong);
     box.appendChild(who);
     var go = row("المتابعة إلى الموقع", ICON.go);
-    go.addEventListener("click", function () { location.href = nextUrl(); });
+    go.addEventListener("click", function () { goNext(); });
     box.appendChild(go);
     if (u.role === "admin" || u.role === "rep" || u.role === "uploader") {
       var up = row("رفع الملفات", ICON.go);
@@ -86,7 +98,7 @@
       if (r.status === 200 && r.data.ok) {
         MSAuth.afterLogin(r.data.user);
         try { sessionStorage.removeItem("ms.sync.reloaded"); } catch (e) { /* لا شيء */ }
-        location.href = nextUrl();
+        goNext();
         return;
       }
       say(ERR[r.data && r.data.error] || "تعذّر تسجيل الدخول. حاول مرة أخرى.");
