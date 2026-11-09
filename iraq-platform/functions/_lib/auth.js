@@ -227,7 +227,7 @@ export function uploadAccount(env) {
     const o = req.headers.get("origin");
     if (req.method !== "GET" && o && o !== new URL(req.url).origin) return null;
     const u = await currentUser(req, env);
-    return u && UPLOAD_ROLES.includes(u.role) ? { name: u.name } : null;
+    return u && UPLOAD_ROLES.includes(u.role) ? { name: u.name, role: u.role } : null;
   };
 }
 
