@@ -142,6 +142,14 @@
     $("clr").addEventListener("click", function () { $("q").value = ""; run(); $("q").focus(); });
     document.addEventListener("click", function (e) { if (!e.target.closest("#box")) hide(); });
 
+    try { // قسمك الأخير: متابعة بنقرة واحدة
+      var sv = JSON.parse(localStorage.getItem("iq.dept") || "null");
+      if (sv && Number(sv.id) > 0) {
+        var mine = document.createElement("button"); mine.type = "button"; mine.textContent = "متابعة إلى: " + sv.name;
+        mine.onclick = function () { location.href = "dept.html?id=" + Number(sv.id); };
+        $("ex").appendChild(mine);
+      }
+    } catch (e) { /* لا شيء */ }
     ["طب الزهراء", "هندسة بغداد", "صيدلة الموصل"].forEach(function (t) {
       var b = document.createElement("button"); b.type = "button"; b.textContent = t;
       b.onclick = function () { $("q").value = t; $("q").focus(); run(); };
