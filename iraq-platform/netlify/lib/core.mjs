@@ -32,6 +32,9 @@ const MANIFEST = "manifest.json";
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const COURSE_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const TYPES = ["lecture", "quiz", "exam"];
+const statusFor = (role) => (role === "admin" || role === "rep" ? "approved" : "pending");
+const visible = (e) => !e.status || e.status === "approved";
+const canReview = (r) => r === "admin" || r === "rep";
 
 const enc = new TextEncoder();
 const sha = async (s) => new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(String(s))));
@@ -73,7 +76,7 @@ async function authenticate(req, deps) {
   // حساب مسجَّل بدور رافع أو ممثل أو مشرف (يوفّره deps.account على Cloudflare)؛ يُهمل إن أُرسل رمز رفع
   if (deps.account && !req.headers.get("x-upload-code")) {
     const a = await deps.account(req);
-    if (a && a.name) return { name: a.name };
+    if (a && a.name) return { name: a.name, role: a.role || "uploader" };
   }
   const users = await parseCodes(deps.env("UPLOAD_CODES"));
   if (!users.length) return { res: deps.account ? fail("unauthorized", 401) : fail("not_configured", 503) };
@@ -93,7 +96,7 @@ async function authenticate(req, deps) {
     return { res: fail("bad_code", 401) };
   }
   if (rec) await deps.store.delete(key);
-  return { name: found.name };
+  return { name: found.name, role: "admin" };
 }
 
 async function readManifest(deps) {
@@ -125,7 +128,7 @@ const publicEntry = (e) => {
   return out;
 };
 // للمشرفين فقط: يضيف اسم الرافع ووقت الرفع
-const adminEntry = (e) => ({ ...publicEntry(e), filename: e.filename || "", by: e.by || "", at: e.at || "" });
+const adminEntry = (e) => ({ ...publicEntry(e), status: e.status || "approved", filename: e.filename || "", by: e.by || "", at: e.at || "" });
 
 function cleanText(v, max) {
   return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
@@ -162,7 +165,7 @@ async function dropChunks(deps, id, n) {
 /* ---------- المسارات العامة ---------- */
 async function uploadsJs(deps) {
   try {
-    const list = (await readManifest(deps)).map(publicEntry);
+    const list = (await readManifest(deps)).filter(visible).map(publicEntry);
     return new Response("window.UPLOADS = " + JSON.stringify(list) + ";\n", {
       headers: {
         "content-type": "application/javascript; charset=utf-8",
@@ -178,9 +181,13 @@ async function uploadsJs(deps) {
   }
 }
 
-async function serveFile(id, method, deps) {
+async function serveFile(id, method, deps, req) {
   const entry = (await readManifest(deps)).find((e) => e.id === id);
   if (!entry || entry.kind === "link") return fail("not_found", 404);
+  if (!visible(entry)) {
+    const a = deps.account && (await deps.account(req));
+    if (!a || !canReview(a.role)) return fail("not_found", 404);
+  }
   const headers = {
     "content-type": "application/pdf",
     "content-disposition": `inline; filename="lecture.pdf"; filename*=UTF-8''${encodeURIComponent(entry.filename || "lecture.pdf")}`,
@@ -215,7 +222,7 @@ async function receiveChunk(req, url, deps) {
   return json({ ok: true });
 }
 
-async function finish(req, deps, who) {
+async function finish(req, deps, who, role) {
   const b = await readJson(req);
   if (!b) return fail("bad_request", 400);
   const id = String(b.id || "");
@@ -245,7 +252,7 @@ async function finish(req, deps, who) {
   if (size > LIMITS.file) { await dropChunks(deps, id, n); return fail("too_big", 413); }
   if (size < 1) return fail("bad_request", 400);
 
-  const entry = { id, kind: "file", type, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who };
+  const entry = { id, kind: "file", type, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who, status: statusFor(role) };
   if (showInLatest !== undefined) entry.showInLatest = showInLatest;
   await updateManifest(deps, (list) => list.concat([entry]));
   return json({ ok: true, entry: publicEntry(entry) });
@@ -259,7 +266,7 @@ function shapeOk(type, number, title) {
 }
 
 /* رابط بلا ملف: اختبار تفاعلي أو أسئلة سنوات سابقة أو رابط محاضرة */
-async function addLink(req, deps, who) {
+async function addLink(req, deps, who, role) {
   const b = await readJson(req);
   if (!b) return fail("bad_request", 400);
   const courseId = String(b.courseId || "");
@@ -274,7 +281,7 @@ async function addLink(req, deps, who) {
   if (!url) return fail("bad_url", 400);
   if (!shapeOk(type, number, title)) return fail("bad_request", 400);
   const id = crypto.randomUUID();
-  const entry = { id, kind: "link", type, courseId, number, title: number > 0 ? title : "", label, url, size: 0, chunks: 0, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who };
+  const entry = { id, kind: "link", type, courseId, number, title: number > 0 ? title : "", label, url, size: 0, chunks: 0, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who, status: statusFor(role) };
   const showInLatest = number > 0 ? flag(b.showInLatest) : undefined;
   if (showInLatest !== undefined) entry.showInLatest = showInLatest;
   await updateManifest(deps, (list) => list.concat([entry]));
@@ -345,6 +352,42 @@ async function abort(req, deps) {
   return json({ ok: true });
 }
 
+const REPORTS = "reports.json";
+async function readReports(deps) {
+  const m = await deps.store.get(REPORTS, { type: "json" });
+  return Array.isArray(m) ? m : [];
+}
+async function addReport(req, deps) {
+  const b = await readJson(req);
+  const id = b && String(b.id || "");
+  const reason = cleanText(b && b.reason, 300);
+  if (!id || !ID_RE.test(id) || !reason) return fail("bad_request", 400);
+  const list = await readReports(deps);
+  if (list.length >= 500) return fail("busy", 503);
+  list.push({ rid: crypto.randomUUID(), id, reason, at: new Date(deps.now()).toISOString(), open: true });
+  await deps.store.set(REPORTS, JSON.stringify(list));
+  return json({ ok: true });
+}
+async function reportDone(req, deps) {
+  const b = await readJson(req);
+  const rid = b && String(b.rid || "");
+  if (!rid) return fail("bad_request", 400);
+  const list = (await readReports(deps)).map((r) => (r.rid === rid ? { ...r, open: false } : r));
+  await deps.store.set(REPORTS, JSON.stringify(list));
+  return json({ ok: true });
+}
+async function review(req, deps) {
+  const b = await readJson(req);
+  const id = b && String(b.id || "");
+  if (!id || !ID_RE.test(id) || !["approve", "reject"].includes(b.action)) return fail("bad_request", 400);
+  let found = false;
+  await updateManifest(deps, (list) => {
+    found = false;
+    return list.map((e) => (e.id !== id ? e : (found = true, { ...e, status: b.action === "approve" ? "approved" : "rejected" })));
+  });
+  return found ? json({ ok: true }) : fail("not_found", 404);
+}
+
 export async function handle(req, deps) {
   try {
     const url = new URL(req.url);
@@ -352,18 +395,24 @@ export async function handle(req, deps) {
     const method = req.method;
 
     if (method === "GET" && path === "uploads.js") return await uploadsJs(deps);
-    if (method === "GET" && path === "uploads") return json({ ok: true, items: (await readManifest(deps)).map(publicEntry) });
+    if (method === "GET" && path === "uploads") return json({ ok: true, items: (await readManifest(deps)).filter(visible).map(publicEntry) });
     const fm = path.match(/^file\/([0-9a-f-]{36})$/);
-    if (fm && (method === "GET" || method === "HEAD")) return await serveFile(fm[1], method, deps);
+    if (fm && (method === "GET" || method === "HEAD")) return await serveFile(fm[1], method, deps, req);
 
-    if (method === "POST" && ["check", "admin", "chunk", "finish", "link", "edit", "abort", "delete"].includes(path)) {
+    if (method === "POST" && path === "report") return await addReport(req, deps);
+
+    if (method === "POST" && ["check", "admin", "chunk", "finish", "link", "edit", "abort", "delete", "review", "reports", "reportdone"].includes(path)) {
       const auth = await authenticate(req, deps);
       if (auth.res) return auth.res;
       if (path === "check") return json({ ok: true, name: auth.name });
+      if (["admin", "edit", "delete", "review", "reports", "reportdone"].includes(path) && !canReview(auth.role)) return fail("forbidden", 403);
+      if (path === "review") return await review(req, deps);
+      if (path === "reports") return json({ ok: true, items: await readReports(deps) });
+      if (path === "reportdone") return await reportDone(req, deps);
       if (path === "admin") return json({ ok: true, items: (await readManifest(deps)).map(adminEntry) });
       if (path === "chunk") return await receiveChunk(req, url, deps);
-      if (path === "finish") return await finish(req, deps, auth.name);
-      if (path === "link") return await addLink(req, deps, auth.name);
+      if (path === "finish") return await finish(req, deps, auth.name, auth.role);
+      if (path === "link") return await addLink(req, deps, auth.name, auth.role);
       if (path === "edit") return await edit(req, deps);
       if (path === "abort") return await abort(req, deps);
       return await remove(req, deps);
