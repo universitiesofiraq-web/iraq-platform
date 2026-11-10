@@ -460,10 +460,10 @@
     updateSendState();
   }
 
-  async function sendChunk(id, i, blob) {
+  async function sendChunk(id, i, blob, courseId) {
     var last = "server";
     for (var t = 0; t < 3; t++) {
-      var r = await api("chunk?id=" + id + "&index=" + i, { body: blob });
+      var r = await api("chunk?id=" + id + "&index=" + i + "&courseId=" + encodeURIComponent(courseId), { body: blob });
       if (r.status === 200) return;
       last = r.data.error || "server";
       if (r.status !== 0 && r.status < 500) break; // الخطأ ليس مؤقتاً
@@ -481,8 +481,8 @@
     var total = Math.max(1, Math.ceil(file.size / CHUNK));
     try {
       for (var i = 0; i < total; i++) {
-        await sendChunk(id, i, file.slice(i * CHUNK, (i + 1) * CHUNK));
-        onBytes(Math.min(file.size, (i + 1) * CHUNK));
+        await sendChunk(id, i, file.slice(i * CHUNK, (i + 1) * CHUNK), courseId);
+        onBytes(Math.min(file.size, (i + 1) * CHUNK), courseId);
       }
       var lecture = !!row.number;
       var body = {
@@ -493,7 +493,7 @@
       var fin = await api("finish", { body: body });
       if (fin.status !== 200) { var fe = new Error(fin.data.error); fe.code = fin.data.error || "server"; throw fe; }
     } catch (err) {
-      await api("abort", { body: { id: id } });
+      await api("abort", { body: { id: id, courseId: courseId } });
       throw err;
     }
   }

@@ -247,6 +247,8 @@ export function uploadAccount(env) {
     if (!pol.admin && !pol.scopes.length) return null;
     return {
       name: u.name,
+      userId: u.id,
+      stageScoped: !pol.admin && pol.scopes.some((scope) => scope.type === "stage"),
       role: pol.admin ? "admin" : anyRep ? "rep" : "uploader",
       can: (courseId) => pol.manageCourse(courseId),
       canUpload: (courseId) => pol.upload(courseId)

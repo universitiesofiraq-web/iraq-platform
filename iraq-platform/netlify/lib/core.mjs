@@ -50,7 +50,9 @@ function safeEqual(a, b) { // مقارنة بزمن ثابت
   return d === 0;
 }
 const pad = (i) => String(i).padStart(3, "0");
-const chunkKey = (id, i) => `chunks/${id}/${pad(i)}`;
+const chunkPrefix = (id, auth, courseId) => auth.userId ? `account-chunks/${auth.userId}/${courseId}/${id}` : `chunks/${id}`;
+const chunkKey = (prefix, i) => `${prefix}/${pad(i)}`;
+const entryPrefix = (entry) => entry.chunkPrefix || `chunks/${entry.id}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function json(body, status = 200, extra = {}) {
@@ -80,7 +82,7 @@ async function authenticate(req, deps) {
   // حساب مسجَّل بدور رافع أو ممثل أو مشرف (يوفّره deps.account على Cloudflare)؛ يُهمل إن أُرسل رمز رفع
   if (deps.account && !req.headers.get("x-upload-code")) {
     const a = await deps.account(req);
-    if (a && a.name) return { name: a.name, role: a.role || "uploader", can: a.can, canUpload: a.canUpload };
+    if (a && a.name) return { name: a.name, role: a.role || "uploader", can: a.can, canUpload: a.canUpload, userId: a.userId, stageScoped: a.stageScoped };
   }
   const users = await parseCodes(deps.env("UPLOAD_CODES"));
   if (!users.length) return { res: deps.account ? fail("unauthorized", 401) : fail("not_configured", 503) };
@@ -164,8 +166,8 @@ async function readJson(req) {
   } catch (e) { return null; }
 }
 
-async function dropChunks(deps, id, n) {
-  for (let i = 0; i < n; i++) await deps.store.delete(chunkKey(id, i));
+async function dropChunks(deps, prefix, n) {
+  for (let i = 0; i < n; i++) await deps.store.delete(chunkKey(prefix, i));
 }
 
 /* ---------- المسارات العامة ---------- */
@@ -192,13 +194,13 @@ async function serveFile(id, method, deps, req) {
   if (!entry || entry.kind === "link") return fail("not_found", 404);
   if (!visible(entry)) {
     const a = deps.account && (await deps.account(req));
-    if (!a || !canReview(a.role)) return fail("not_found", 404);
+    if (!a || !(await mayManage(a, entry.courseId))) return fail("not_found", 404);
   }
   const headers = {
     "content-type": "application/pdf",
     "content-disposition": `inline; filename="lecture.pdf"; filename*=UTF-8''${encodeURIComponent(entry.filename || "lecture.pdf")}`,
     "content-length": String(entry.size),
-    "cache-control": "public, max-age=86400",
+    "cache-control": visible(entry) ? "public, max-age=86400" : "private, no-store",
     "x-content-type-options": "nosniff"
   };
   if (method === "HEAD") return new Response(null, { status: 200, headers });
@@ -207,7 +209,7 @@ async function serveFile(id, method, deps, req) {
   const stream = new ReadableStream({
     async pull(controller) {
       if (i >= entry.chunks) { controller.close(); return; }
-      const buf = await deps.store.get(chunkKey(id, i++), { type: "arrayBuffer" });
+      const buf = await deps.store.get(chunkKey(entryPrefix(entry), i++), { type: "arrayBuffer" });
       if (!buf) { controller.error(new Error("missing_chunk")); return; }
       controller.enqueue(new Uint8Array(buf));
     }
@@ -216,15 +218,21 @@ async function serveFile(id, method, deps, req) {
 }
 
 /* ---------- المسارات التي تحتاج رمزاً ---------- */
-async function receiveChunk(req, url, deps) {
+async function receiveChunk(req, url, deps, auth) {
   const id = url.searchParams.get("id") || "";
   const idx = Number(url.searchParams.get("index"));
   if (!ID_RE.test(id) || !Number.isInteger(idx) || idx < 0 || idx >= LIMITS.maxChunks) return fail("bad_request", 400);
+  const courseId = url.searchParams.get("courseId") || "";
+  if ((auth.stageScoped && !courseId) || (courseId && (!COURSE_RE.test(courseId) || !(await mayUpload(auth, courseId))))) {
+    return fail("forbidden", 403);
+  }
+  if ((await readManifest(deps)).some((entry) => entry.id === id)) return fail("already_completed", 409);
+  const prefix = chunkPrefix(id, auth, courseId);
   const buf = await req.arrayBuffer();
   if (buf.byteLength === 0) return fail("bad_request", 400);
   if (buf.byteLength > LIMITS.chunk) return fail("too_big", 413);
   if (idx === 0 && new TextDecoder("latin1").decode(new Uint8Array(buf, 0, Math.min(5, buf.byteLength))) !== "%PDF-") return fail("not_pdf", 400);
-  await deps.store.set(chunkKey(id, idx), buf, { metadata: { size: buf.byteLength } });
+  await deps.store.set(chunkKey(prefix, idx), buf, { metadata: { size: buf.byteLength } });
   return json({ ok: true });
 }
 
@@ -243,26 +251,35 @@ async function finish(req, deps, who, auth) {
     return fail("bad_request", 400);
   }
   if (!shapeOk(type, number, cleanText(b.title, 200))) return fail("bad_request", 400);
-  if (!(await mayUpload(auth, courseId))) { await dropChunks(deps, id, n); return fail("forbidden", 403); }
+  if (!(await mayUpload(auth, courseId))) return fail("forbidden", 403);
   const title = number > 0 ? cleanText(b.title, 200) : "";
   const showInLatest = number > 0 ? flag(b.showInLatest) : undefined;
 
   const already = (await readManifest(deps)).find((e) => e.id === id);
-  if (already) return json({ ok: true, entry: publicEntry(already) }); // إعادة الطلب بعد انقطاع
+  if (already) {
+    if (already.courseId !== courseId || (auth.userId && already.uploadedBy !== auth.userId)) return fail("already_completed", 409);
+    return json({ ok: true, entry: publicEntry(already) });
+  }
+
+  // Existing clients without a course on chunk requests may finish in their own account namespace.
+  let prefix = chunkPrefix(id, auth, courseId);
+  if (auth.userId && !auth.stageScoped && !(await deps.store.getMetadata(chunkKey(prefix, 0)))) {
+    prefix = chunkPrefix(id, auth, "");
+  }
 
   let size = 0;
   for (let i = 0; i < n; i++) {
-    const m = await deps.store.getMetadata(chunkKey(id, i));
+    const m = await deps.store.getMetadata(chunkKey(prefix, i));
     if (!m) return fail("missing_chunk", 400);
     size += Number(m.metadata && m.metadata.size) || 0;
   }
-  if (size > LIMITS.file) { await dropChunks(deps, id, n); return fail("too_big", 413); }
+  if (size > LIMITS.file) { await dropChunks(deps, prefix, n); return fail("too_big", 413); }
   if (size < 1) return fail("bad_request", 400);
   // فحص بنيوي للملف المجمّع قبل تسجيله: لا يُعتمد ملف مزيف أو مبتور (والترويسة وحدها لا تكفي)
   const parts = [];
   for (let i = 0; i < n; i++) {
-    const c = await deps.store.get(chunkKey(id, i), { type: "arrayBuffer" });
-    if (!c) { await dropChunks(deps, id, n); return fail("missing_chunk", 400); }
+    const c = await deps.store.get(chunkKey(prefix, i), { type: "arrayBuffer" });
+    if (!c) { await dropChunks(deps, prefix, n); return fail("missing_chunk", 400); }
     parts.push(new Uint8Array(c));
   }
   const whole = new Uint8Array(parts.reduce((t, p) => t + p.length, 0));
@@ -270,14 +287,20 @@ async function finish(req, deps, who, auth) {
   for (const p of parts) { whole.set(p, off); off += p.length; }
   const verdict = checkPdf(whole);
   if (!verdict.ok) {
-    await dropChunks(deps, id, n);
+    await dropChunks(deps, prefix, n);
     return json(pdfRejection(verdict), 400);
   }
 
   const entry = { id, kind: "file", type, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who, status: await statusFor(auth, courseId) };
   if (showInLatest !== undefined) entry.showInLatest = showInLatest;
-  await updateManifest(deps, (list) => list.concat([entry]));
-  return json({ ok: true, entry: publicEntry(entry) });
+  if (auth.userId) {
+    entry.uploadedBy = auth.userId;
+    entry.chunkPrefix = prefix;
+  }
+  const saved = (await updateManifest(deps, (list) => list.some((existing) => existing.id === id) ? list : list.concat([entry])))
+    .find((existing) => existing.id === id);
+  if (saved.courseId !== courseId || (auth.userId && saved.uploadedBy !== auth.userId)) return fail("already_completed", 409);
+  return json({ ok: true, entry: publicEntry(saved) });
 }
 
 // الشكل المقبول: المحاضرة (lecture) تحتاج رقماً من 1، والرقم 0 (للمادة كلها) لـ quiz وexam فقط، وأي رقم فوق 0 يحتاج عنواناً
@@ -362,16 +385,20 @@ async function remove(req, deps) {
   const entry = (await readManifest(deps)).find((e) => e.id === id);
   if (!entry) return fail("not_found", 404);
   await updateManifest(deps, (list) => list.filter((e) => e.id !== id));
-  if (entry.kind !== "link") await dropChunks(deps, id, entry.chunks);
+  if (entry.kind !== "link") await dropChunks(deps, entryPrefix(entry), entry.chunks);
   return json({ ok: true });
 }
 
-async function abort(req, deps) {
+async function abort(req, deps, auth) {
   const b = await readJson(req);
   const id = b && String(b.id || "");
   if (!id || !ID_RE.test(id)) return fail("bad_request", 400);
+  const courseId = String(b.courseId || "");
+  if ((auth.stageScoped && !courseId) || (courseId && (!COURSE_RE.test(courseId) || !(await mayUpload(auth, courseId))))) {
+    return fail("forbidden", 403);
+  }
   const inList = (await readManifest(deps)).some((e) => e.id === id);
-  if (!inList) await dropChunks(deps, id, LIMITS.maxChunks); // لا نمس ملفاً أُنجز رفعه
+  if (!inList) await dropChunks(deps, chunkPrefix(id, auth, courseId), LIMITS.maxChunks);
   return json({ ok: true });
 }
 
@@ -460,11 +487,11 @@ export async function handle(req, deps) {
         for (const e of await readManifest(deps)) if (await mayManage(auth, e.courseId)) out.push(adminEntry(e));
         return json({ ok: true, items: out });
       }
-      if (path === "chunk") return await receiveChunk(req, url, deps);
+      if (path === "chunk") return await receiveChunk(req, url, deps, auth);
       if (path === "finish") return await finish(req, deps, auth.name, auth);
       if (path === "link") return await addLink(req, deps, auth.name, auth);
       if (path === "edit") return await edit(req, deps);
-      if (path === "abort") return await abort(req, deps);
+      if (path === "abort") return await abort(req, deps, auth);
       return await remove(req, deps);
     }
     return fail("not_found", 404);

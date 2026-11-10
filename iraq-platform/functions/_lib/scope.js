@@ -55,9 +55,10 @@ export async function isGlobalAdmin(user, env) {
 /* سلسلة العقدة: { university, college, department } */
 export async function chainOf(env, type, id) {
   const sql = {
-    subject: "SELECT d.id AS department, c.id AS college, c.university_id AS university FROM subjects sb " +
+    subject: "SELECT st.id AS stage, d.id AS department, c.id AS college, c.university_id AS university FROM subjects sb " +
               "JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id " +
               "JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE sb.id=?",
+    stage: "SELECT st.id AS stage, d.id AS department, c.id AS college, c.university_id AS university FROM stages st JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE st.id=?",
     department: "SELECT d.id AS department, c.id AS college, c.university_id AS university FROM departments d JOIN colleges c ON c.id=d.college_id WHERE d.id=?",
     college: "SELECT NULL AS department, c.id AS college, c.university_id AS university FROM colleges c WHERE c.id=?",
     university: "SELECT NULL AS department, NULL AS college, u.id AS university FROM universities u WHERE u.id=?"
@@ -75,7 +76,8 @@ export async function userScopes(env, userId) {
 /* هل تغطي إحدى نطاقات المستخدم هذه السلسلة؟ repOnly: يلزم مستوى ممثل. skip: نوع يُتجاهل (للحذف: لا يحذف الممثل عقدته نفسها) */
 export function covers(scopes, chain, repOnly, skip) {
   if (!chain) return false;
-  return scopes.some((s) => (!repOnly || s.level === "rep") && s.type !== skip && chain[s.type] === s.node_id);
+  return scopes.some((s) => (s.level === "rep" || (!repOnly && s.level === "uploader")) &&
+    s.type !== skip && Number.isSafeInteger(chain[s.type]) && chain[s.type] === s.node_id);
 }
 
 /* صلاحيات المستخدم: { admin, scopes, manage(type,id,skip), upload(courseId), manageCourse(courseId) } */
@@ -111,6 +113,11 @@ export async function policy(env, user) {
 }
 
 async function nodeName(env, type, id) {
+  if (type === "stage") {
+    const row = await env.DB.prepare("SELECT number FROM stages WHERE id=?").bind(id).first();
+    return row ? "المرحلة " + row.number : "";
+  }
+  if (!Object.hasOwn(TBL, type)) return "";
   const r = await env.DB.prepare("SELECT name_ar FROM " + TBL[type] + " WHERE id=?").bind(id).first();
   return r ? r.name_ar : "";
 }
@@ -127,7 +134,7 @@ export async function handleScopes(req, env, user, p) {
     const out = [];
     for (const r of rows) {
       const mine = r.user_id === user.id;
-      const manageable = await pol.manage(r.type, r.node_id);
+      const manageable = await pol.manage(r.type, r.node_id, r.type === "stage" ? "stage" : undefined);
       if (!mine && !manageable) continue;
       const ch = await chainOf(env, r.type, r.node_id);
       const uni = ch && ch.university ? await env.DB.prepare("SELECT name_ar FROM universities WHERE id=?").bind(ch.university).first() : null;
@@ -148,6 +155,8 @@ export async function handleScopes(req, env, user, p) {
        الرافع يُعيَّن في نطاق المسؤول نفسه أو ما تحته. المشرف العام يتجاوز. */
     const cur = await env.DB.prepare("SELECT level FROM scopes WHERE user_id=? AND type=? AND node_id=?").bind(t.id, type, id).first();
     if ((level === "rep" || (cur && cur.level === "rep")) && !(await pol.manage(type, id, type))) return fail("forbidden", 403);
+    if (type === "department" && cur?.level === "rep" && (action === "remove" || level !== "rep") &&
+        !(await pol.manage(type, id, "college"))) return fail("superior_approval_required", 403);
     if (action === "remove") {
       await env.DB.prepare("DELETE FROM scopes WHERE user_id=? AND type=? AND node_id=?").bind(t.id, type, id).run();
       await audit(env, user.id, t.id, "revoke", type, id);

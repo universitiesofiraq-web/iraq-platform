@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v35";
+var V = "ms-v36";
 var SHELL = ["platform.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }).then(function () { return self.skipWaiting(); }));
@@ -14,7 +14,7 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  if (/^\/api\/(auth\/|admin\/|catalog\/|platform(?:$|\/)|sync|announcements|pdfnotes|ai\/)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
+  if (/^\/api\/(auth\/|admin\/|catalog\/|platform(?:$|\/)|sync|stage-announcements|announcements|pdfnotes|ai\/)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
   var isPdf = /\.pdf$/i.test(url.pathname);
   e.respondWith(
     (isPdf ? caches.match(req).then(function (hit) { return hit || fetchAndStore(req); })
@@ -23,7 +23,7 @@ self.addEventListener("fetch", function (e) {
 });
 function fetchAndStore(req) {
   return fetch(req, { cache: "no-cache" }).then(function (res) {
-    if (res && res.status === 200 && !res.redirected) { var copy = res.clone(); caches.open(V).then(function (c) { c.put(req, copy); }); }
+    if (res && res.status === 200 && !res.redirected && !/no-store/i.test(res.headers.get("cache-control") || "")) { var copy = res.clone(); caches.open(V).then(function (c) { c.put(req, copy); }); }
     return res;
   });
 }

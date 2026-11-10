@@ -102,7 +102,7 @@
           return post("finish", { id: id, chunks: total, courseId: cid, number: num, type: type, title: num ? title : "", label: label, filename: file.name }).then(done);
         }
         file.slice(i * CH, (i + 1) * CH).arrayBuffer().then(function (buf) {
-          return post("chunk?id=" + id + "&index=" + i, null, buf);
+          return post("chunk?id=" + id + "&index=" + i + "&courseId=" + encodeURIComponent(cid), null, buf);
         }).then(function (d) {
           if (!d.ok) return done(d);
           i++; $("fill").style.width = Math.round(i / total * 100) + "%"; next();
