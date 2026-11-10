@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1831">
+  <title>إدارة دردشة المرحلة | منصة الجامعات العراقية</title>
+  <link rel="stylesheet" href="css/group-chat.css?v=2">
+</head>
+<body>
+  <main class="chat-app chat-management">
+    <header class="chat-top">
+      <h1>إدارة دردشة المرحلة</h1>
+      <a id="stageBack" class="top-back" href="admin.html">العودة إلى لوحة المرحلة</a>
+    </header>
+    <p id="manageStatus" class="notice" role="status" hidden></p>
+    <div id="manageContent" hidden>
+      <section class="management-card" aria-labelledby="stageName">
+        <h2 id="stageName"></h2>
+        <form id="createGroup" class="form-stack">
+          <label for="groupName">اسم المجموعة</label>
+          <input id="groupName" name="name" maxlength="64" placeholder="مثال: مجموعة أ" required>
+          <button class="primary" type="submit">إنشاء مجموعة</button>
+        </form>
+      </section>
+      <section class="management-card" aria-labelledby="manageRoomsTitle">
+        <h2 id="manageRoomsTitle">إدارة المجموعات</h2>
+        <p id="noGroups" class="muted" hidden>لا توجد مجموعات لهذه المرحلة بعد.</p>
+        <div id="groupControls" hidden>
+          <div class="form-stack">
+            <label for="managedGroup">المجموعة</label>
+            <select id="managedGroup"></select>
+          </div>
+          <div class="management-actions">
+            <a id="openManagedGroup" class="ghost" href="group-chat.html">فتح الدردشة للأعضاء</a>
+            <button id="rotateInvite" type="button" class="ghost">تجديد الدعوة</button>
+          </div>
+          <div id="inviteNotice" class="invite-notice" hidden>
+            <strong>رمز الدعوة للمجموعة المحددة</strong>
+            <code id="inviteValue" dir="ltr"></code>
+            <button id="copyInvite" type="button">نسخ الرمز</button>
+          </div>
+          <div class="management-actions management-tabs" aria-label="أقسام إدارة المجموعة">
+            <button type="button" class="ghost" data-kind="requests" aria-pressed="true">طلبات الانضمام</button>
+            <button type="button" class="ghost" data-kind="members" aria-pressed="false">الأعضاء</button>
+            <button type="button" class="ghost" data-kind="reports" aria-pressed="false">بلاغات الدردشة</button>
+            <button id="refreshItems" type="button" class="ghost">تحديث القائمة</button>
+          </div>
+          <ul id="manageList" class="management-list"></ul>
+          <button id="moreItems" type="button" class="ghost" hidden>عرض المزيد</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="js/group-chat-admin.js?v=1" defer></script>
+</body>
+</html>
