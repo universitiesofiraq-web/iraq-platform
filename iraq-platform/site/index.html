@@ -45,10 +45,12 @@
 
   <footer class="iq-foot"><a href="privacy.html">الخصوصية</a><a href="terms.html">الشروط</a></footer>
 
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
     var KT = { gov: "حكومية", private: "أهلية" };
+    var loadError = null;
     var DB = null, hits = [], cur = -1, KIND = { u: "جامعة", c: "كلية", d: "قسم" };
 
     function norm(s) {
@@ -121,7 +123,15 @@
     function run() {
       var v = $("q").value; $("box").classList.toggle("has", !!v);
       if (!v.trim()) return hide();
-      if (!DB) return;
+      if (!DB) {
+        var result = $("res");
+        result.replaceChildren();
+        var notice = document.createElement("div"); notice.className = "iq-none";
+        notice.textContent = loadError ? IQApi.errorText(loadError) : "جارٍ تحميل دليل البحث…";
+        result.appendChild(notice); result.hidden = false;
+        $("q").setAttribute("aria-expanded", "true");
+        return;
+      }
       show(find(v), v.trim());
     }
     function move(d) {
@@ -145,7 +155,7 @@
     try { // قسمك الأخير: متابعة بنقرة واحدة
       var sv = JSON.parse(localStorage.getItem("iq.dept") || "null");
       if (sv && Number(sv.id) > 0) {
-        var mine = document.createElement("button"); mine.type = "button"; mine.textContent = "متابعة إلى: " + sv.name;
+        var mine = document.createElement("button"); mine.type = "button"; mine.hidden = true; mine.textContent = "متابعة إلى: " + sv.name;
         mine.onclick = function () { location.href = "dept.html?id=" + Number(sv.id); };
         $("ex").appendChild(mine);
       }
@@ -156,11 +166,19 @@
       $("ex").appendChild(b);
     });
 
-    fetch("/api/catalog/index").then(function (r) { return r.json(); }).then(function (d) {
-      if (!d.ok) throw 0;
+    function loadIndex() {
+    loadError = null;
+    $("grid").textContent = "جارٍ التحميل…";
+    IQApi.request("/api/catalog/index").then(function (d) {
       DB = build(d);
+      if (mine && sv) {
+        var saved = d.d.find(function (row) { return row[0] === Number(sv.id); });
+        mine.hidden = !saved;
+        if (saved) mine.textContent = "متابعة إلى: " + saved[2];
+      }
       $("stats").textContent = d.u.length + " جامعة · " + d.c.length + " كلية" + (d.d.length ? " · " + d.d.length + " قسم" : "");
       var g = $("grid"); g.innerHTML = "";
+      if (!d.u.length) g.textContent = "لا توجد جامعات مفعّلة حاليًا.";
       d.u.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ar"); }).forEach(function (r) {
         var a = document.createElement("a"); a.className = "iq-u"; a.href = "catalog.html?u=" + r[0] + "&n=" + encodeURIComponent(r[1]);
         var b = document.createElement("b"); b.textContent = r[1]; a.appendChild(b);
@@ -169,9 +187,13 @@
         g.appendChild(a);
       });
       run();
-    }).catch(function () {
-      $("grid").innerHTML = '<div class="cg-empty">تعذّر تحميل القائمة. حدّث الصفحة وحاول مرة أخرى.</div>';
+    }).catch(function (error) {
+      loadError = error;
+      IQApi.showError($("grid"), error, loadIndex);
+      run();
     });
+    }
+    loadIndex();
   })();
   </script>
   <script src="js/upload-link.js"></script>
