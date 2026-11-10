@@ -195,7 +195,15 @@ async function changeStageMembership(req, env, actor, permission, stageId) {
   const audit = env.DB.prepare(
     "INSERT INTO scope_audit(actor_id,target_user_id,action,type,node_id,created_at) SELECT ?,?,?,'stage',?,? WHERE changes()=1"
   ).bind(actor.id, target.id, "stage_" + body.action, stageId, new Date().toISOString());
-  const [result] = await env.DB.batch([statement, audit]);
+  // إضافة مسؤول مخوّل للطالب إلى المرحلة تأكيدٌ لعضويته فيها؛ وإزالته تُلغي التأكيد
+  const now = Date.now();
+  const confirm = body.action === "enroll"
+    ? env.DB.prepare(
+      `INSERT OR REPLACE INTO student_verification (user_id,stage_id,verified_by,verified_at)
+       SELECT ?,?,?,? WHERE EXISTS (SELECT 1 FROM user_profile WHERE user_id=? AND stage_id=?)`
+    ).bind(target.id, stageId, actor.id, now, target.id, stageId)
+    : env.DB.prepare("DELETE FROM student_verification WHERE user_id=? AND stage_id=?").bind(target.id, stageId);
+  const [result] = await env.DB.batch([statement, audit, confirm]);
   return result.meta.changes === 1 ? json({ ok: true }) : fail("membership_conflict", 409);
 }
 
