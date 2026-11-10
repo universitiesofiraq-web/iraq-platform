@@ -56,13 +56,16 @@ async function audit(env, groupId, messageId, actorId, action, now) {
     .bind(groupId, messageId, actorId, action, now).run();
 }
 
-/* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند أول دخول، وينضم إليها الطالب تلقائياً
+/* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند دخول أول طالب مؤكَّد، وينضم إليها الطالب المؤكَّد تلقائياً
    (إلا من رُفض أو أُلغيت عضويته من المشرف). العضوية تبقى مشروطة بمرحلة ملفه الشخصي. */
 const DEFAULT_GROUP = "مجموعة المرحلة";
 async function autoJoin(env, userId, now) {
   const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
   if (!p || !p.stage_id) return;
   const stage = p.stage_id;
+  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي */
+  const ok = await env.DB.prepare("SELECT 1 AS x FROM student_verification WHERE user_id=? AND stage_id=?").bind(userId, stage).first();
+  if (!ok) return;
   const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
   if (!has) {
     if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;

@@ -86,6 +86,9 @@ export function checkPdf(b) {
     if (!(hasPages && hasObjStm)) return bad("no_pages", "لا توجد صفحات في الملف");
   }
 
+  // 5) محاضرات الطلبة لا تحتاج جافاسكربت ولا إطلاق برامج؛ نرفض ما فيه ذلك (ما داخل ObjStm المضغوط لا يُفحص هنا)
+  if (/\/JavaScript\b|\/JS\s*[(<]|\/Launch\b|\/SubmitForm\b|\/ImportData\b/.test(all)) return bad("active_content", "الملف يحوي محتوى نشطاً (جافاسكربت أو إطلاق برامج) غير مسموح");
+
   return { ok: true, pages, xrefEntries: entries ? entries.length : null, xrefStream: !entries };
 }
 
