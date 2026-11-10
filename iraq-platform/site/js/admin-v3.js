@@ -119,7 +119,7 @@ function panel(title, subtitle) {
   if (subtitle) text.append(element("p", subtitle, "muted"));
   head.append(text);
   card.append(head);
-  return { card, head };
+  return { card, head, title: text.firstElementChild };
 }
 
 function stats(items) {
@@ -226,6 +226,7 @@ function transition(item, action, text) {
 function universityActions(item) {
   const actions = element("div", undefined, "actions");
   actions.append(link("الممثلون", "manage.html?u=" + item.id, "button"), button("تعديل", () => profileForm(item)));
+  if (item.state !== "not_onboarded") actions.append(button("المسؤول", () => managerForm(item)));
   if (item.state === "active") actions.append(button("إيقاف", () => transition(item, "suspend", "إيقاف الجامعة مؤقتاً")));
   else actions.append(button("تفعيل", () => transition(item, "activate", "تفعيل الجامعة"), "primary"));
   return actions;
@@ -393,9 +394,10 @@ function showGlobal() {
   $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
   const nav = [["الرئيسية", "admin.html"], ["تحليل النمو", "#growth"], ["الجامعات", "#universities"], ["طلبات التفعيل", "#joins"],
-    ["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["الملفات والبلاغات", "admin-tools.html#files"],
-    ["الإعلانات", "admin-tools.html#ann"]];
+    ["تعيين الممثلين", "manage.html"], ["الحسابات", "#users"], ["طلبات التمثيل", "#reqs"],
+    ["الملفات بانتظار المراجعة", "#files"], ["البلاغات", "#reports"], ["التبليغات", "#ann"]];
   navigation(nav);
+  opsSections();
   $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"));
   if (me.owner) $("page-actions").append(button("الإدارة العامة", globalTeam));
   loadUniversities();
@@ -681,6 +683,193 @@ function stagePanels(data) {
   loadFiles();
   loadNews();
   loadReports();
+}
+
+
+/* أقسام الإدارة العامة (الحسابات، طلبات التمثيل، الملفات، البلاغات، التبليغات) داخل اللوحة الجديدة */
+const ROLE_LABELS = { student: "طالب", uploader: "رافع ملفات", rep: "ممثل" };
+
+function opsCard(id, title, subtitle) {
+  const p = panel(title, subtitle);
+  p.card.id = id;
+  const body = element("div");
+  p.card.append(body);
+  return { card: p.card, body, head: p.head, title: p.title };
+}
+
+function setCount(section, title, count) {
+  if (section.title) section.title.textContent = count === undefined ? title : title + " (" + number(count) + ")";
+}
+
+function usersSection(section) {
+  const search = element("input");
+  search.type = "search"; search.placeholder = "ابحث بالاسم أو البريد"; search.setAttribute("aria-label", "ابحث في الحسابات");
+  const list = element("ul", undefined, "list");
+  let all = [];
+  section.body.replaceChildren(search, list);
+
+  function draw() {
+    const q = search.value.trim().toLowerCase();
+    const rows = all.filter(u => !q || ((u.name || "") + " " + (u.email || "")).toLowerCase().includes(q)).slice(0, 100);
+    if (!rows.length) { list.replaceChildren(empty(all.length ? "لا توجد حسابات مطابقة." : "لا يوجد مستخدمون بعد.")); return; }
+    list.replaceChildren(...rows.map(u => {
+      const row = element("li");
+      row.append(element("strong", u.name || u.email), element("small", u.email + " — " + (u.active ? "فعّال" : "موقوف")));
+      if (u.role === "admin") { row.append(element("span", "مشرف عام", "status")); return row; }
+      const select = element("select");
+      select.setAttribute("aria-label", "دور " + (u.name || u.email));
+      for (const [key, label] of Object.entries(ROLE_LABELS)) select.append(new Option(label, key, false, key === u.role));
+      select.addEventListener("change", () => {
+        const next = select.value, previous = u.role;
+        confirmAction("تغيير الدور", (u.name || u.email) + " إلى «" + ROLE_LABELS[next] + "»؟", [], async () => {
+          await api("/api/auth/user", { id: u.id, role: next });
+          await loadUsers();
+        });
+        // إن أُغلق الحوار دون تأكيد يعود المؤشر إلى الدور السابق
+        $("dialog").addEventListener("close", () => { select.value = previous; }, { once: true });
+      });
+      const toggle = button(u.active ? "إيقاف" : "تفعيل", () => confirmAction(u.active ? "إيقاف الحساب" : "تفعيل الحساب",
+        (u.name || u.email) + (u.active ? " لن يتمكن من الدخول إلى المنصة." : ""), [], async () => {
+          await api("/api/auth/user", { id: u.id, active: !u.active });
+          await loadUsers();
+        }), u.active ? "" : "primary");
+      const actions = element("div", undefined, "actions");
+      actions.append(select, toggle);
+      row.append(actions);
+      return row;
+    }));
+  }
+  async function loadUsers() {
+    try { all = (await api("/api/auth/users")).users || []; setCount(section, "الحسابات", all.length); draw(); }
+    catch (error) { list.replaceChildren(); showNotice(error.message, true); }
+  }
+  search.addEventListener("input", draw);
+  loadUsers();
+}
+
+function requestsSection(section) {
+  const list = element("ul", undefined, "list");
+  section.body.replaceChildren(list);
+  async function load() {
+    try {
+      const { items } = await api("/api/auth/rep-requests");
+      setCount(section, "طلبات التمثيل", items.length);
+      if (!items.length) { list.replaceChildren(); section.body.append(empty("لا توجد طلبات بانتظار القرار.")); return; }
+      list.replaceChildren(...items.map(q => {
+        const row = element("li");
+        row.append(element("strong", q.name || q.email), element("small", q.email + " — يطلب تمثيل: " + (q.node || "") + " — " + (q.created_at || "")));
+        const ok = button("قبول", () => confirmAction("قبول طلب التمثيل", (q.name || q.email) + " سيصبح ممثلاً لهذا النطاق.", [], async () => {
+          await api("/api/auth/rep-request/decide", { id: q.id, action: "approve" }); await load();
+        }), "primary");
+        const no = button("رفض", () => confirmAction("رفض الطلب", "رفض طلب " + (q.name || q.email) + "؟", [], async () => {
+          await api("/api/auth/rep-request/decide", { id: q.id, action: "reject" }); await load();
+        }));
+        row.append(element("div", undefined, "actions"));
+        row.lastElementChild.append(ok, no);
+        return row;
+      }));
+    } catch (error) { list.replaceChildren(); showNotice(error.message, true); }
+  }
+  load();
+}
+
+function filesSection(section) {
+  const list = element("ul", undefined, "list");
+  section.body.replaceChildren(list);
+  async function load() {
+    try {
+      const { items } = await api("/api/admin", {});
+      const pending = items.filter(e => e.status === "pending");
+      setCount(section, "الملفات بانتظار المراجعة", pending.length);
+      if (!pending.length) { list.replaceChildren(); section.body.append(empty("لا توجد ملفات بانتظار المراجعة.")); return; }
+      list.replaceChildren(...pending.map(e => {
+        const title = e.title || e.label || e.filename || e.id;
+        const row = element("li");
+        row.append(element("strong", title), element("small", [e.by, e.at].filter(Boolean).join(" — ")));
+        const ok = button("قبول", () => confirmAction("نشر الملف", "الموافقة على نشر «" + title + "»؟", [], async () => {
+          await api("/api/review", { id: e.id, action: "approve" }); await load();
+        }), "primary");
+        const no = button("رفض", () => confirmAction("رفض الملف", "رفض «" + title + "»؟", [], async () => {
+          await api("/api/review", { id: e.id, action: "reject" }); await load();
+        }));
+        row.append(element("div", undefined, "actions"));
+        row.lastElementChild.append(ok, no);
+        return row;
+      }));
+    } catch (error) { list.replaceChildren(); showNotice(error.message, true); }
+  }
+  load();
+}
+
+function reportsSection(section) {
+  const list = element("ul", undefined, "list");
+  section.body.replaceChildren(list);
+  async function load() {
+    try {
+      const { items } = await api("/api/reports", {});
+      const open = (items || []).filter(r => r.open);
+      setCount(section, "البلاغات", open.length);
+      if (!open.length) { list.replaceChildren(); section.body.append(empty("لا توجد بلاغات مفتوحة.")); return; }
+      list.replaceChildren(...open.map(r => {
+        const row = element("li");
+        row.append(element("strong", r.reason), element("small", "ملف: " + r.id + " — " + (r.at || "")));
+        row.append(element("div", undefined, "actions"));
+        row.lastElementChild.append(button("تمّت المعالجة", () => confirmAction("إغلاق البلاغ", r.reason, [], async () => {
+          await api("/api/reportdone", { rid: r.rid }); await load();
+        }), "primary"));
+        return row;
+      }));
+    } catch (error) { list.replaceChildren(); showNotice(error.message, true); }
+  }
+  load();
+}
+
+function announcementsSection(section) {
+  const title = element("input"), body = element("textarea");
+  title.placeholder = "عنوان التبليغ"; title.maxLength = 120; title.setAttribute("aria-label", "عنوان التبليغ");
+  body.placeholder = "نص التبليغ"; body.maxLength = 2000; body.setAttribute("aria-label", "نص التبليغ");
+  const publish = button("نشر التبليغ", async () => {
+    if (!title.value.trim() || !body.value.trim()) { showNotice("اكتب العنوان والنص.", true); return; }
+    try { await api("/api/announcements", { title: title.value.trim(), body: body.value.trim() }); title.value = ""; body.value = ""; await load(); }
+    catch (error) { showNotice(error.message, true); }
+  }, "primary");
+  const list = element("ul", undefined, "list");
+  section.body.replaceChildren(title, body, publish, list);
+  async function load() {
+    try {
+      const { items } = await api("/api/announcements");
+      setCount(section, "التبليغات", items.length);
+      list.replaceChildren(...items.map(a => {
+        const row = element("li");
+        row.append(element("strong", a.title), element("small", a.body));
+        row.append(element("div", undefined, "actions"));
+        row.lastElementChild.append(button("حذف", () => confirmAction("حذف التبليغ", "حذف «" + a.title + "» نهائياً؟", [], async () => {
+          await api("/api/announcements/delete", { id: a.id }); await load();
+        })));
+        return row;
+      }));
+    } catch (error) { showNotice(error.message, true); }
+  }
+  load();
+}
+
+function opsSections() {
+  if ($("ops")) return;
+  const box = element("div");
+  box.id = "ops";
+  const sections = [
+    ["users", "الحسابات", "تغيير الأدوار وتفعيل الحسابات وإيقافها", usersSection],
+    ["reqs", "طلبات التمثيل", "طلبات الطلاب لتمثيل قسم أو كلية أو جامعة", requestsSection],
+    ["files", "الملفات بانتظار المراجعة", "لا تُنشر الملفات إلا بعد قبولها", filesSection],
+    ["reports", "البلاغات", "بلاغات الطلاب عن الملفات", reportsSection],
+    ["ann", "التبليغات", "إعلانات تظهر لجميع الطلاب", announcementsSection]
+  ];
+  for (const [id, title, subtitle, render] of sections) {
+    const section = opsCard(id, title, subtitle);
+    box.append(section.card);
+    render(section);
+  }
+  $("main").append(box);
 }
 
 function renderScope(data, reload) {

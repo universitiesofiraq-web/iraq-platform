@@ -86,6 +86,8 @@ const baseApi = path => {
   if (path.endsWith("/audit")) return { ok: true, items: [] };
   if (path.includes("?filter=active")) return { ok: true, totals: { directory: 2 }, items: [university(1,"جامعة البصرة","البصرة")] };
   if (path.includes("?filter=directory")) return { ok: true, totals: { directory: 2 }, items: [university(1,"جامعة البصرة","البصرة"), university(2,"جامعة بغداد","بغداد","not_onboarded")] };
+  // أقسام لوحة الإدارة الإضافية: لا بيانات في هذا الاختبار
+  if (["/api/auth/users", "/api/auth/rep-requests", "/api/admin", "/api/reports", "/api/announcements"].includes(path)) return { ok: true, users: [], items: [] };
   throw new Error("Unexpected request " + path);
 };
 

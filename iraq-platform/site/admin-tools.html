@@ -425,6 +425,13 @@
     api("GET", "auth/me").then(function (d) {
       ME = d && d.user;
       if (!ME) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
+      if (ME.admin) {
+        // المشرف العام يستخدم لوحة واحدة: admin.html
+        var map = { home: "", users: "#users", teams: "#universities", reqs: "#reqs", files: "#files", reports: "#reports", ann: "#ann" };
+        var h = location.hash.slice(1);
+        location.replace("admin.html" + (map[h] !== undefined ? map[h] : ""));
+        return;
+      }
       var stageScope = (ME.scopes || []).find(function (scope) { return scope.type === "stage" && scope.level === "rep"; });
       if (!ME.admin && stageScope && !(ME.scopes || []).some(function (scope) { return scope.type !== "stage" && scope.level === "rep"; })) {
         location.replace("admin.html?type=stage&id=" + stageScope.node_id);
