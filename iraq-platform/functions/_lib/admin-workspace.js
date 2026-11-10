@@ -37,9 +37,14 @@ async function workspace(env, type, id, permission) {
   ).bind(chain.college ?? null, chain.department ?? null, chain.university).first();
   const items = results || [];
   const canAssign = type !== "stage" || await permission.manage("stage", id, "stage");
+  const subjects = type === "stage" ? (await env.DB.prepare(
+    "SELECT sb.id,sb.name_ar,t.number AS term FROM subjects sb JOIN terms t ON t.id=sb.term_id WHERE t.stage_id=? ORDER BY t.number,sb.name_ar"
+  ).bind(id).all()).results : undefined;
   return json({
     ok: true,
-    scope: { type, id, ...labels, stage: type === "stage" ? items[0]?.number : undefined },
+    scope: { type, id, ...labels, university_id: chain.university, college_id: chain.college,
+      department_id: chain.department, stage: type === "stage" ? items[0]?.number : undefined },
+    subjects,
     can_assign: canAssign,
     items
   });
@@ -116,7 +121,7 @@ export async function handleAdminWorkspace(req, env) {
   const url = new URL(req.url);
   const route = url.pathname;
   if (!["/api/admin/workspace", "/api/admin/stage-representative",
-    "/api/admin/stage-announcements", "/api/stage-announcements"].includes(route)) return null;
+    "/api/admin/stage-announcements", "/api/stage-announcements", "/api/admin/stage-students"].includes(route)) return null;
   if (!env.DB) return fail("not_configured", 503);
   const user = await currentUser(req, env);
   if (!user) return fail("unauthorized", 401);
@@ -134,6 +139,18 @@ export async function handleAdminWorkspace(req, env) {
     if (!Object.hasOwn(scopeSql, type) || !positive(id)) return fail("bad_request", 400);
     if (!(await permission.manage(type, id))) return fail("forbidden", 403);
     return workspace(env, type, id, permission);
+  }
+  if (route === "/api/admin/stage-students") {
+    if (req.method !== "GET") return fail("method_not_allowed", 405);
+    const stageId = Number(url.searchParams.get("stage_id")), after = Number(url.searchParams.get("after") || 0);
+    if (!positive(stageId) || !Number.isSafeInteger(after) || after < 0) return fail("bad_request", 400);
+    if (!(await permission.manage("stage", stageId))) return fail("forbidden", 403);
+    const { results } = await env.DB.prepare(
+      `SELECT u.id,u.name FROM user_profile p JOIN users u ON u.id=p.user_id
+       WHERE p.stage_id=? AND u.active=1 AND u.id>? ORDER BY u.id LIMIT 51`
+    ).bind(stageId, after).all();
+    const page = (results || []).slice(0, 50);
+    return json({ ok: true, items: page.map(({ name }) => ({ name })), next: results?.length > 50 ? page.at(-1).id : null });
   }
   const student = route === "/api/stage-announcements";
   if (req.method !== "GET" && (student || req.method !== "POST")) return fail("method_not_allowed", 405);

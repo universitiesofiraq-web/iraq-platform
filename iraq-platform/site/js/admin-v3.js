@@ -413,6 +413,144 @@ function assignmentForm(row, revoke, reload) {
   });
 }
 
+function fileLink(file) {
+  if (file.kind !== "link") return "/api/file/" + encodeURIComponent(file.id);
+  try {
+    const url = new URL(file.url);
+    if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+  } catch {}
+  return null;
+}
+
+function appendNoticeRows(items, target) {
+  if (!items.length) {
+    target.replaceChildren(empty("لا توجد إعلانات لهذه المرحلة."));
+    return;
+  }
+  const list = element("ul", undefined, "list");
+  for (const entry of items) {
+    const row = element("li");
+    row.append(element("strong", entry.title), element("small", entry.by + " · " + date(entry.at)));
+    if (entry.body) row.append(element("p", entry.body));
+    list.append(row);
+  }
+  target.replaceChildren(list);
+}
+
+function stagePanels(data) {
+  const { scope, subjects } = data;
+  const key = { stage_id: scope.id };
+  const stageApi = "/api/admin/stage-announcements?stage_id=" + scope.id;
+  const uploadUrl = "contribute.html?stage_id=" + scope.id;
+  const files = panel("المحاضرات والملفات", "المواد والملفات ضمن هذه المرحلة.");
+  const news = panel("إعلانات المرحلة");
+  const reports = panel("البلاغات");
+  const students = panel("طلبة المرحلة", "تظهر الحسابات المرتبطة بهذه المرحلة في سجلات المنصة.");
+  files.card.id = "stage-files";
+  news.card.id = "stage-announcements";
+  reports.card.id = "stage-reports";
+  students.card.id = "stage-students";
+  const filesBody = element("div"), newsBody = element("div"), reportsBody = element("div"), studentsBody = element("div");
+  files.card.append(filesBody); news.card.append(newsBody); reports.card.append(reportsBody); students.card.append(studentsBody);
+  files.head.append(link("رفع ملف", uploadUrl, "button primary"));
+  const publish = button("نشر إعلان", () => {
+    const title = element("input"), body = element("textarea");
+    title.required = true; title.maxLength = 120; body.maxLength = 2000;
+    confirmAction("نشر إعلان لهذه المرحلة", stageLabel(scope.stage), [field("العنوان", title), field("نص الإعلان", body)], async () => {
+      await api(stageApi, { title: title.value, body: body.value });
+      await loadNews();
+    });
+  });
+  news.head.append(publish);
+  $("page-actions").append(link("رفع ملف جديد", uploadUrl, "button primary"));
+  $("sidebar-nav").append(link("الملفات", "#stage-files"), link("الطلبة", "#stage-students"),
+    link("الإعلانات", "#stage-announcements"), link("البلاغات", "#stage-reports"));
+
+  const guarded = async (target, load, render) => {
+    target.replaceChildren(empty("جارٍ التحميل…"));
+    try { render(await load(), target); }
+    catch (error) {
+      target.replaceChildren(empty(error.message), button("إعادة المحاولة", () => guarded(target, load, render)));
+    }
+  };
+
+  const names = new Map((subjects || []).map(subject => ["s" + subject.id, subject.name_ar]));
+  function loadFiles() {
+    return guarded(filesBody, () => api("/api/admin", key), ({ items }, target) => {
+      if (!items.length) {
+        target.replaceChildren(empty("لا توجد ملفات لهذه المرحلة."));
+        return;
+      }
+      target.replaceChildren(table(["الملف", "المادة", "الحالة", "الإجراءات"], items.map(file => {
+        const actions = element("div", undefined, "actions");
+        const href = fileLink(file);
+        if (href) {
+          const view = link("فتح", href, "button");
+          view.target = "_blank"; view.rel = "noopener";
+          actions.append(view);
+        }
+        if (file.status === "pending") {
+          for (const [action, label] of [["approve", "اعتماد"], ["reject", "رفض"]]) {
+            actions.append(button(label, () => confirmAction(label + " الملف", file.label, [], async () => {
+              await api("/api/review", { id: file.id, action });
+              await loadFiles();
+            })));
+          }
+        }
+        const state = file.status === "approved" ? "منشور" : file.status === "rejected" ? "مرفوض" : "قيد المراجعة";
+        const badge = element("span", state, "status");
+        badge.dataset.state = file.status === "approved" ? "active" : file.status === "rejected" ? "suspended" : "registered";
+        return [file.label, names.get(file.courseId) || "—", badge, actions];
+      })));
+    });
+  }
+
+  function loadReports() {
+    return guarded(reportsBody, () => api("/api/reports", key), ({ items }, target) => {
+      if (!items.length) {
+        target.replaceChildren(empty("لا توجد بلاغات لهذه المرحلة."));
+        return;
+      }
+      const list = element("ul", undefined, "list");
+      for (const report of items) {
+        const row = element("li");
+        row.append(element("p", report.reason), element("small", report.open ? "مفتوح" : "مغلق"));
+        if (report.open) row.append(button("إغلاق البلاغ", () => confirmAction("إغلاق البلاغ", report.reason, [], async () => {
+          await api("/api/reportdone", { rid: report.rid });
+          await loadReports();
+        })));
+        list.append(row);
+      }
+      target.replaceChildren(list);
+    });
+  }
+
+  function loadNews() {
+    return guarded(newsBody, () => api(stageApi), ({ items }, target) => appendNoticeRows(items, target));
+  }
+
+  function loadStudents(after = 0) {
+    return guarded(studentsBody, () => api("/api/admin/stage-students?stage_id=" + scope.id + "&after=" + after),
+      ({ items, next }, target) => {
+        if (!items.length) {
+          target.replaceChildren(empty("لا توجد حسابات مرتبطة بهذه المرحلة."));
+          return;
+        }
+        const list = element("ul", undefined, "list");
+        for (const student of items) list.append(element("li", student.name));
+        target.replaceChildren(list);
+        if (next) target.append(button("الصفحة التالية", () => loadStudents(next)));
+        if (after) target.append(button("الصفحة الأولى", () => loadStudents()));
+      });
+  }
+
+  $("content").append(files.card, news.card, reports.card, students.card);
+  studentsBody.append(button("عرض الطلبة المرتبطين", () => loadStudents()));
+  loadFiles();
+  loadNews();
+  loadReports();
+}
+
 function renderScope(data, reload) {
   const { scope, items } = data;
   const { type, id, university, college, department, stage } = scope;
@@ -483,6 +621,7 @@ function renderScope(data, reload) {
   const grid = element("div", undefined, "panel-grid");
   grid.append(stages.card, hierarchy.card);
   $("content").replaceChildren(banner, summary, grid);
+  if (stageOnly) stagePanels(data);
   $("content").hidden = false;
 }
 

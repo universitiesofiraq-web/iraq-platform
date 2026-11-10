@@ -82,7 +82,7 @@ async function authenticate(req, deps) {
   // حساب مسجَّل بدور رافع أو ممثل أو مشرف (يوفّره deps.account على Cloudflare)؛ يُهمل إن أُرسل رمز رفع
   if (deps.account && !req.headers.get("x-upload-code")) {
     const a = await deps.account(req);
-    if (a && a.name) return { name: a.name, role: a.role || "uploader", can: a.can, canUpload: a.canUpload, userId: a.userId, stageScoped: a.stageScoped };
+    if (a && a.name) return { name: a.name, role: a.role || "uploader", can: a.can, canUpload: a.canUpload, userId: a.userId, stageScoped: a.stageScoped, stageCourses: a.stageCourses };
   }
   const users = await parseCodes(deps.env("UPLOAD_CODES"));
   if (!users.length) return { res: deps.account ? fail("unauthorized", 401) : fail("not_configured", 503) };
@@ -468,9 +468,19 @@ export async function handle(req, deps) {
         if (!(await mayManage(auth, t.courseId))) return fail("forbidden", 403);
       }
       if (path === "review") return await review(req, deps);
+      let stageCourses;
+      if (path === "admin" || path === "reports") {
+        const body = await readJson(req.clone());
+        if (body?.stage_id !== undefined) {
+          if (!Number.isSafeInteger(body.stage_id) || body.stage_id < 1) return fail("bad_request", 400);
+          stageCourses = await auth.stageCourses?.(body.stage_id);
+          if (!stageCourses) return fail("forbidden", 403);
+        }
+      }
+      const canList = (courseId) => stageCourses ? stageCourses.has(courseId) : mayManage(auth, courseId);
       if (path === "reports") {
         const list = await readManifest(deps), course = new Map(list.map((e) => [e.id, e.courseId])), items = [];
-        for (const r of await readReports(deps)) if (course.has(r.id) && (await mayManage(auth, course.get(r.id)))) items.push(r);
+        for (const r of await readReports(deps)) if (course.has(r.id) && (await canList(course.get(r.id)))) items.push(r);
         return json({ ok: true, items });
       }
       if (path === "reportdone") {
@@ -484,7 +494,7 @@ export async function handle(req, deps) {
       }
       if (path === "admin") {
         const out = [];
-        for (const e of await readManifest(deps)) if (await mayManage(auth, e.courseId)) out.push(adminEntry(e));
+        for (const e of await readManifest(deps)) if (await canList(e.courseId)) out.push(adminEntry(e));
         return json({ ok: true, items: out });
       }
       if (path === "chunk") return await receiveChunk(req, url, deps, auth);

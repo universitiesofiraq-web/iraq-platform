@@ -143,3 +143,30 @@ test("a forged scope URL shows the server rejection without drawing management d
   assert.equal(screen.get("content").hidden, true);
   assert.match(screen.get("notice").textContent, /لا يسمح نطاقك/);
 });
+
+test("stage representatives see only their stage actions and scoped file and announcement calls", async () => {
+  const screen = dashboard((path, options) => {
+    if (path === "/api/auth/me") return { ok: true, user: { name: "الممثل", scopes: [{ type: "stage", node_id: 12, level: "rep" }] } };
+    if (path === "/api/admin/workspace?type=stage&id=12") return { ok: true,
+      scope: { type: "stage", id: 12, stage: 2, department: "طب الزهراء" }, can_assign: false,
+      items: [{ id: 12, number: 2, department: "طب الزهراء", students: 1, subjects: 1 }],
+      subjects: [{ id: 12, name_ar: "التشريح" }] };
+    if (path === "/api/admin") {
+      assert.deepEqual(JSON.parse(options.body), { stage_id: 12 });
+      return { ok: true, items: [{ id: "id", courseId: "s12", label: "محاضرة المرحلة", status: "pending" }] };
+    }
+    if (path === "/api/reports") {
+      assert.deepEqual(JSON.parse(options.body), { stage_id: 12 });
+      return { ok: true, items: [] };
+    }
+    assert.equal(path, "/api/admin/stage-announcements?stage_id=12");
+    return { ok: true, items: [] };
+  });
+  await tick();
+  assert.match(screen.get("title").textContent, /ممثل المرحلة الثانية/);
+  assert.match(screen.get("stage-files").textContent, /محاضرة المرحلة/);
+  assert.match(screen.get("stage-files").textContent, /اعتماد/);
+  assert.match(screen.get("stage-announcements").textContent, /نشر إعلان/);
+  assert.doesNotMatch(screen.get("content").textContent, /تعيين ممثل/);
+  assert.doesNotMatch(screen.get("sidebar-nav").textContent, /الفرق والتعيينات|الإدارة العامة/);
+});

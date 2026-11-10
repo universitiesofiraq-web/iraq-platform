@@ -42,10 +42,15 @@ test("stage appointment is unique, atomic, audited and restricted to an ancestor
   const scope = (actor, body) => handleAuth(signedRequest(sql, "/api/auth/scope", actor, body), env);
   assert.equal((await scope(6, revoke)).status, 403);
   assert.equal((await scope(6, { ...revoke, action: "add", level: "uploader" })).status, 403);
-  assert.equal((await assign(5, 12, 3, 7)).status, 200);
+  assert.equal((await api("/api/admin/stage-representative", 5, {
+    stage_id: 12, expected_user_id: 3, user_email: "  OTHER@example.test  "
+  })).status, 200);
   assert.equal((await assign(5, 12, 3, 0)).status, 409);
   assert.equal((await api("/api/admin/workspace?type=stage&id=12", 3)).status, 403);
   assert.equal((await api("/api/admin/workspace?type=stage&id=12", 7)).status, 200);
+  const students = await (await api("/api/admin/stage-students?stage_id=12", 7)).json();
+  assert.deepEqual(students.items, [{ name: "طالب آخر" }]);
+  assert.equal((await api("/api/admin/stage-students?stage_id=11", 7)).status, 403);
   assert.deepEqual(sql.prepare("SELECT target_user_id, action FROM scope_audit ORDER BY id").all().map(row => [row.target_user_id,row.action]), [[3,"grant"], [3,"revoke"], [7,"grant"]]);
   assert.equal((await scope(2, revoke)).status, 200);
 });
@@ -91,6 +96,9 @@ test("stage scope reaches file review, direct downloads and chunk storage withou
   assert.equal((await send("file/" + b.id, 3)).headers.get("cache-control"), "private, no-store");
   assert.equal((await (await send("file/" + a.id, 5)).text()), "%PDF-");
   assert.deepEqual((await (await send("admin", 3, {})).json()).items.map(entry => entry.id), [b.id]);
+  assert.deepEqual((await (await send("admin", 5, { stage_id: 12 })).json()).items.map(entry => entry.id), [b.id]);
+  assert.equal((await send("admin", 3, { stage_id: 11 })).status, 403);
+  assert.equal((await send("reports", 3, { stage_id: 21 })).status, 403);
   assert.equal((await send("review", 3, { id: a.id, action: "approve" })).status, 403);
   assert.equal((await send("finish", 3, { id: a.id, courseId:"s11", chunks:1, number:1, title:"ملف" })).status, 403);
   assert.ok(values.has("chunks/" + a.id + "/000"));

@@ -425,6 +425,11 @@
     api("GET", "auth/me").then(function (d) {
       ME = d && d.user;
       if (!ME) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
+      var stageScope = (ME.scopes || []).find(function (scope) { return scope.type === "stage" && scope.level === "rep"; });
+      if (!ME.admin && stageScope && !(ME.scopes || []).some(function (scope) { return scope.type !== "stage" && scope.level === "rep"; })) {
+        location.replace("admin.html?type=stage&id=" + stageScope.node_id);
+        return;
+      }
       var isRep = ME.admin || (ME.scopes || []).some(function (x) { return x.level === "rep"; });
       if (!isRep) { $("gate").textContent = "هذه الصفحة لمشرفي المنصة وممثلي الأقسام والكليات والجامعات فقط."; return; }
       $("gate").classList.add("ad-hide");

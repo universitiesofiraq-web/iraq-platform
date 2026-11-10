@@ -251,7 +251,14 @@ export function uploadAccount(env) {
       stageScoped: !pol.admin && pol.scopes.some((scope) => scope.type === "stage"),
       role: pol.admin ? "admin" : anyRep ? "rep" : "uploader",
       can: (courseId) => pol.manageCourse(courseId),
-      canUpload: (courseId) => pol.upload(courseId)
+      canUpload: (courseId) => pol.upload(courseId),
+      async stageCourses(stageId) {
+        if (!(await pol.manage("stage", stageId))) return null;
+        const { results } = await env.DB.prepare(
+          "SELECT sb.id FROM subjects sb JOIN terms t ON t.id=sb.term_id WHERE t.stage_id=?"
+        ).bind(stageId).all();
+        return new Set((results || []).map(item => "s" + item.id));
+      }
     };
   };
 }
