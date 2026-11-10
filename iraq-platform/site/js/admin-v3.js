@@ -193,8 +193,7 @@ function profileForm(item) {
 async function managerForm(item) {
   showNotice("جارٍ تحميل مسؤولي الجامعة…");
   try {
-    const { items } = await api("/api/auth/scopes");
-    const candidates = items.filter(row => row.type === "university" && row.level === "rep" && row.node_id === item.id);
+    const { items: candidates } = await api(adminRoot + "/managers?university_id=" + item.id);
     if (!candidates.length) {
       showNotice("عيّن مسؤولًا لهذه الجامعة من إدارة التعيينات قبل تسجيلها.", true);
       $("notice").append(" ", link("فتح إدارة التعيينات", "manage.html"));
@@ -204,7 +203,7 @@ async function managerForm(item) {
     const select = element("select");
     select.required = true;
     select.append(new Option("اختر المسؤول", ""));
-    for (const row of candidates) select.append(new Option(row.name + " — " + row.email, row.user_id));
+    for (const row of candidates) select.append(new Option(row.name + " — " + row.email, row.id));
     confirmAction(item.manager_id ? "تغيير مسؤول الجامعة" : "تسجيل الجامعة", item.name_ar,
       [field("مسؤول الجامعة", select)], async () => {
         await api(adminRoot, {

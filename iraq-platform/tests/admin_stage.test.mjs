@@ -58,6 +58,7 @@ test("stage appointment is unique, atomic, audited and restricted to an ancestor
 test("stage announcements require the exact stage scope or trusted student membership", async () => {
   const { env, sql } = fixture();
   sql.exec("INSERT INTO scopes VALUES (3,'stage',12,'rep')");
+  sql.exec("INSERT INTO university_onboarding VALUES (1,'active',2,1,1,1)");
   const api = (path, who, body) => handleAdminWorkspace(signedRequest(sql, path, who, body), env);
   const root = "/api/admin/stage-announcements?stage_id=";
   assert.equal((await api(root + 11, 3, { title: "مرفوض" })).status, 403);
@@ -66,6 +67,11 @@ test("stage announcements require the exact stage scope or trusted student membe
   assert.equal((await api(root + 12, 7)).status, 403);
   const student = "/api/stage-announcements?stage_id=";
   assert.equal((await api(student + 12, 7)).status, 200);
+  const ownFeed = await (await api("/api/stage-announcements", 7)).json();
+  assert.deepEqual(ownFeed.items.map(row => row.title), ["تبليغ المرحلة الثانية"]);
+  assert.deepEqual((await (await api("/api/stage-announcements", 3)).json()).items, []);
+  sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
+  assert.deepEqual((await (await api("/api/stage-announcements", 7)).json()).items, []);
   assert.equal((await api(student + 11, 7)).status, 403);
   assert.equal((await api(student + 12)).status, 401);
   const all = await handleAuth(signedRequest(sql, "/api/announcements"), env);

@@ -106,6 +106,9 @@ export async function handleCatalog(req, env) {
     }
 
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
+    const origin = req.headers.get("origin");
+    if (origin && origin !== url.origin) return fail("forbidden", 403);
+    if (!req.headers.get("content-type")?.includes("application/json")) return fail("bad_request", 400);
     const me = await currentUser(req, env);
     if (!me) return fail("forbidden", 403);
     const admin = await isGlobalAdmin(me, env);

@@ -1,5 +1,6 @@
 import { currentUser } from "./auth.js";
 import { chainOf, policy } from "./scope.js";
+import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -92,11 +93,20 @@ async function stageRep(env, user, body) {
 }
 
 async function stageAnnouncements(req, env, user, permission, stageId, student) {
-  if (!positive(stageId)) return fail("bad_request", 400);
-  const manage = await permission.manage("stage", stageId);
-  if (!manage && (!student || req.method !== "GET" || !(await env.DB.prepare(
-    "SELECT 1 FROM user_profile WHERE user_id=? AND stage_id=?"
-  ).bind(user.id, stageId).first()))) return fail("forbidden", 403);
+  if (student) {
+    const requested = stageId;
+    const member = await env.DB.prepare(
+      `SELECT st.id AS stage_id FROM user_profile p JOIN stages st ON st.id=p.stage_id
+       JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
+       JOIN universities u ON u.id=c.university_id WHERE p.user_id=? AND ${ACTIVE_UNIVERSITY}`
+    ).bind(user.id).first();
+    if (requested !== null && (!positive(requested) || member?.stage_id !== requested)) return fail("forbidden", 403);
+    if (!member) return json({ ok: true, items: [] });
+    stageId = member.stage_id;
+  } else {
+    if (!positive(stageId)) return fail("bad_request", 400);
+    if (!(await permission.manage("stage", stageId))) return fail("forbidden", 403);
+  }
 
   if (req.method === "GET") {
     const { results } = await env.DB.prepare(
@@ -154,5 +164,6 @@ export async function handleAdminWorkspace(req, env) {
   }
   const student = route === "/api/stage-announcements";
   if (req.method !== "GET" && (student || req.method !== "POST")) return fail("method_not_allowed", 405);
-  return stageAnnouncements(req, env, user, permission, Number(url.searchParams.get("stage_id")), student);
+  const stageId = url.searchParams.get("stage_id");
+  return stageAnnouncements(req, env, user, permission, stageId === null ? null : Number(stageId), student);
 }

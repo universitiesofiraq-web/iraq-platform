@@ -31,6 +31,8 @@ test("only explicit verified activation exposes the university and its children"
   assert.equal((await api(root, 3)).status, 403);
   assert.equal((await api(root, 4)).status, 401);
   assert.equal((await read("universities?view=directory", 3)).status, 403);
+  const crossSite = signedRequest(sql, "/api/catalog/add", 1, { type: "university", name_ar: "محاولة خارجية" }, "https://foreign.test");
+  assert.equal((await handleCatalog(crossSite, env)).status, 403);
   assert.equal((await (await read("universities?view=directory", 1)).json()).items.length, 2);
   assert.equal((await api(root, 1, { id: 1, action: "register", manager_id: 2 }, "https://foreign.test")).status, 403);
   assert.equal((await api(root, 1, { id: 2, action: "register", manager_id: 4 })).status, 409);

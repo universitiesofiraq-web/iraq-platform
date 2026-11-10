@@ -82,11 +82,21 @@ async function change(req, env, user) {
 
 export async function handleOnboarding(req, env) {
   const url = new URL(req.url);
-  if (url.pathname !== "/api/admin/universities" && url.pathname !== "/api/admin/universities/audit") return null;
+  if (!["/api/admin/universities", "/api/admin/universities/audit", "/api/admin/universities/managers"].includes(url.pathname)) return null;
   if (!env.DB) return fail("not_configured", 503);
   const user = await currentUser(req, env);
   if (!user) return fail("unauthorized", 401);
   if (!(await isGlobalAdmin(user, env))) return fail("forbidden", 403);
+  if (url.pathname.endsWith("/managers")) {
+    if (req.method !== "GET") return fail("method_not_allowed", 405);
+    const id = Number(url.searchParams.get("university_id"));
+    if (!Number.isSafeInteger(id) || id < 1) return fail("bad_request", 400);
+    const { results } = await env.DB.prepare(
+      `SELECT u.id,u.name,u.email FROM users u JOIN scopes s ON s.user_id=u.id
+       WHERE s.type='university' AND s.node_id=? AND s.level='rep' AND u.active=1 ORDER BY u.name,u.id`
+    ).bind(id).all();
+    return json({ ok: true, items: results || [] });
+  }
   if (req.method === "GET" && url.pathname.endsWith("/audit")) {
     const { results } = await env.DB.prepare(
       `SELECT a.id, a.university_id, u.name_ar AS university, p.name AS actor, a.previous_state,
