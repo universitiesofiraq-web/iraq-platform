@@ -563,7 +563,9 @@ function stagePanels(data) {
     });
   });
   news.head.append(publish);
-  $("page-actions").append(link("رفع ملف جديد", uploadUrl, "button primary"));
+  const chatUrl = "group-chat-admin.html?" + new URLSearchParams({ stage_id: scope.id });
+  $("page-actions").append(link("رفع ملف جديد", uploadUrl, "button primary"),
+    link("إدارة الدردشة وإنشاء مجموعة", chatUrl, "button"));
   $("sidebar-nav").append(link("الملفات", "#stage-files"), link("الطلبة", "#stage-students"),
     link("الإعلانات", "#stage-announcements"), link("البلاغات", "#stage-reports"));
 
