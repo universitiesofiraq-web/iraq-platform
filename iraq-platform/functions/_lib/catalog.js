@@ -29,7 +29,25 @@ async function all(env, sql, ...args) {
   return r.results || [];
 }
 
+/* القراءات العامة (بلا دخول) تُخزَّن 5 دقائق في كاش Cloudflare كي لا يضرب كل زائر قاعدة البيانات */
 export async function handleCatalog(req, env) {
+  const url = new URL(req.url);
+  const m = url.pathname.match(/^\/api\/catalog\/([a-z]+)$/);
+  const cacheable = req.method === "GET" && m && m[1] !== "me" && !url.searchParams.get("view") && typeof caches !== "undefined" && caches.default;
+  if (!cacheable) return handleCatalogRaw(req, env);
+  const key = new Request(url.origin + url.pathname + url.search, { method: "GET" });
+  try { const hit = await caches.default.match(key); if (hit) return hit; } catch (_) { /* بلا كاش */ }
+  const res = await handleCatalogRaw(req, env);
+  if (res && res.status === 200) {
+    const out = new Response(res.body, res);
+    out.headers.set("cache-control", "public, max-age=60, s-maxage=300");
+    try { await caches.default.put(key, out.clone()); } catch (_) { /* تجاهل */ }
+    return out;
+  }
+  return res;
+}
+
+async function handleCatalogRaw(req, env) {
   const url = new URL(req.url);
   const m = url.pathname.match(/^\/api\/catalog\/([a-z]+)$/);
   if (!m) return null;
