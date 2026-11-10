@@ -127,6 +127,39 @@ async function stageAnnouncements(req, env, user, permission, stageId, student) 
   return json({ ok: true, id: result.meta.last_row_id });
 }
 
+async function changeStageMembership(req, env, actor, permission, stageId) {
+  if (!(await permission.manage("stage", stageId, "stage"))) return fail("forbidden", 403);
+  const body = await req.json().catch(() => null);
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!email || email.length > 254 || !["enroll", "unenroll"].includes(body.action)) return fail("bad_request", 400);
+  const [chain, target] = await Promise.all([
+    chainOf(env, "stage", stageId),
+    env.DB.prepare(
+      `SELECT u.id,u.active,p.stage_id FROM users u LEFT JOIN user_profile p ON p.user_id=u.id
+       WHERE lower(u.email)=?`
+    ).bind(email).first()
+  ]);
+  if (!chain) return fail("not_found", 404);
+  if (!target) return fail("membership_conflict", 409);
+  let statement;
+  if (body.action === "unenroll") {
+    statement = env.DB.prepare("UPDATE user_profile SET stage_id=NULL WHERE user_id=? AND stage_id=?").bind(target.id, stageId);
+  } else {
+    if (!target.active || target.stage_id === stageId) return fail("membership_conflict", 409);
+    if (target.stage_id && !(await permission.manage("stage", target.stage_id, "stage"))) return fail("forbidden", 403);
+    statement = env.DB.prepare(
+      `INSERT INTO user_profile(user_id,college_id,stage_id) VALUES(?,?,?)
+       ON CONFLICT(user_id) DO UPDATE SET college_id=excluded.college_id,stage_id=excluded.stage_id
+       WHERE user_profile.stage_id IS ?`
+    ).bind(target.id, chain.college, stageId, target.stage_id);
+  }
+  const audit = env.DB.prepare(
+    "INSERT INTO scope_audit(actor_id,target_user_id,action,type,node_id,created_at) SELECT ?,?,?,'stage',?,? WHERE changes()=1"
+  ).bind(actor.id, target.id, "stage_" + body.action, stageId, new Date().toISOString());
+  const [result] = await env.DB.batch([statement, audit]);
+  return result.meta.changes === 1 ? json({ ok: true }) : fail("membership_conflict", 409);
+}
+
 export async function handleAdminWorkspace(req, env) {
   const url = new URL(req.url);
   const route = url.pathname;
@@ -151,9 +184,10 @@ export async function handleAdminWorkspace(req, env) {
     return workspace(env, type, id, permission);
   }
   if (route === "/api/admin/stage-students") {
-    if (req.method !== "GET") return fail("method_not_allowed", 405);
     const stageId = Number(url.searchParams.get("stage_id")), after = Number(url.searchParams.get("after") || 0);
     if (!positive(stageId) || !Number.isSafeInteger(after) || after < 0) return fail("bad_request", 400);
+    if (req.method === "POST") return changeStageMembership(req, env, user, permission, stageId);
+    if (req.method !== "GET") return fail("method_not_allowed", 405);
     if (!(await permission.manage("stage", stageId))) return fail("forbidden", 403);
     const { results } = await env.DB.prepare(
       `SELECT u.id,u.name FROM user_profile p JOIN users u ON u.id=p.user_id

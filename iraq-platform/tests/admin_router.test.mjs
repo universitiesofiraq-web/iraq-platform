@@ -28,4 +28,16 @@ test("Pages router applies role checks to onboarding, directory and stage resour
   assert.equal((await call("/api/admin/stage-announcements?stage_id=12", 3, { title: "إعلان" }, "https://foreign.test")).status, 403);
   assert.equal((await call("/api/admin/stage-announcements?stage_id=12", 3, { title: "إعلان" })).status, 200);
   assert.deepEqual((await (await call("/api/announcements")).json()).items, []);
+  const members = "/api/admin/stage-students?stage_id=";
+  const enroll = { action: "enroll", email: "student@example.test" };
+  assert.equal((await call(members + 12, 3, enroll)).status, 403);
+  assert.equal((await call(members + 21, 2, enroll)).status, 403);
+  assert.equal((await call(members + 12, 2, enroll)).status, 200);
+  assert.deepEqual((await (await call("/api/stage-announcements", 3)).json()).items.map(item => item.title), ["إعلان"]);
+  assert.equal((await call(members + 21, 1, enroll)).status, 200);
+  assert.deepEqual((await (await call("/api/stage-announcements", 3)).json()).items, []);
+  assert.equal((await call(members + 12, 2, enroll)).status, 403);
+  assert.equal((await call(members + 21, 1, { ...enroll, action: "unenroll" })).status, 200);
+  assert.deepEqual(sql.prepare("SELECT action FROM scope_audit ORDER BY id").all().map(row => row.action),
+    ["grant", "stage_enroll", "stage_enroll", "stage_unenroll"]);
 });

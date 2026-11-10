@@ -13,6 +13,7 @@ const errors = {
   onboarding_transition_conflict: "تغيّرت حالة الجامعة أو أن شروط الإجراء غير مستوفاة. حدّث القائمة وتحقق من تعيين مسؤول نشط.",
   inactive_account: "الحساب المختار غير نشط.",
   admin_locked: "صلاحية هذا الحساب محمية.",
+  membership_conflict: "تعذّر تعديل العضوية. تحقق من الحساب وحالته والمرحلة المسجلة له.",
   assignment_conflict: "تعذّر التعيين. تحقق من الحساب أو حدّث اللوحة إذا تغيّر الممثل.",
   bad_request: "تحقق من الحقول المطلوبة."
 };
@@ -541,6 +542,19 @@ function stagePanels(data) {
         if (next) target.append(button("الصفحة التالية", () => loadStudents(next)));
         if (after) target.append(button("الصفحة الأولى", () => loadStudents()));
       });
+  }
+
+  if (data.can_assign) {
+    for (const [action, label] of [["enroll", "ربط طالب"], ["unenroll", "إلغاء ارتباط طالب"]]) {
+      students.head.append(button(label, () => {
+        const email = element("input");
+        email.type = "email"; email.dir = "ltr"; email.required = true; email.maxLength = 254;
+        confirmAction(label, stageLabel(scope.stage), [field("بريد حساب الطالب المسجل", email)], async () => {
+          await api("/api/admin/stage-students?stage_id=" + scope.id, { email: email.value, action });
+          await loadStudents();
+        });
+      }));
+    }
   }
 
   $("content").append(files.card, news.card, reports.card, students.card);
