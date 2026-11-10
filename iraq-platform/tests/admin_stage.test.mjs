@@ -66,6 +66,16 @@ test("stage announcements require the exact stage scope or trusted student membe
   assert.equal((await api(root + 12, 3, { title: "تبليغ المرحلة الثانية" })).status, 200);
   assert.equal((await api(root + 12, 7)).status, 403);
   const student = "/api/stage-announcements?stage_id=";
+  // اختيار المرحلة وحده لا يفتح إعلاناتها: بانتظار تأكيد الممثل
+  const waiting = await (await api("/api/stage-announcements", 7)).json();
+  assert.deepEqual([waiting.items, waiting.membership], [[], "pending"]);
+  // تأكيد لمرحلة أخرى لا يُحتسب
+  sql.exec("INSERT INTO student_verification VALUES (7,11,3,1)");
+  assert.equal((await (await api("/api/stage-announcements", 7)).json()).membership, "pending");
+  sql.exec("DELETE FROM student_verification");
+  // الطالب لا يؤكّد نفسه
+  assert.equal((await api("/api/admin/stage-students?stage_id=12", 7, { action: "verify", user_id: 7 })).status, 403);
+  assert.equal((await api("/api/admin/stage-students?stage_id=12", 3, { action: "verify", user_id: 7 })).status, 200);
   assert.equal((await api(student + 12, 7)).status, 200);
   const ownFeed = await (await api("/api/stage-announcements", 7)).json();
   assert.deepEqual(ownFeed.items.map(row => row.title), ["تبليغ المرحلة الثانية"]);

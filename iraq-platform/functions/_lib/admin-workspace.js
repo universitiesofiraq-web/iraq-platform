@@ -99,12 +99,16 @@ async function stageAnnouncements(req, env, user, permission, stageId, student) 
   if (student) {
     const requested = stageId;
     const member = await env.DB.prepare(
-      `SELECT st.id AS stage_id FROM user_profile p JOIN stages st ON st.id=p.stage_id
+      `SELECT st.id AS stage_id,
+              EXISTS (SELECT 1 FROM student_verification v WHERE v.user_id=p.user_id AND v.stage_id=p.stage_id) AS confirmed
+       FROM user_profile p JOIN stages st ON st.id=p.stage_id
        JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
        JOIN universities u ON u.id=c.university_id WHERE p.user_id=? AND ${ACTIVE_UNIVERSITY}`
     ).bind(user.id).first();
     if (requested !== null && (!positive(requested) || member?.stage_id !== requested)) return fail("forbidden", 403);
     if (!member) return json({ ok: true, items: [] });
+    // اختيار المرحلة عند التسجيل لا يكفي: إعلانات المرحلة لمن أكّد ممثلها عضويته فقط
+    if (!member.confirmed) return json({ ok: true, items: [], membership: "pending" });
     stageId = member.stage_id;
   } else {
     if (!positive(stageId)) return fail("bad_request", 400);

@@ -83,6 +83,7 @@ test("a student registering never activates a university; only authorized admins
   const me = (await (await read("me", 9)).json()).profile;
   assert.equal(me.department_id, 1);
   assert.equal(me.university_state, "pending");
+  assert.equal(me.membership, "pending");
   // جامعة فعّلتها الإدارة: تبقى ظاهرة، والتسجيل فيها يعيد active دون سجل تدقيق جديد
   sql.exec("INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by) VALUES (1,'active',1,1,1,1)");
   const audits = sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n;

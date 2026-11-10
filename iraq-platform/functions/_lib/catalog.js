@@ -267,6 +267,12 @@ async function myProfile(req, env) {
      FROM user_profile p JOIN stages st ON st.id=p.stage_id JOIN departments d ON d.id=st.department_id
      JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id
      LEFT JOIN university_onboarding o ON o.university_id=u.id WHERE p.user_id=?`).bind(me.id).first();
+  if (row) { // العضوية: اختيار المرحلة (pending) غير تأكيد الممثل لها (confirmed)
+    const v = await env.DB.prepare(
+      "SELECT 1 AS ok FROM student_verification v JOIN user_profile p ON p.user_id=v.user_id AND p.stage_id=v.stage_id WHERE v.user_id=?"
+    ).bind(me.id).first().catch(() => null);
+    row.membership = v ? "confirmed" : "pending";
+  }
   return json({ ok: true, profile: row || null });
 }
 
