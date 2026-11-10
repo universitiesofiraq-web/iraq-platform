@@ -117,7 +117,7 @@ test("directory errors are distinct from an empty active directory", async () =>
   const screen = dashboard(path => path.includes("?filter=") ? { ok: false, error: "server" } : baseApi(path));
   await tick();
   assert.equal(screen.get("content").hidden, true);
-  assert.match(screen.get("notice").textContent, /تعذّر الاتصال/);
+  assert.match(screen.get("notice").textContent, /تعذّر تحميل البيانات/);
   assert.match(screen.get("notice").textContent, /إعادة المحاولة/);
 });
 
