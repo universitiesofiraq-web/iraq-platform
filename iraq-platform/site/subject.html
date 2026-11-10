@@ -110,7 +110,7 @@
       $("up").href = "contribute.html?subject=" + id;
       canReview = !!d.can; // الإدارة حسب نطاق المستخدم (ممثل هذا القسم/الكلية/الجامعة أو المشرف العام)
       load();
-    }).catch(function () { load(); });
+    }).catch(function () { $("title").textContent = "تعذّر تحميل المادة"; $("meta").textContent = "تحقق من اتصالك ثم أعد فتح الصفحة."; load(); });
   })();
   </script>
   <script src="js/upload-link.js"></script>
