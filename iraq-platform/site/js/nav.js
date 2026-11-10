@@ -18,6 +18,7 @@
     { title: "دراستي", items: [
       { id: "courses", label: "الكورسات والمواد", icon: "book", href: "platform.html#semesters", enabled: true, children: "semesters" },
       { id: "latest", label: "أحدث المحاضرات", icon: "play", href: "platform.html#latest", enabled: true },
+      { id: "group-chat", label: "دردشة مجموعتي", icon: "users", href: "group-chat.html", enabled: true },
       { id: "favorites", label: "المفضلة", icon: "star", href: "platform.html#favorites", enabled: true },
       { id: "resume", label: "متابعة القراءة", icon: "file", enabled: true, dynamic: "resume" },
       { id: "professors", label: "الأساتذة", icon: "users", href: "platform.html#professors", enabled: true }
