@@ -39,6 +39,19 @@ export function isAdminUser(u, env) {
   return list.includes(String(u.email || "").toLowerCase());
 }
 
+export async function isGlobalAdmin(user, env) {
+  if (!user || user.active === 0) return false;
+  if (isAdminUser(user, env)) return true;
+  if (!env.DB) return false;
+  try {
+    return !!(await env.DB.prepare("SELECT 1 FROM global_admins WHERE user_id=? AND active=1").bind(user.id).first());
+  } catch (error) {
+    // Migration-first rollout. A missing grants table confers no permissions.
+    if (/no such table: (?:main\.)?global_admins/i.test(String(error?.message))) return false;
+    throw error;
+  }
+}
+
 /* سلسلة العقدة: { university, college, department } */
 export async function chainOf(env, type, id) {
   const sql = {
@@ -67,7 +80,7 @@ export function covers(scopes, chain, repOnly, skip) {
 
 /* صلاحيات المستخدم: { admin, scopes, manage(type,id,skip), upload(courseId), manageCourse(courseId) } */
 export async function policy(env, user) {
-  const admin = isAdminUser(user, env);
+  const admin = await isGlobalAdmin(user, env);
   const scopes = user ? await userScopes(env, user.id) : [];
   const memo = new Map();
   const subjChain = async (courseId) => {

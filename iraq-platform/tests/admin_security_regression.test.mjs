@@ -26,14 +26,14 @@ function mockEnv(current = known.oldAdmin, userScopes = []) {
             return args[0] === 11 ? { university: 1, college: 10, department: 100 }
               : args[0] === 22 ? { university: 2, college: 20, department: 200 } : null;
           }
-          if (sql.includes('SELECT email FROM users WHERE id')) return accounts.find(x => x.id === args[0]) ?? null;
+          if (sql.includes('SELECT id, email, active FROM users WHERE id')) return accounts.find(x => x.id === args[0]) ?? null;
           return null;
         },
         async all() {
           if (sql.includes('FROM scopes WHERE user_id')) {
             return { results: userScopes.filter(s => s.user_id === args[0]) };
           }
-          if (sql.includes('FROM users ORDER BY id')) return { results: accounts };
+          if (sql.includes('FROM users u LEFT JOIN global_admins')) return { results: accounts };
           return { results: [] };
         },
         async run() { return { success: true }; }

@@ -6,7 +6,7 @@
 //   subject {department_id,stage,term,name_ar,name_en?,professor?}
 // حذف (للمشرف): POST /api/catalog/delete { type, id }  (university|college|department|subject)
 import { currentUser } from "./auth.js";
-import { policy, isAdminUser } from "./scope.js";
+import { policy, isGlobalAdmin } from "./scope.js";
 import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 
 const json = (body, status = 200) =>
@@ -36,7 +36,7 @@ export async function handleCatalog(req, env) {
   try {
     if (req.method === "GET") {
       const directory = q.get("view") === "directory";
-      if (directory && !isAdminUser(await currentUser(req, env), env)) return fail("forbidden", 403);
+      if (directory && !(await isGlobalAdmin(await currentUser(req, env), env))) return fail("forbidden", 403);
       const visible = directory ? "1=1" : ACTIVE_UNIVERSITY;
       if (part === "index") {
         const [u, c, d] = await Promise.all([
@@ -108,7 +108,7 @@ export async function handleCatalog(req, env) {
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
     const me = await currentUser(req, env);
     if (!me) return fail("forbidden", 403);
-    const admin = isAdminUser(me, env);
+    const admin = await isGlobalAdmin(me, env);
     let b;
     try { b = await req.json(); } catch { return fail("bad_request", 400); }
     const type = String(b.type || "");

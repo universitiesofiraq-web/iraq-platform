@@ -6,7 +6,9 @@
 //           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
 // الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
-import { handleScopes, policy, userScopes, isAdminUser } from "./scope.js";
+import { handleScopes, policy, userScopes, isAdminUser, isGlobalAdmin } from "./scope.js";
+
+import { handleGlobalAdmins } from "./global-admin.js";
 
 export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "iq.dept"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
@@ -176,11 +178,14 @@ async function syncPut(req, user, env) {
 }
 
 async function adminUsers(env) {
-  const rows = await env.DB.prepare("SELECT id, email, name, role, active, created_at FROM users ORDER BY id").all();
+  const rows = await env.DB.prepare(
+    `SELECT u.id, u.email, u.name, u.role, u.active, u.created_at, COALESCE(g.active,0) AS delegated
+     FROM users u LEFT JOIN global_admins g ON g.user_id=u.id ORDER BY u.id`
+  ).all();
   const admins = new Set(adminList(env));
-  const users = (rows.results || []).map((u) => ({
+  const users = (rows.results || []).map(({ delegated, ...u }) => ({
     ...u,
-    role: admins.has(String(u.email || "").toLowerCase()) ? "admin" : u.role === "admin" ? "student" : u.role
+    role: admins.has(String(u.email || "").toLowerCase()) || (u.active && delegated) ? "admin" : u.role === "admin" ? "student" : u.role
   }));
   return json({ ok: true, users });
 }
@@ -188,10 +193,10 @@ async function adminUsers(env) {
 async function adminUpdate(req, env) {
   const b = await readJson(req);
   if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
-  const target = await env.DB.prepare("SELECT email FROM users WHERE id = ?").bind(b.id).first();
+  const target = await env.DB.prepare("SELECT id, email, active FROM users WHERE id = ?").bind(b.id).first();
   if (!target) return fail("not_found", 404);
   // Neither role nor active state of listed administrators may be edited here.
-  if (adminList(env).includes(String(target.email || "").toLowerCase())) return fail("admin_locked", 409);
+  if (isAdminUser(target, env) || await isGlobalAdmin(target, env)) return fail("admin_locked", 409);
   if (b.role !== undefined) {
     if (!ROLES.includes(b.role)) return fail("bad_role", 400);
     await env.DB.prepare("UPDATE users SET role = ? WHERE id = ?").bind(b.role, b.id).run();
@@ -269,15 +274,17 @@ export async function handleAuth(req, env, opts = {}) {
   if (p === "/api/auth/me" && req.method === "GET") {
     if (!user) return fail("unauthorized", 401);
     const sc = await userScopes(env, user.id);
-    return json({ ok: true, user: { ...publicUser(user), scopes: sc, admin: isAdminUser(user, env) } });
+    return json({ ok: true, user: { ...publicUser(user), scopes: sc, admin: await isGlobalAdmin(user, env), owner: isAdminUser(user, env) } });
   }
   if (!user) return fail("unauthorized", 401);
+
+  if (p === "/api/auth/global-admins") return handleGlobalAdmins(req, env, user);
 
   if (p === "/api/sync" && req.method === "GET") return syncGet(user, env);
   if (p === "/api/sync" && req.method === "PUT") return syncPut(req, user, env);
 
   if (isAnn && req.method === "POST") {
-    if (!isAdminUser(user, env)) return fail("forbidden", 403);
+    if (!(await isGlobalAdmin(user, env))) return fail("forbidden", 403);
     return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
   }
 
@@ -286,7 +293,7 @@ export async function handleAuth(req, env, opts = {}) {
     if (r) return r;
   }
 
-  if (!isAdminUser(user, env)) return fail("forbidden", 403);
+  if (!(await isGlobalAdmin(user, env))) return fail("forbidden", 403);
   if (p === "/api/auth/users" && req.method === "GET") return adminUsers(env);
   if (p === "/api/auth/user" && req.method === "POST") return adminUpdate(req, env);
   return fail("not_found", 404);

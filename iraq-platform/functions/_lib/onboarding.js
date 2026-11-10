@@ -1,5 +1,5 @@
 import { currentUser } from "./auth.js";
-import { isAdminUser } from "./scope.js";
+import { isGlobalAdmin } from "./scope.js";
 
 // Queries using this predicate bind the same alias to the university's primary key.
 export const ACTIVE_UNIVERSITY =
@@ -81,7 +81,7 @@ export async function handleOnboarding(req, env) {
   if (!env.DB) return fail("not_configured", 503);
   const user = await currentUser(req, env);
   if (!user) return fail("unauthorized", 401);
-  if (!isAdminUser(user, env)) return fail("forbidden", 403);
+  if (!(await isGlobalAdmin(user, env))) return fail("forbidden", 403);
   if (req.method === "GET" && url.pathname.endsWith("/audit")) {
     const { results } = await env.DB.prepare(
       `SELECT a.id, a.university_id, u.name_ar AS university, p.name AS actor, a.previous_state,
