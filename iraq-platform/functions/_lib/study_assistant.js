@@ -158,9 +158,9 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
     return { mode: "gemini", text: String((((d.candidates || [])[0] || {}).content || { parts: [{}] }).parts[0].text || "").trim() };
   }
   if (env.AI) {
-    const model = env.CF_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct";
+    const model = env.CF_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fp8";
     const out = await env.AI.run(model, { messages: [{ role: "system", content: sys }, { role: "user", content: user }], max_tokens: 1200 });
-    return { mode: "cloudflare", text: String((out && out.response) || "").trim() };
+    return { mode: "cloudflare", text: String((out && (out.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content))) || "").trim() };
   }
   return null;
 }
