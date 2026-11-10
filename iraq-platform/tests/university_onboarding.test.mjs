@@ -135,3 +135,26 @@ test("university visibility: admin sees every directory row, activation never de
   assert.equal(sql.prepare("SELECT state FROM university_onboarding WHERE university_id=51").get().state, "active");
   assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding WHERE university_id=50").get().n, 0);
 });
+
+test("admin statistics count files and reports from their real store, and only enrolled students", async () => {
+  const { DB, sql } = database();
+  seedAcademic(sql);
+  sql.exec("INSERT INTO users (id,google_sub,email,name,role,active,created_at) VALUES (9,'9','s9@example.test','طالب','student',1,0)");
+  sql.exec("INSERT INTO user_profile (user_id,college_id,stage_id) VALUES (9,1,NULL)"); // أُزيل من مرحلته: لا يُحسب طالباً
+  const sid = sql.prepare(`SELECT sb.id FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+    JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE c.university_id=1 LIMIT 1`).get().id;
+  const store = {
+    "manifest.json": [{ id: "a", courseId: "s" + sid }, { id: "b", courseId: "s" + sid, status: "approved" },
+      { id: "c", courseId: "s" + sid, status: "pending" }, { id: "d", courseId: "s" + sid, status: "rejected" }],
+    "reports.json": [{ rid: "1", open: true }, { rid: "2", open: false }]
+  };
+  const env = { DB, ADMIN_EMAILS: "owner@example.test", LECTURES: { get: async (k) => store[k] ?? null } };
+  const api = (path, id) => handleOnboarding(signedRequest(sql, path, id), env);
+  const ov = (await (await api(root + "/overview", 1)).json()).totals;
+  assert.deepEqual([ov.files, ov.pending, ov.reports, ov.students], [2, 1, 1, 0]);
+  const row = (await (await api(root + "?filter=directory", 1)).json()).items.find(r => r.id === 1);
+  assert.deepEqual([row.files, row.students], [2, 0]);
+  // بلا ربط KV: لا تقدير، يبقى رقم الجدول
+  delete env.LECTURES;
+  assert.equal((await (await api(root + "/overview", 1)).json()).totals.files, 0);
+});
