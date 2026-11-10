@@ -56,6 +56,8 @@
     .mg-legend{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 14px;margin:0 0 14px}
     .mg-legend summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-weight:600}
     .mg-legend ul{margin:6px 0;padding-inline-start:20px;line-height:1.9}
+    .mg-cnt{margin:0 0 8px;opacity:.8;font-size:.9rem;min-height:1.2em}
+    .mg-uh{margin:18px 0 8px;font-size:1.05rem;color:var(--lapis)}
     .mg-hint{font-size:.85rem;opacity:.8;margin:6px 0 0;line-height:1.6}
     @media (prefers-reduced-motion:reduce){.mg-skel{animation:none}}
     @media (max-width:560px){.mg-node.lv1{margin-inline-start:8px}.mg-node.lv2{margin-inline-start:16px}}
@@ -74,9 +76,11 @@
     <div id="app" class="mg-hide">
       <div class="mg-bar">
         <select id="uni" aria-label="الجامعة"></select>
-        <input id="q" type="search" placeholder="ابحث باسم القسم أو الكلية أو بريد المسؤول" aria-label="بحث">
+        <button id="newUni" class="mg-btn mg-hide" type="button">+ جامعة</button>
+        <input id="q" type="search" placeholder="ابحث عن قسم أو كلية أو جامعة أو مسؤول… (اضغط / للبحث)" aria-label="بحث" autocomplete="off">
         <label class="mg-chk"><input id="noRep" type="checkbox"> الأقسام بلا مسؤول فقط</label>
       </div>
+      <p class="mg-cnt" id="cnt" aria-live="polite"></p>
       <details class="mg-legend"><summary>ما صلاحيات كل دور؟</summary>
         <ul>
           <li><b>مشرف المنصة:</b> كل الجامعات، ويعيّن مسؤولي الجامعات.</li>
@@ -102,6 +106,13 @@
     <select id="addLevel"></select>
     <p class="mg-hint" id="addHint"></p>
     <div class="acts"><button class="mg-btn" id="addNo" type="button">إلغاء</button><button class="mg-btn pri" id="addYes" type="button">تعيين</button></div>
+  </dialog>
+
+  <dialog class="mg-dlg" id="dlgNew" aria-labelledby="newT">
+    <h2 id="newT">إضافة</h2><p id="newSub"></p>
+    <label for="newName">الاسم بالعربية</label>
+    <input id="newName" maxlength="120" autocomplete="off">
+    <div class="acts"><button class="mg-btn" id="newNo" type="button">إلغاء</button><button class="mg-btn pri" id="newYes" type="button">إضافة</button></div>
   </dialog>
 
   <dialog class="mg-dlg" id="dlgCfm" aria-labelledby="cfmT">
@@ -135,11 +146,20 @@
     /* ===== تحميل البيانات ===== */
     function loadRows() { return api("GET", "auth/scopes").then(function (d) { if (d.ok) ROWS = d.items || []; return d.ok; }); }
 
-    function loadTree(uid) {
-      skel($("tree"), 5);
+    var TREES = {};
+    function fetchTree(uid, force) {
+      if (TREES[uid] && !force) return Promise.resolve(TREES[uid]);
       return cat("colleges?university_id=" + uid).then(function (cols) {
         return Promise.all(cols.map(function (c) { return cat("departments?college_id=" + c.id).then(function (ds) { c.departments = ds; return c; }); }));
-      }).then(function (cols) { TREE = cols; render(); });
+      }).then(function (cols) { TREES[uid] = cols; return cols; });
+    }
+    function loadTree(uid, force) {
+      skel($("tree"), 5);
+      return fetchTree(uid, force).then(function (cols) { TREE = cols; render(); });
+    }
+    /* تطبيع عربي: يتجاهل الهمزات والتشكيل والتاء المربوطة والياء المقصورة */
+    function norm(t) {
+      return String(t || "").toLowerCase().replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
     }
 
     /* هل أستطيع إدارة هذه العقدة؟ (الخادم هو الحَكَم النهائي) */
@@ -181,6 +201,11 @@
         b.onclick = function () { openAdd(type, n, b, collegeId); };
         head.appendChild(b);
       }
+      if (ME.admin && type !== "department") {
+        var nb = el("button", type === "university" ? "+ كلية" : "+ قسم", "mg-btn"); nb.type = "button";
+        nb.onclick = function () { openNew(type === "university" ? "college" : "department", n, nb); };
+        head.appendChild(nb);
+      }
       card.appendChild(head);
 
       var box = el("div", null, "mg-people");
@@ -203,37 +228,55 @@
     }
 
     function render() {
-      var q = $("q").value.trim().toLowerCase(), onlyNo = $("noRep").checked, uid = Number($("uni").value);
-      var uni = UNIS.filter(function (u) { return u.id === uid; })[0];
-      var deps = [], withRep = 0, repCount = 0, uplCount = 0;
-      TREE.forEach(function (c) { c.departments.forEach(function (d) { deps.push(d); if (peopleOf("department", d.id).some(function (p) { return p.level === "rep"; })) withRep++; }); });
-      ROWS.forEach(function (r) { if (r.university_id === uid) { if (r.level === "rep") repCount++; else uplCount++; } });
-      var st = $("stats"); st.textContent = "";
-      [["الكليات", TREE.length], ["الأقسام", deps.length], ["أقسام بلا مسؤول", deps.length - withRep, 1], ["المسؤولون", repCount], ["الرافعون", uplCount]].forEach(function (s) {
-        var d = el("div", null, "mg-stat" + (s[2] && s[1] > 0 ? " warn" : "")); d.appendChild(el("b", String(s[1]))); d.appendChild(el("span", s[0])); st.appendChild(d);
-      });
+      var q = norm($("q").value), onlyNo = $("noRep").checked, uid = Number($("uni").value);
+      var global = !!q && UNIS.length > 1;
+      var box = $("tree"); box.textContent = "";
+      var shown = 0, depsShown = 0;
 
       function match(type, n) {
         if (!q) return true;
-        if ((n.name_ar || "").toLowerCase().indexOf(q) > -1) return true;
-        return peopleOf(type, n.id).some(function (p) { return ((p.email || "") + " " + (p.name || "")).toLowerCase().indexOf(q) > -1; });
+        if (norm(n.name_ar).indexOf(q) > -1) return true;
+        return peopleOf(type, n.id).some(function (p) { return norm((p.email || "") + " " + (p.name || "")).indexOf(q) > -1; });
       }
-      var box = $("tree"); box.textContent = "";
-      var shown = 0;
-      if (uni && !onlyNo && match("university", uni) && canManage("university", uni.id)) { box.appendChild(nodeCard("university", uni, 0)); shown++; }
-      TREE.forEach(function (c) {
-        var ds = c.departments.filter(function (d) {
-          if (onlyNo && peopleOf("department", d.id).some(function (p) { return p.level === "rep"; })) return false;
-          return match("department", d) || match("college", c);
+      function hasRep(d) { return peopleOf("department", d.id).some(function (p) { return p.level === "rep"; }); }
+
+      function renderUni(uni, tree) {
+        var out = [];
+        if (!onlyNo && match("university", uni) && canManage("university", uni.id)) out.push(nodeCard("university", uni, 0));
+        tree.forEach(function (c) {
+          var ds = c.departments.filter(function (d) {
+            if (onlyNo && hasRep(d)) return false;
+            return match("department", d) || match("college", c);
+          });
+          var visibleCollege = canManage("college", c.id);
+          var anyDept = ds.some(function (d) { return canManage("department", d.id, c.id); });
+          if (!visibleCollege && !anyDept) return;
+          if (!onlyNo && visibleCollege && (match("college", c) || ds.length)) out.push(nodeCard("college", c, 1));
+          ds.forEach(function (d) { if (canManage("department", d.id, c.id)) { out.push(nodeCard("department", d, 2, c.id)); depsShown++; } });
         });
-        var cm = !onlyNo && (match("college", c) || ds.length);
-        var visibleCollege = canManage("college", c.id);
-        var anyDept = ds.some(function (d) { return canManage("department", d.id, c.id); });
-        if (!visibleCollege && !anyDept) return;
-        if (cm && visibleCollege) { box.appendChild(nodeCard("college", c, 1)); shown++; }
-        ds.forEach(function (d) { if (canManage("department", d.id, c.id)) { box.appendChild(nodeCard("department", d, 2, c.id)); shown++; } });
+        return out;
+      }
+
+      var targets = global ? UNIS.filter(function (u) { return TREES[u.id]; }) : UNIS.filter(function (u) { return u.id === uid; });
+      targets.forEach(function (u) {
+        var cards = renderUni(u, global ? TREES[u.id] : TREE);
+        if (!cards.length) return;
+        if (global) box.appendChild(el("h2", u.name_ar, "mg-uh"));
+        cards.forEach(function (c) { box.appendChild(c); shown++; });
       });
-      if (!shown) box.appendChild(el("p", onlyNo ? "كل الأقسام لها مسؤول." : "لا توجد نتائج مطابقة.", "mg-empty"));
+
+      /* الإحصاءات للجامعة المختارة فقط */
+      var st = $("stats"); st.textContent = "";
+      st.classList.toggle("mg-hide", global);
+      var deps = [], withRep = 0, repCount = 0, uplCount = 0;
+      TREE.forEach(function (c) { c.departments.forEach(function (d) { deps.push(d); if (hasRep(d)) withRep++; }); });
+      ROWS.forEach(function (r) { if (r.university_id === uid) { if (r.level === "rep") repCount++; else uplCount++; } });
+      [["الكليات", TREE.length], ["الأقسام", deps.length], ["أقسام بلا مسؤول", deps.length - withRep, 1], ["المسؤولون", repCount], ["الرافعون", uplCount]].forEach(function (x) {
+        var d = el("div", null, "mg-stat" + (x[2] && x[1] > 0 ? " warn" : "")); d.appendChild(el("b", String(x[1]))); d.appendChild(el("span", x[0])); st.appendChild(d);
+      });
+
+      $("cnt").textContent = q ? (shown ? shown + " نتيجة" + (global ? " في كل الجامعات" : "") : "") : "";
+      if (!shown) box.appendChild(el("p", onlyNo ? "كل الأقسام لها مسؤول." : (q ? "لا توجد نتائج لـ «" + $("q").value.trim() + "»." : "لا توجد عناصر."), "mg-empty"));
     }
 
     /* ===== تعيين ===== */
@@ -265,6 +308,44 @@
       });
     };
 
+    /* ===== إضافة جامعة/كلية/قسم (مشرف المنصة فقط) ===== */
+    var NEW = null;
+    var NEWLBL = { university: "جامعة", college: "كلية", department: "قسم" };
+    function openNew(type, parent, opener) {
+      NEW = { type: type, parent: parent, opener: opener };
+      $("newT").textContent = "إضافة " + NEWLBL[type];
+      $("newSub").textContent = parent ? "داخل: " + parent.name_ar : "جامعة جديدة في المنصة.";
+      $("newName").value = "";
+      var d = $("dlgNew"); if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+      $("newName").focus();
+    }
+    function closeNew() { var d = $("dlgNew"); if (d.open) d.close(); if (NEW && NEW.opener && NEW.opener.focus) NEW.opener.focus(); }
+    $("newNo").onclick = closeNew;
+    $("newYes").onclick = function () {
+      var name = $("newName").value.trim();
+      if (name.length < 2) { toast("اكتب اسماً صحيحاً.", false); $("newName").focus(); return; }
+      var body = { type: NEW.type, name_ar: name };
+      if (NEW.type === "college") body.university_id = NEW.parent.id;
+      if (NEW.type === "department") body.college_id = NEW.parent.id;
+      var b = $("newYes"); b.disabled = true;
+      api("POST", "catalog/add", body).then(function (d) {
+        b.disabled = false;
+        if (!d.ok) { toast("تعذّرت الإضافة.", false); return; }
+        toast("تمت إضافة " + NEWLBL[NEW.type] + " «" + name + "».", true); closeNew();
+        if (NEW.type === "university") {
+          return cat("universities").then(function (all) {
+            UNIS = all; var s = $("uni"); s.textContent = ""; UNIS.forEach(function (u) { s.appendChild(new Option(u.name_ar, u.id)); });
+            s.classList.remove("mg-hide");
+            var created = all.filter(function (u) { return u.name_ar === name; }).pop();
+            if (created) s.value = String(created.id);
+            return loadTree(Number(s.value), true);
+          });
+        }
+        var uid = Number($("uni").value); delete TREES[uid];
+        return loadTree(uid, true);
+      });
+    };
+
     /* ===== إزالة ===== */
     function confirmRemove(p, type, n, opener) {
       $("cfmT").textContent = "إزالة " + (p.name || p.email) + " من «" + n.name_ar + "»؟ تُسحب منه كل صلاحيات هذا النطاق.";
@@ -285,9 +366,22 @@
 
     /* ===== البوابة ===== */
     var qt;
-    $("q").oninput = function () { clearTimeout(qt); qt = setTimeout(function () { if (TREE) render(); }, 200); };
+    $("q").oninput = function () {
+      clearTimeout(qt);
+      qt = setTimeout(function () {
+        if (!TREE) return;
+        if ($("q").value.trim() && UNIS.length > 1) {
+          $("cnt").textContent = "جارٍ البحث في كل الجامعات…";
+          Promise.all(UNIS.map(function (u) { return fetchTree(u.id); })).then(render);
+        } else render();
+      }, 200);
+    };
+    $("newUni").onclick = function () { openNew("university", null, $("newUni")); };
     $("noRep").onchange = function () { if (TREE) render(); };
     $("uni").onchange = function () { loadTree(Number($("uni").value)); };
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) { e.preventDefault(); $("q").focus(); }
+    });
 
     api("GET", "auth/me").then(function (d) {
       ME = d && d.user;
@@ -300,7 +394,8 @@
         if (!UNIS.length) { $("gate").textContent = "لا توجد جامعات ضمن صلاحياتك بعد."; return; }
         $("gate").classList.add("mg-hide"); $("app").classList.remove("mg-hide");
         var s = $("uni"); s.textContent = ""; UNIS.forEach(function (u) { s.appendChild(new Option(u.name_ar, u.id)); });
-        if (UNIS.length === 1) s.classList.add("mg-hide");
+        if (UNIS.length === 1 && !ME.admin) s.classList.add("mg-hide");
+        if (ME.admin) $("newUni").classList.remove("mg-hide");
         return loadTree(UNIS[0].id);
       });
     }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
