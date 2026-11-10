@@ -57,7 +57,7 @@ test("only explicit verified activation exposes the university and its children"
   assert.ok(audit.items.every(row => row.actor === "المالك"));
 });
 
-test("a student registering activates a new university, but never a suspended one", async () => {
+test("a student registering never activates a university; only authorized admins do", async () => {
   const { DB, sql } = database();
   seedAcademic(sql);
   sql.exec("INSERT INTO users (id,google_sub,email,name,role,active,created_at) VALUES (9,'9','s9@example.test','طالب جديد','student',1,0)");
@@ -65,19 +65,34 @@ test("a student registering activates a new university, but never a suspended on
   const read = (path, id) => handleCatalog(signedRequest(sql, "/api/catalog/" + path, id), env);
   const join = (id, body) => handleCatalog(signedRequest(sql, "/api/catalog/join", id, body), env);
   assert.equal((await read("universities?view=join")).status, 401);
-  assert.equal((await read("universities?view=join", 9)).status, 200);
   assert.deepEqual((await (await read("universities?view=join", 9)).json()).items.map(r => r.id).sort(), [1, 2]);
   assert.deepEqual((await (await read("universities", 9)).json()).items, []);
   assert.equal((await join(9, { department_id: 1, stage: 99 })).status, 400);
   assert.equal((await join(4, { department_id: 1, stage: 2 })).status, 401);
-  const ok = await join(9, { department_id: 1, stage: 2 });
+  // جامعة في الدليل وغير مفعّلة: يُحفظ التسجيل وتبقى الجامعة كما هي
+  const ok = await join(9, { department_id: 1, stage: 2, state: "active", is_admin: true });
   assert.equal(ok.status, 200);
-  assert.equal((await ok.json()).university_activated, true);
+  const body = await ok.json();
+  assert.equal(body.university_state, "pending");
+  assert.equal(body.university_activated, false);
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding").get().n, 0);
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n, 0);
+  assert.deepEqual((await (await read("universities", 9)).json()).items, []);
+  assert.equal(sql.prepare("SELECT role FROM users WHERE id=9").get().role, "student");
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM scopes WHERE user_id=9").get().n, 0);
+  const me = (await (await read("me", 9)).json()).profile;
+  assert.equal(me.department_id, 1);
+  assert.equal(me.university_state, "pending");
+  // جامعة فعّلتها الإدارة: تبقى ظاهرة، والتسجيل فيها يعيد active دون سجل تدقيق جديد
+  sql.exec("INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by) VALUES (1,'active',1,1,1,1)");
+  const audits = sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n;
+  assert.equal((await (await join(9, { department_id: 1, stage: 3 })).json()).university_state, "active");
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n, audits);
   assert.deepEqual((await (await read("universities", 9)).json()).items.map(r => r.id), [1]);
-  assert.equal((await (await read("me", 9)).json()).profile.department_id, 1);
-  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n, 1);
+  assert.equal((await (await read("me", 9)).json()).profile.university_state, "active");
+  // المعلّقة مرفوضة وتبقى معلّقة
   sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
   assert.equal((await join(9, { department_id: 1, stage: 3 })).status, 403);
-  assert.equal((await read("universities?view=join", 9)).status, 200);
+  assert.equal(sql.prepare("SELECT state FROM university_onboarding WHERE university_id=1").get().state, "suspended");
   assert.deepEqual((await (await read("universities?view=join", 9)).json()).items.map(r => r.id), [2]);
 });

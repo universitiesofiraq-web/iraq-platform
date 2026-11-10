@@ -29,7 +29,7 @@
       if (v && Number(v.id) > 0) { location.href = "dept.html?id=" + Number(v.id); return; }
       // طالب جديد بلا قسم محفوظ: صفحة التسجيل التي تعرض كل الجامعات
       return fetch("/api/catalog/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (m) {
-        location.href = m && m.profile ? "platform.html?dept=" + Number(m.profile.department_id) : "join.html";
+        location.href = m && m.profile && m.profile.university_state === "active" ? "platform.html?dept=" + Number(m.profile.department_id) : "join.html";
       });
     }).catch(function () { location.href = "index.html"; });
   }
