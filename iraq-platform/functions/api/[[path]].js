@@ -9,6 +9,7 @@ import { handleOnboarding } from "../_lib/onboarding.js";
 import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
 import { handleCatalog } from "../_lib/catalog.js";
 import { handleInvites } from "../_lib/invites.js";
+import { handleGroupChat } from "../_lib/group_chat.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
@@ -21,6 +22,8 @@ export async function onRequest({ request, env }) {
   if (inviteRes) return inviteRes;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
+  const chatRes = await handleGroupChat(request, env, { currentUser });
+  if (chatRes) return chatRes;
   const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط
   if (pnRes) return pnRes;
   const aiRes = await handleAi(request, env, { currentUser }); // ترجمة/شرح النص المحدد في قارئ PDF (يحتاج ربط Workers AI باسم AI)
