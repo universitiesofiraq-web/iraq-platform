@@ -34,6 +34,7 @@
       <div class="cg-msg" id="msg" role="alert"></div>
     </form>
   </main>
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     var LV = ["university", "college", "department", "subject"];
@@ -43,6 +44,7 @@
     var ADDT = ["إضافة جامعة", "إضافة كلية", "إضافة قسم", "إضافة مادة"];
     var stack = [];     // [{type,id,name}] العناصر المختارة
     var admin = false;
+    var loadVersion = 0;
     var $ = function (i) { return document.getElementById(i); };
 
     function fillSelect(sel, n, label) {
@@ -52,8 +54,7 @@
     fillSelect($("fStage"), 8, "المرحلة"); fillSelect($("fTerm"), 2, "الكورس");
 
     function api(p, body) {
-      return fetch("/api/catalog/" + p, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {})
-        .then(function (r) { return r.json(); });
+      return IQApi.request("/api/catalog/" + p, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
     }
     function level() { return stack.length; }
     function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
@@ -79,6 +80,8 @@
     }
 
     function load() {
+      var request = ++loadVersion;
+      $("add").hidden = true;
       var lv = level();
       $("title").textContent = TITLES[lv]; $("qf").value = "";
       renderPath();
@@ -87,6 +90,7 @@
       var qs = lv ? "?" + PARENT[type] + "=" + stack[lv - 1].id : "";
       $("list").innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';
       api(API[type] + qs).then(function (d) {
+        if (request !== loadVersion) return;
         var list = $("list"); list.innerHTML = "";
         var items = (d && d.items) || [];
         if (!items.length) { list.innerHTML = '<div class="cg-empty">لا توجد عناصر بعد.</div>'; }
@@ -106,7 +110,7 @@
             del.onclick = function (e) {
               e.stopPropagation();
               if (!confirm("حذف «" + it.name_ar + "»؟")) return;
-              api("delete", { type: type, id: it.id }).then(function (r) { if (r.ok) load(); else alert(r.error === "not_empty" ? "احذف محتوياته أولاً" : "تعذّر الحذف"); });
+              api("delete", { type: type, id: it.id }).then(function (r) { if (r.ok) load(); else alert("تعذّر الحذف"); }).catch(function (error) { alert(error.code === "not_empty" ? "احذف محتوياته أولاً" : IQApi.errorText(error)); });
             };
             row.appendChild(del);
           }
@@ -120,7 +124,9 @@
         $("addTitle").textContent = ADDT[lv];
         $("subExtra").hidden = type !== "subject"; $("fProf").hidden = type !== "subject";
         $("msg").textContent = "";
-      }).catch(function () { $("list").innerHTML = '<div class="cg-empty">تعذّر التحميل.</div>'; });
+      }).catch(function (error) {
+        if (request === loadVersion) IQApi.showError($("list"), error, load);
+      });
     }
 
     $("add").onsubmit = function (e) {
@@ -131,13 +137,13 @@
       if (type === "subject") { body.stage = $("fStage").value; body.term = $("fTerm").value; body.professor = $("fProf").value; }
       api("add", body).then(function (r) {
         if (r.ok) { $("fName").value = ""; $("fEn").value = ""; $("fProf").value = ""; load(); }
-        else $("msg").textContent = r.error === "forbidden" ? "للمشرف فقط" : "تعذّرت الإضافة";
-      });
+        else $("msg").textContent = "تعذّرت الإضافة";
+      }).catch(function (error) { $("msg").textContent = IQApi.errorText(error); });
     };
 
-    fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+    IQApi.request("/api/auth/me").then(function (d) {
       var u = d && (d.user || d);
-      admin = !!(u && u.role === "admin");
+      admin = !!(u && u.admin);
     }).catch(function () {}).then(load);
   })();
   </script>
