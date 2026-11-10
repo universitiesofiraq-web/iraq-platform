@@ -131,6 +131,10 @@ export async function handleScopes(req, env, user, p) {
     if (!(await pol.manage(type, id))) return fail("forbidden", 403);
     const t = await env.DB.prepare("SELECT id FROM users WHERE lower(email)=?").bind(email).first();
     if (!t) return fail("user_not_found", 404);
+    /* هرمية التعيين: المسؤول لا يعيّن ولا يزيل ولا يغيّر مسؤولاً إلا في نطاق أدنى من نطاقه (strictly below).
+       الرافع يُعيَّن في نطاق المسؤول نفسه أو ما تحته. المشرف العام يتجاوز. */
+    const cur = await env.DB.prepare("SELECT level FROM scopes WHERE user_id=? AND type=? AND node_id=?").bind(t.id, type, id).first();
+    if ((level === "rep" || (cur && cur.level === "rep")) && !(await pol.manage(type, id, type))) return fail("forbidden", 403);
     if (action === "remove") {
       await env.DB.prepare("DELETE FROM scopes WHERE user_id=? AND type=? AND node_id=?").bind(t.id, type, id).run();
       await audit(env, user.id, t.id, "revoke", type, id);
