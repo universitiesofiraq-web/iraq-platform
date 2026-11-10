@@ -45,7 +45,7 @@
   function renderRooms() {
     var root = $("roomList"); root.textContent = "";
     $("roomCount").textContent = rooms.length;
-    if (!rooms.length) root.appendChild(node("p", "muted", "لا توجد مجموعات بعد. اطلب الانضمام برمز دعوة من ممثل مرحلتك."));
+    if (!rooms.length) root.appendChild(node("p", "muted", "لا توجد مجموعة بعد. اختر قسمك ومرحلتك في ملفك الشخصي لتنضم تلقائياً."));
     rooms.forEach(function (r) {
       var b = node("button", "room" + (r.id === active ? " is-active" : "")); b.type = "button"; b.dataset.roomId = r.id;
       var avatar = node("span", "room-avatar", "✦");

@@ -20,7 +20,7 @@
         <div class="pane-title"><div><small>المساحة الجامعية</small><h1>دردشة مجموعتي</h1></div><span id="roomCount" class="count">0</span></div>
         <div id="authBanner" class="notice" hidden></div>
         <div id="roomList" class="rooms-list" role="group" aria-label="غرف الدردشة"><p class="muted">جارٍ تحميل مجموعاتك...</p></div>
-        <details class="group-panel" id="joinPanel">
+        <details class="group-panel" id="joinPanel" hidden>
           <summary>+ اطلب الانضمام برمز الدعوة</summary>
           <form id="joinForm" class="form-stack">
             <label for="joinCode">رمز المجموعة</label>
@@ -30,7 +30,7 @@
         </details>
         <p id="joinStatus" class="muted" role="status"></p>
         <ul id="requestList" class="request-list" aria-label="حالة طلبات الانضمام" hidden></ul>
-        <div class="room-footer">محادثات المجموعات خاصة بأعضائها فقط. لا تشارك رمز الدعوة علناً.</div>
+        <div class="room-footer">محادثات المجموعات خاصة بأعضائها فقط، وتنضم تلقائياً إلى مجموعة مرحلتك.</div>
       </aside>
       <section class="thread-pane" aria-label="المحادثة">
         <div class="thread-head"><button id="backToRooms" type="button" class="ghost back-to-rooms">المجموعات</button><div class="avatar">✦</div><div class="thread-head-text"><h2 id="activeTitle" tabindex="-1">اختر مجموعتك</h2><p id="activeSubtitle">ستظهر هنا رسائل مجموعتك الدراسية</p></div>
@@ -39,7 +39,7 @@
         </div>
         <div id="pinnedBar" class="pinned" hidden></div>
         <div id="conversation" class="conversation" role="log" aria-label="الرسائل" aria-live="polite" aria-relevant="additions text">
-          <div class="empty-thread"><div class="empty-icon">✦</div><h3>مجموعتك، مساحتك</h3><p>اطلب الانضمام برمز الدعوة من ممثل المجموعة.</p></div>
+          <div class="empty-thread"><div class="empty-icon">✦</div><h3>مجموعتك، مساحتك</h3><p>اختر مجموعة مرحلتك من القائمة.</p></div>
         </div>
         <div class="older-wrap"><button id="olderBtn" type="button" hidden>تحميل رسائل سابقة</button></div>
         <div id="replyBar" class="reply-bar" hidden><span id="replyText"></span><button id="cancelReply" type="button" aria-label="إلغاء الرد">×</button></div>

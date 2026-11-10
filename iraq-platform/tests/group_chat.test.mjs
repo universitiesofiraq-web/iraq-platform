@@ -15,7 +15,7 @@ function fixture() {
   q("INSERT INTO stages(id,department_id,number) VALUES(11,1,1),(12,1,2),(13,1,3),(21,2,1)");
   q("INSERT INTO user_profile(user_id,college_id,stage_id) VALUES(2,1,11),(3,1,11),(4,1,21)");
   q("INSERT INTO scopes(user_id,type,node_id,level) VALUES(1,'department',1,'rep')");
-  const env = { DB, GROUP_CHAT_ENABLED: "1" };
+  const env = { DB, GROUP_CHAT_ENABLED: "1", GROUP_CHAT_AUTO: "0" };
   const users = [1, 2, 3, 4].map(id => ({ id, name: "طالب " + id, email: "student" + id + "@x.edu", role: "student" }));
   async function call(userId, op, payload, method) {
     const url = "https://platform.test/api/group-chat/" + op;
@@ -225,4 +225,22 @@ test("stage managers can review reports without membership but only in scope", a
   const [newReport] = (await call(3, reportPath(a.id))).data.items;
   assert.equal((await call(3, "manage", { room_id: a.id, action: "dismiss", id: newReport.id })).code, 200);
   assert.equal((await call(2, "messages?room_id=" + a.id)).data.items[1].body, "رسالة باقية");
+});
+
+test("auto groups: every stage gets a default group and students join without a code", async () => {
+  const { env, call, q } = fixture();
+  env.GROUP_CHAT_AUTO = "1";
+  const r2 = await call(2, "rooms");
+  assert.equal(r2.data.items.length, 1);
+  const r3 = await call(3, "rooms");
+  assert.equal(r3.data.items.length, 1);
+  assert.equal(r3.data.items[0].id, r2.data.items[0].id, "same stage shares one group");
+  const r4 = await call(4, "rooms");
+  assert.equal(r4.data.items.length, 1);
+  assert.notEqual(r4.data.items[0].id, r2.data.items[0].id, "other department has its own group");
+  const sent = await call(2, "send", { room_id: r2.data.items[0].id, body: "مرحبا", client_id: "abcdefabcdefabcdef12" });
+  assert.equal(sent.code, 201);
+  assert.equal((await call(3, "messages?room_id=" + r2.data.items[0].id)).data.items.length, 1);
+  q("INSERT INTO chat_join_requests(group_id,user_id,status,requested_at) VALUES(?,?,'revoked',1)", r2.data.items[0].id, 1);
+  assert.equal((await call(1, "rooms")).data.items.length, 0, "no profile stage, no auto membership");
 });

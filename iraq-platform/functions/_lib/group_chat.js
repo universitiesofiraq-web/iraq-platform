@@ -56,6 +56,28 @@ async function audit(env, groupId, messageId, actorId, action, now) {
     .bind(groupId, messageId, actorId, action, now).run();
 }
 
+/* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند أول دخول، وينضم إليها الطالب تلقائياً
+   (إلا من رُفض أو أُلغيت عضويته من المشرف). العضوية تبقى مشروطة بمرحلة ملفه الشخصي. */
+const DEFAULT_GROUP = "مجموعة المرحلة";
+async function autoJoin(env, userId, now) {
+  const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
+  if (!p || !p.stage_id) return;
+  const stage = p.stage_id;
+  const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
+  if (!has) {
+    if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;
+    const inv = await secret();
+    await env.DB.prepare("INSERT OR IGNORE INTO chat_groups(stage_id,name,invite_hash,created_by,created_at) VALUES(?,?,?,?,?)")
+      .bind(stage, DEFAULT_GROUP, inv.hash, userId, now).run();
+  }
+  await env.DB.prepare(`INSERT INTO chat_members(group_id,user_id,joined_at)
+    SELECT g.id,?,? FROM chat_groups g
+    WHERE g.stage_id=? AND g.active=1
+      AND NOT EXISTS (SELECT 1 FROM chat_members m WHERE m.group_id=g.id AND m.user_id=?)
+      AND NOT EXISTS (SELECT 1 FROM chat_join_requests r WHERE r.group_id=g.id AND r.user_id=? AND r.status IN ('rejected','revoked'))`)
+    .bind(userId, now, stage, userId, userId).run();
+}
+
 export async function handleGroupChat(req, env, opts = {}) {
   const url = new URL(req.url);
   const match = /^\/api\/group-chat\/(rooms|create|join|manage|messages|send|edit|delete|pin|read|mute|rotate-code|report)$/.exec(url.pathname.replace(/\/$/, ""));
@@ -79,6 +101,7 @@ export async function handleGroupChat(req, env, opts = {}) {
         { json, fail, idOf, bodyOf, secret, now });
     }
     if (op === "rooms" && req.method === "GET") {
+      if (env.GROUP_CHAT_AUTO !== "0") await autoJoin(env, user.id, now);
       const rows = await env.DB.prepare(`SELECT g.id, g.name, g.created_by, g.stage_id, p.stage_id AS profile_stage_id, s.number AS stage,
         d.id AS department_id, d.name_ar AS department, c.id AS college_id, c.name_ar AS college,
         u.id AS university_id, u.name_ar AS university, cm.muted,
