@@ -6,13 +6,14 @@
   var API = "/api/study-assistant/";
   var HKEY = "iq.guide.history";
   var MODES = [
-    { id: "ask", label: "اسأل", ph: "اسأل عن أي محاضرة فتحتها…", chips: ["لخّص لي أهم نقاط المحاضرة", "اشرح لي المفاهيم الصعبة ببساطة", "ما الذي يجب أن أحفظه للامتحان؟"] },
+    { id: "ask", label: "اسألني أي شيء", ph: "اسألني عن محاضراتك أو تبليغاتك أو درجاتك أو أي سؤال…", chips: ["ما آخر محاضرة نزلت؟", "ما آخر تبليغ؟", "كم عدد المحاضرات في قسمي؟", "ما درجاتي ومعدلي؟", "لخّص لي أهم نقاط المحاضرة"] },
     { id: "quiz", label: "اختبرني", ph: "موضوع الاختبار (اختياري)", chips: ["اختبرني من هذه المحاضرة", "اختبار سريع على أهم المفاهيم"] },
     { id: "mindmap", label: "خريطة ذهنية", ph: "موضوع الخريطة (اختياري)", chips: ["خريطة ذهنية لهذه المحاضرة"] },
-    { id: "advisor", label: "دليل القسم", ph: "اسأل عن قسمك: المواد، الامتحانات، السعي…", chips: ["ما المواد المرفوعة لقسمي؟", "ما مواعيد الامتحانات؟", "كيف يُحتسب السعي؟"] }
+    { id: "advisor", label: "دليل القسم", ph: "اسأل عن قسمك: المواد، الامتحانات، السعي…", chips: ["ما المواد المرفوعة لقسمي؟", "ما مواعيد الامتحانات؟", "كيف يُحتسب السعي؟"] },
+    { id: "grades", label: "درجاتي", grades: true }
   ];
   var st = { mode: "ask", busy: false, me: null, docs: [], hist: [], built: false, last: null };
-  var root, thread, input, sendBtn, docSel, chipsBox, quotaEl, whoEl, modeBtns = [], opener = null;
+  var root, thread, input, sendBtn, docSel, chipsBox, quotaEl, whoEl, foot, gradesBox, modeBtns = [], opener = null;
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function req(path, method, body) {
@@ -155,10 +156,49 @@
     st.mode = id;
     var m = MODES.filter(function (x) { return x.id === id; })[0];
     modeBtns.forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.mode === id)); });
+    var g = !!m.grades;
+    thread.hidden = g; chipsBox.hidden = g; foot.hidden = g; gradesBox.hidden = !g;
+    if (g) { loadGrades(); return; }
     input.placeholder = m.ph;
     docSel.hidden = id === "advisor" || st.docs.length === 0;
     chipsBox.textContent = "";
     m.chips.forEach(function (c) { var b = el("button", "ag-chip", c); b.type = "button"; b.addEventListener("click", function () { send(c, id); }); chipsBox.appendChild(b); });
+  }
+
+  /* ---------- درجاتي: يسجّلها الطالب بنفسه ويراها المرشد ---------- */
+  function renderGrades(d) {
+    var box = gradesBox.querySelector(".ag-glist"); box.textContent = "";
+    var sum = gradesBox.querySelector(".ag-gsum");
+    if (!d.ok) { sum.textContent = errText(d); return; }
+    sum.textContent = d.count ? "عدد الدرجات: " + d.count + (d.averagePercent != null ? " — معدلك التقريبي: " + d.averagePercent + "%" : "") : "لم تسجّل أي درجة بعد.";
+    (d.items || []).slice().reverse().forEach(function (g) {
+      var row = el("div", "ag-grow");
+      var t = el("div", "ag-gt"); t.appendChild(el("strong", null, g.subject)); t.appendChild(el("small", null, (g.kind || "") + " · " + g.score + " من " + g.max + (g.percent != null ? " (" + g.percent + "%)" : "") + (g.date ? " · " + g.date : "")));
+      var del = el("button", "ag-gdel", "حذف"); del.type = "button";
+      del.addEventListener("click", function () { if (confirm("حذف هذه الدرجة؟")) req("grades", "DELETE", { id: g.id }).then(renderGrades); });
+      row.appendChild(t); row.appendChild(del); box.appendChild(row);
+    });
+  }
+  function loadGrades() { req("grades").then(function (d) { if (d.status === 401) { gradesBox.querySelector(".ag-gsum").textContent = "سجّل الدخول لتسجيل درجاتك."; return; } renderGrades(d); }).catch(function () { renderGrades({ ok: false }); }); }
+  function buildGrades() {
+    var box = el("div", "ag-grades"); box.hidden = true;
+    box.appendChild(el("p", "ag-tip", "سجّل درجاتك هنا فيعرفها المرشد ويجيبك عنها (معدلك، أضعف مادة…). هي محفوظة في حسابك ولا يراها غيرك."));
+    var f = el("form", "ag-gform");
+    var subj = el("input"); subj.placeholder = "اسم المادة"; subj.maxLength = 80; subj.required = true; subj.setAttribute("aria-label", "اسم المادة");
+    var kind = el("select"); kind.setAttribute("aria-label", "النوع"); ["سعي", "نصف السنة", "نهائي", "اختبار", "عملي", "أخرى"].forEach(function (k) { var o = el("option", null, k); o.value = k; kind.appendChild(o); });
+    var score = el("input"); score.type = "number"; score.step = "any"; score.min = "0"; score.placeholder = "الدرجة"; score.required = true; score.setAttribute("aria-label", "الدرجة");
+    var max = el("input"); max.type = "number"; max.step = "any"; max.min = "1"; max.placeholder = "من (100)"; max.setAttribute("aria-label", "الدرجة العظمى");
+    var add = el("button", "ag-send", "إضافة"); add.type = "submit";
+    [subj, kind, score, max, add].forEach(function (x) { f.appendChild(x); });
+    f.addEventListener("submit", function (e) {
+      e.preventDefault(); add.disabled = true;
+      req("grades", "POST", { subject: subj.value, kind: kind.value, score: score.value, max: max.value || 100 }).then(function (d) {
+        if (!d.ok) { alert(errText(d)); return; }
+        subj.value = ""; score.value = ""; max.value = ""; renderGrades(d);
+      }).then(function () { add.disabled = false; });
+    });
+    box.appendChild(f); box.appendChild(el("p", "ag-gsum")); box.appendChild(el("div", "ag-glist"));
+    return box;
   }
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; }
 
@@ -180,8 +220,9 @@
     MODES.forEach(function (m) { var b = el("button", "ag-tab", m.label); b.type = "button"; b.setAttribute("role", "tab"); b.dataset.mode = m.id; b.addEventListener("click", function () { setMode(m.id); input.focus(); }); tabs.appendChild(b); modeBtns.push(b); });
     dlg.appendChild(tabs);
     thread = el("div", "ag-thread"); thread.setAttribute("aria-live", "polite"); dlg.appendChild(thread);
+    gradesBox = buildGrades(); dlg.appendChild(gradesBox);
     chipsBox = el("div", "ag-chips"); dlg.appendChild(chipsBox);
-    var foot = el("div", "ag-foot");
+    foot = el("div", "ag-foot");
     docSel = el("select", "ag-doc"); docSel.setAttribute("aria-label", "المحاضرة"); docSel.hidden = true;
     var o0 = el("option", null, "كل محاضراتي المفهرسة"); o0.value = ""; docSel.appendChild(o0); foot.appendChild(docSel);
     var row = el("div", "ag-inrow");

@@ -12,7 +12,7 @@ const AI = { async run(model, input) { aiCalls.push({ model, input }); const u =
   if (u.task === "quiz") return { response: 'هنا {"title":"t","questions":[{"question":"q","options":["a","b","c","d"],"correctIndex":1,"explanation":"e","pageNumber":2}]}' };
   return { response: "جواب (ص 2)" }; } };
 const manifest = [{ id: "x", course: "s1", number: 1, title: "Kidney", label: "PDF", type: "lecture" }, { id: "y", course: "s99", number: 1, title: "Other", label: "PDF" }];
-const env = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: "boss@x.com", AI, DAILY_QUOTA_UNITS: "3",
+const env = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: "boss@x.com", AI, DAILY_QUOTA_UNITS: "4",
   LECTURES: { async get(k) { return k === "manifest.json" ? manifest : null; } } };
 const db = env.DB;
 await db.batch([
@@ -62,8 +62,21 @@ ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x", do
 const r = await call("POST", "/api/study-assistant/assistant/run", { question: "what regulates glomerular filtration?" }, a);
 ok(r.status === 200 && r.body.citations[0].pageNumber === 2, "citation page number");
 const sent = JSON.parse(aiCalls.at(-1).input.messages[1].content);
-ok(sent.departmentKnowledge.some((k) => k.content.includes("فسلجة")) && sent.departmentKnowledge.some((k) => k.content.includes("Kidney")) && !sent.departmentKnowledge.some((k) => k.content.includes("Other")), "department data: subjects + own lectures only");
-ok(sent.departmentKnowledge.some((k) => k.content.includes("امتحان")), "announcements included");
+const sd = JSON.stringify(sent.studentData);
+ok(sent.departmentKnowledge.some((k) => k.content.includes("فسلجة")) && sd.includes("Kidney") && !sent.departmentKnowledge.some((k) => k.content.includes("Other")) && !sd.includes("Other"), "department data: subjects + own lectures only");
+ok(sent.studentData.platform.latestAnnouncements.some((x) => x.title.includes("امتحان") || x.body.includes("امتحان")), "announcements included");
+ok(sent.studentData.platform.filesCount >= 1 && sent.studentData.platform.latestFile && sent.studentData.today && sent.studentData.profile.department, "student data: counts, latest file, today, profile");
+
+// الدرجات: يسجّلها الطالب ويراها المساعد، ولا يراها غيره
+ok((await call("POST", "/api/study-assistant/grades", { subject: "فسلجة", kind: "سعي", score: 18, max: 20 }, a)).status === 201, "grade added");
+ok((await call("POST", "/api/study-assistant/grades", { subject: "فسلجة", score: 25, max: 20 }, a)).status === 400, "grade above max refused");
+const gl = await call("GET", "/api/study-assistant/grades", null, a);
+ok(gl.body.count === 1 && gl.body.averagePercent === 90, "grades list + average");
+await call("POST", "/api/study-assistant/assistant/run", { question: "ما درجاتي؟" }, a);
+const sent2 = JSON.parse(aiCalls.at(-1).input.messages[1].content);
+ok(sent2.studentData.personal.grades.count === 1 && sent2.studentData.personal.grades.averagePercent === 90, "assistant receives the student's grades");
+ok(!/فقط/.test(aiCalls.at(-1).input.messages[0].content.split("\n")[0]) && aiCalls.at(-1).input.messages[0].content.includes("أي سؤال"), "prompt allows any question");
+ok((await call("DELETE", "/api/study-assistant/grades", { id: gl.body.items[0].id }, a)).body.deleted === 1, "grade deleted");
 // b لا يرى مقاطع a
 await call("POST", "/api/study-assistant/assistant/run", { question: "glomerular filtration" }, b);
 ok(JSON.parse(aiCalls.at(-1).input.messages[1].content).approvedChunks.length === 0, "chunks isolated per user");
