@@ -163,3 +163,43 @@ test("university tree queries stay in the selected university and keep directory
   assert.ok(plan.some(row => row.detail.includes("SEARCH d USING INDEX idx_departments_college")));
   assert.ok(!plan.some(row => row.detail === "SCAN d"));
 });
+
+test("shared catalog cache rechecks active universities and never caches account permissions", async t => {
+  const previous = globalThis.caches;
+  const stored = new Map();
+  globalThis.caches = { default: {
+    async match(key) { return stored.get(key.url)?.clone(); },
+    async put(key, response) { stored.set(key.url, response.clone()); }
+  } };
+  t.after(() => { globalThis.caches = previous; });
+  const { DB, sql } = database();
+  seedAcademic(sql);
+  sql.exec("INSERT INTO university_onboarding VALUES (1,'active',2,1,1,1)");
+  const env = { DB, ADMIN_EMAILS: "owner@example.test" };
+  const read = path => handleCatalog(new Request("https://example.test/api/catalog/" + path), env);
+  const first = await read("universities");
+  assert.equal(first.headers.get("cache-control"), "no-store");
+  assert.equal((await first.json()).items.length, 1);
+  const count = stored.size;
+  const subject = "/api/catalog/subject?id=11";
+  const owner = await (await handleCatalog(signedRequest(sql, subject, 1), env)).json();
+  const student = await (await handleCatalog(signedRequest(sql, subject, 3), env)).json();
+  assert.equal(owner.can, true);
+  assert.equal(student.can, false);
+  assert.equal(stored.size, count);
+  sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
+  assert.deepEqual((await (await read("universities")).json()).items, []);
+  assert.equal((await read("subject?id=11")).status, 404);
+});
+
+test("a warm shared cache cannot bypass a failed visibility check", async t => {
+  const previous = globalThis.caches;
+  let cacheRead = false;
+  globalThis.caches = { default: { async match() { cacheRead = true; return new Response('{"ok":true,"items":[]}'); } } };
+  t.after(() => { globalThis.caches = previous; });
+  const DB = { prepare() { throw quotaError(); } };
+  const response = await handleCatalog(new Request("https://example.test/api/catalog/universities"), { DB });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "database_quota_exceeded");
+  assert.equal(cacheRead, false);
+});
