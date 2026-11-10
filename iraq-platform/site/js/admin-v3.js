@@ -1,16 +1,16 @@
 const $ = id => document.getElementById(id);
 const adminRoot = "/api/admin/universities";
 const labels = {
-  active: "المسجلة والنشطة",
-  registered: "المسجلة غير المفعّلة",
-  suspended: "المعلّقة",
-  directory: "كل جامعات الدليل",
-  not_onboarded: "في الدليل فقط"
+  active: "مفعّلة",
+  registered: "بانتظار التفعيل",
+  suspended: "موقوفة",
+  directory: "كل الجامعات",
+  not_onboarded: "غير مفعّلة"
 };
 const errors = {
   unauthorized: "انتهت الجلسة. سجّل الدخول مرة أخرى.",
   forbidden: "لا يسمح نطاقك بهذا الإجراء.",
-  onboarding_transition_conflict: "تغيّرت حالة الجامعة أو أن شروط الإجراء غير مستوفاة. حدّث القائمة وتحقق من تعيين مسؤول نشط.",
+  onboarding_transition_conflict: "تغيّرت حالة الجامعة. حدّث الصفحة وحاول مرة أخرى.",
   inactive_account: "الحساب المختار غير نشط.",
   admin_locked: "صلاحية هذا الحساب محمية.",
   membership_conflict: "تعذّر تعديل العضوية. تحقق من الحساب وحالته والمرحلة المسجلة له.",
@@ -225,18 +225,9 @@ function transition(item, action, text) {
 
 function universityActions(item) {
   const actions = element("div", undefined, "actions");
-  actions.append(link("إدارة الجامعة", workspaceLink("university", item.id), "button"), button("تعديل", () => profileForm(item)));
-  if (item.state === "not_onboarded") actions.append(button("تسجيل", () => managerForm(item), "primary"));
-  else {
-    actions.append(button("المسؤول", () => managerForm(item)));
-    if (item.state === "registered" && !item.verified_at) {
-      actions.append(button("اعتماد التحقق", () => transition(item, "verify", "اعتماد التحقق"), "primary"));
-    } else if (item.state === "active") {
-      actions.append(button("تعليق", () => transition(item, "suspend", "تعليق الجامعة")));
-    } else {
-      actions.append(button("تفعيل", () => transition(item, "activate", "تفعيل الجامعة"), "primary"));
-    }
-  }
+  actions.append(link("الممثلون", "manage.html?u=" + item.id, "button"), button("تعديل", () => profileForm(item)));
+  if (item.state === "active") actions.append(button("إيقاف", () => transition(item, "suspend", "إيقاف الجامعة مؤقتاً")));
+  else actions.append(button("تفعيل", () => transition(item, "activate", "تفعيل الجامعة"), "primary"));
   return actions;
 }
 
@@ -253,42 +244,55 @@ function renderUniversities() {
   });
   const choices = element("div", undefined, "filters");
   choices.setAttribute("aria-label", "نطاق عرض الجامعات");
-  for (const key of ["active", "registered", "suspended", "directory"]) {
+  for (const key of ["active", "directory", "suspended"]) {
     const choice = button(labels[key], () => {
       if (filter !== key) { filter = key; loadUniversities(); }
     });
     choice.setAttribute("aria-pressed", String(filter === key));
     choices.append(choice);
   }
+  const ov = listing.overview?.totals || {};
   const totals = stats([
-    ["الجامعات في هذا العرض", rows.length],
-    ["الكليات في هذا العرض", rows.reduce((sum, row) => sum + row.colleges, 0)],
-    ["الأقسام في هذا العرض", rows.reduce((sum, row) => sum + row.departments, 0)],
-    ["إجمالي دليل الجامعات", listing.totals.directory]
+    ["الطلاب المسجّلون", ov.students || 0],
+    ["الجامعات المفعّلة", ov.active ?? listing.totals.active],
+    ["الملفات المنشورة", ov.files || 0],
+    ["ملفات بانتظار المراجعة", ov.pending || 0],
+    ["بلاغات مفتوحة", ov.reports || 0],
+    ["الممثلون", ov.reps || 0]
   ]);
   const layout = element("div", undefined, "panel-grid");
-  const universities = panel(labels[filter], "الجامعات النشطة هي التي تظهر للطلاب.");
+  const universities = panel(labels[filter], filter === "active"
+    ? "تتفعّل الجامعة تلقائياً عند تسجيل أول طالب فيها."
+    : "اضغط «تفعيل» لإظهار الجامعة للطلاب، أو «إيقاف» لإخفائها.");
   universities.card.id = "universities";
   if (rows.length) {
-    universities.card.append(table(["الجامعة", "الحالة", "الكليات", "الأقسام", "المسؤول", "الإجراءات"],
+    universities.card.append(table(["الجامعة", "الحالة", "الطلاب", "الملفات", "الأقسام", "الإجراءات"],
       rows.map(item => {
         const name = element("div");
         name.append(element("strong", item.name_ar));
         if (item.city) name.append(element("small", item.city));
         const badge = element("span", labels[item.state] || "غير معروفة", "status");
         badge.dataset.state = item.state;
-        return [name, badge, number(item.colleges), number(item.departments), item.manager_name || "—", universityActions(item)];
+        return [name, badge, number(item.students || 0), number(item.files || 0), number(item.departments), universityActions(item)];
       })));
   } else {
-    universities.card.append(empty(query.length ? "لا توجد جامعات تطابق البحث." :
-      filter === "active" ? "لا توجد جامعات نشطة بعد. افتح «كل جامعات الدليل» لتسجيل جامعة." : "لا توجد جامعات في هذا العرض."));
+    universities.card.append(empty(query.length ? "لا توجد جامعات تطابق البحث." : "لا توجد جامعات في هذا العرض."));
   }
-  const onboarding = panel("التوسع التدريجي", "خطوات اعتماد الجامعة");
-  const steps = element("ol");
-  ["أكمل ملف الجامعة وعيّن مسؤولها.", "سجّل الجامعة واعتمد التحقق من بياناتها.", "فعّل الجامعة لتظهر للطلاب."].forEach(text => steps.append(element("li", text)));
-  onboarding.card.append(steps, empty("وجود الجامعة في الدليل لا يغيّر حالة عضويتها."));
-  layout.append(universities.card, onboarding.card);
-  const log = panel("سجل نشاط الجامعات", "آخر إجراءات التسجيل والتفعيل والتعليق");
+  const joins = panel("طلبات التفعيل الأخيرة", "الطلاب الذين سجّلوا وتم قبولهم تلقائياً");
+  joins.card.id = "joins";
+  const recent = listing.overview?.recent || [];
+  if (recent.length) {
+    const list = element("ul", undefined, "list");
+    for (const r of recent) {
+      const li = element("li");
+      li.append(element("strong", r.name + " · " + r.university),
+        element("small", [r.college, r.department, stageLabel(r.stage), date(r.created_at)].filter(Boolean).join(" · ")));
+      list.append(li);
+    }
+    joins.card.append(list);
+  } else joins.card.append(empty("لم يسجّل أي طالب بعد."));
+  layout.append(universities.card, joins.card);
+  const log = panel("سجل تفعيل الجامعات", "متى تفعّلت كل جامعة ومن فعّلها");
   log.card.id = "audit";
   const history = element("div");
   auditItems(listing.audit || [], history);
@@ -305,7 +309,9 @@ async function loadUniversities() {
   try {
     const data = await api(adminRoot + "?filter=" + filter);
     if (request !== listVersion) return;
-    listing = { ...data, audit: listing?.audit || [] };
+    const overviewData = await api(adminRoot + "/overview").catch(() => null);
+    if (request !== listVersion) return;
+    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview };
     renderUniversities();
     showNotice();
     const log = $("audit").lastElementChild;
@@ -369,16 +375,16 @@ function navigation(entries) {
 
 function showGlobal() {
   $("title").textContent = "لوحة الإدارة العامة";
-  $("description").textContent = "إدارة إطلاق الجامعات ومتابعة المحتوى والصلاحيات.";
+  $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
   $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
   $("scope-label").textContent = "جميع الجامعات";
   $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
-  const nav = [["الرئيسية", "admin.html"], ["الجامعات", "#universities"], ["الكليات والأقسام والتعيينات", "manage.html"],
-    ["المستخدمون", "admin-tools.html#users"], ["الملفات", "admin-tools.html#files"],
-    ["الطلبات والبلاغات", "admin-tools.html#reqs"], ["الإعلانات", "admin-tools.html#ann"], ["سجل النشاط", "#audit"]];
+  const nav = [["الرئيسية", "admin.html"], ["الجامعات", "#universities"], ["طلبات التفعيل", "#joins"],
+    ["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["الملفات والبلاغات", "admin-tools.html#files"],
+    ["الإعلانات", "admin-tools.html#ann"]];
   navigation(nav);
-  $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"), button("طباعة التقرير", () => window.print()));
+  $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"));
   if (me.owner) $("page-actions").append(button("الإدارة العامة", globalTeam));
   loadUniversities();
 }

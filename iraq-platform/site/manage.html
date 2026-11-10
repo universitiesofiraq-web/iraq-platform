@@ -396,7 +396,10 @@
         var s = $("uni"); s.textContent = ""; UNIS.forEach(function (u) { s.appendChild(new Option(u.name_ar, u.id)); });
         if (UNIS.length === 1 && !ME.admin) s.classList.add("mg-hide");
         if (ME.admin) $("newUni").classList.remove("mg-hide");
-        return loadTree(UNIS[0].id);
+        var want = Number(new URLSearchParams(location.search).get("u"));
+        var first = UNIS.some(function (u) { return u.id === want; }) ? want : UNIS[0].id;
+        s.value = String(first);
+        return loadTree(first);
       });
     }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
   })();

@@ -9,6 +9,9 @@ import { currentUser } from "./auth.js";
 import { policy, isGlobalAdmin } from "./scope.js";
 import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 
+const NOT_SUSPENDED =
+  "NOT EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='suspended')";
+
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -36,8 +39,16 @@ export async function handleCatalog(req, env) {
   try {
     if (req.method === "GET") {
       const directory = q.get("view") === "directory";
+      const joining = q.get("view") === "join"; // التسجيل: كل جامعات الدليل عدا المعلّقة، للمستخدم المسجّل دخوله
       if (directory && !(await isGlobalAdmin(await currentUser(req, env), env))) return fail("forbidden", 403);
-      const visible = directory ? "1=1" : ACTIVE_UNIVERSITY;
+      if (joining && !(await currentUser(req, env))) return fail("unauthorized", 401);
+      const visible = directory ? "1=1" : joining ? NOT_SUSPENDED : ACTIVE_UNIVERSITY;
+      if (part === "me") return await myProfile(req, env);
+      if (part === "stages") {
+        const id = num(q.get("department_id"));
+        if (!id) return fail("bad_request", 400);
+        return json({ ok: true, items: await all(env, `SELECT st.id, st.number FROM stages st JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE st.department_id=? AND ${visible} ORDER BY st.number`, id) });
+      }
       if (part === "index") {
         const [u, c, d] = await Promise.all([
           all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, u.kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`)
@@ -105,6 +116,7 @@ export async function handleCatalog(req, env) {
       return fail("not_found", 404);
     }
 
+    if (req.method === "POST" && part === "join") return await join(req, env, url);
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
     const origin = req.headers.get("origin");
     if (origin && origin !== url.origin) return fail("forbidden", 403);
@@ -229,4 +241,47 @@ async function importData(env, b) {
     await chunk(ins); out.departments += ins.length;
   }
   return json({ ok: true, ...out });
+}
+
+// ملف الطالب: جامعته وكليته وقسمه ومرحلته
+async function myProfile(req, env) {
+  const me = await currentUser(req, env);
+  if (!me) return fail("unauthorized", 401);
+  const row = await env.DB.prepare(
+    `SELECT st.number AS stage, d.id AS department_id, d.name_ar AS department, c.id AS college_id, c.name_ar AS college,
+            u.id AS university_id, u.name_ar AS university
+     FROM user_profile p JOIN stages st ON st.id=p.stage_id JOIN departments d ON d.id=st.department_id
+     JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE p.user_id=?`).bind(me.id).first();
+  return json({ ok: true, profile: row || null });
+}
+
+// تسجيل الطالب في قسمه ومرحلته: يُقبل مباشرة، وتُفعَّل جامعته تلقائياً إن لم تكن مفعّلة (إلا المعلّقة)
+async function join(req, env, url) {
+  const origin = req.headers.get("origin");
+  if (origin && origin !== url.origin) return fail("forbidden", 403);
+  if (!req.headers.get("content-type")?.includes("application/json")) return fail("bad_request", 400);
+  const me = await currentUser(req, env);
+  if (!me) return fail("unauthorized", 401);
+  let b;
+  try { b = await req.json(); } catch { return fail("bad_request", 400); }
+  const did = num(b.department_id), stage = num(b.stage);
+  if (!did || !stage || stage > 8) return fail("bad_request", 400);
+  const dep = await env.DB.prepare(
+    `SELECT d.id, c.id AS college_id, c.university_id, o.state FROM departments d JOIN colleges c ON c.id=d.college_id
+     LEFT JOIN university_onboarding o ON o.university_id=c.university_id WHERE d.id=?`).bind(did).first();
+  if (!dep) return fail("not_found", 404);
+  if (dep.state === "suspended") return fail("suspended", 403);
+  const now = Date.now();
+  await env.DB.prepare("INSERT OR IGNORE INTO stages (department_id,number) VALUES (?,?)").bind(did, stage).run();
+  const st = await env.DB.prepare("SELECT id FROM stages WHERE department_id=? AND number=?").bind(did, stage).first();
+  const owner = await env.DB.prepare("SELECT id FROM users WHERE role='admin' AND active=1 ORDER BY id LIMIT 1").first();
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO user_profile (user_id,college_id,stage_id) VALUES (?,?,?)
+      ON CONFLICT(user_id) DO UPDATE SET college_id=excluded.college_id, stage_id=excluded.stage_id`).bind(me.id, dep.college_id, st.id),
+    env.DB.prepare(`INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by)
+      VALUES (?,'active',?,?,?,?) ON CONFLICT(university_id) DO UPDATE SET state='active', verified_at=COALESCE(verified_at, excluded.verified_at),
+      updated_at=excluded.updated_at, updated_by=excluded.updated_by WHERE university_onboarding.state='registered'`)
+      .bind(dep.university_id, owner ? owner.id : me.id, now, now, me.id)
+  ]);
+  return json({ ok: true, department_id: did, university_activated: !dep.state || dep.state === "registered" });
 }

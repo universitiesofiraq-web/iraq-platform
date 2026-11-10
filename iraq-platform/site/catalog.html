@@ -21,6 +21,7 @@
     <nav class="cg-path" id="path" aria-label="المسار"></nav>
     <input id="qf" type="search" class="cg-q" placeholder="ابحث في هذه القائمة…" aria-label="بحث في القائمة" autocomplete="off">
     <div class="cg-list" id="list"></div>
+    <p class="cg-empty" id="joinHint" hidden>جامعتك غير موجودة في القائمة؟ <a href="join.html">سجّل جامعتك من كل جامعات العراق</a></p>
     <form class="cg-add" id="add" hidden>
       <strong id="addTitle"></strong>
       <input id="fName" placeholder="الاسم بالعربية" required maxlength="120">
@@ -81,6 +82,7 @@
       var lv = level();
       $("title").textContent = TITLES[lv]; $("qf").value = "";
       renderPath();
+      $("joinHint").hidden = lv !== 0;
       var type = LV[lv];
       var qs = lv ? "?" + PARENT[type] + "=" + stack[lv - 1].id : "";
       $("list").innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';

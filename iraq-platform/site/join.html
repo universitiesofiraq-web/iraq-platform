@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سجّل جامعتك | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <style>
+    .jn-steps{display:flex;gap:6px;margin:4px 0 14px;flex-wrap:wrap}
+    .jn-steps span{flex:1;min-width:64px;text-align:center;padding:6px 4px;border-radius:999px;background:rgba(19,41,75,.08);font-size:.8rem;color:#5b6475}
+    .jn-steps span.on{background:#13294B;color:#fff}
+    .jn-steps span.done{background:#E0A93B;color:#13294B}
+    .jn-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .jn-stages button{padding:14px 0;border-radius:12px;border:1px solid rgba(19,41,75,.18);background:#fff;font:inherit;font-weight:600;cursor:pointer}
+    .jn-stages button:hover{border-color:#13294B}
+    .jn-lead{color:#5b6475;margin:-4px 0 12px}
+    .jn-done{text-align:center;padding:28px 8px}
+    .jn-done b{display:block;font-size:1.2rem;margin-bottom:8px}
+  </style>
+</head>
+<body>
+  <header class="iq-top">
+    <a class="iq-brand" href="/"><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a></nav>
+  </header>
+  <main class="cg">
+    <h1 id="title">سجّل جامعتك</h1>
+    <p class="jn-lead" id="lead">اختر جامعتك ثم كليتك وقسمك ومرحلتك، وتدخل مباشرة إلى مواد قسمك.</p>
+    <div class="jn-steps" id="steps"><span>الجامعة</span><span>الكلية</span><span>القسم</span><span>المرحلة</span></div>
+    <nav class="cg-path" id="path" aria-label="المسار"></nav>
+    <input id="qf" type="search" class="cg-q" placeholder="ابحث…" aria-label="بحث" autocomplete="off">
+    <div class="cg-list" id="list"></div>
+    <div class="cg-msg" id="msg" role="alert"></div>
+  </main>
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    var TITLES = ["اختر جامعتك", "اختر كليتك", "اختر قسمك", "اختر مرحلتك"];
+    var stack = []; // [{id,name}] جامعة، كلية، قسم
+    var STAGE_NAMES = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
+    function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
+    function get(p) { return fetch("/api/catalog/" + p, { credentials: "same-origin" }).then(function (r) { return r.json(); }); }
+
+    $("qf").addEventListener("input", function () {
+      var q = norm(this.value.trim());
+      document.querySelectorAll("#list .cg-item").forEach(function (r) { r.style.display = !q || (r.dataset.t || "").indexOf(q) >= 0 ? "" : "none"; });
+    });
+
+    function renderSteps() {
+      [].forEach.call($("steps").children, function (s, i) { s.className = i < stack.length ? "done" : i === stack.length ? "on" : ""; });
+      var p = $("path"); p.innerHTML = "";
+      stack.forEach(function (s, i) {
+        if (i) p.appendChild(document.createTextNode(" / "));
+        var b = document.createElement("button"); b.textContent = s.name;
+        b.onclick = function () { stack = stack.slice(0, i); load(); };
+        p.appendChild(b);
+      });
+    }
+
+    function load() {
+      var lv = stack.length;
+      $("title").textContent = TITLES[lv]; $("qf").value = ""; $("msg").textContent = "";
+      $("qf").hidden = lv === 3;
+      renderSteps();
+      var list = $("list");
+      if (lv === 3) {
+        list.innerHTML = "";
+        var g = document.createElement("div"); g.className = "jn-stages";
+        STAGE_NAMES.forEach(function (n, i) {
+          var b = document.createElement("button"); b.type = "button"; b.textContent = n;
+          b.onclick = function () { submit(i + 1); };
+          g.appendChild(b);
+        });
+        list.appendChild(g);
+        return;
+      }
+      var path = ["universities?view=join", "colleges?view=join&university_id=", "departments?view=join&college_id="][lv] + (lv ? stack[lv - 1].id : "");
+      list.innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';
+      get(path).then(function (d) {
+        if (d && d.error === "unauthorized") { location.href = "login.html?next=join.html"; return; }
+        list.innerHTML = "";
+        var items = (d && d.items) || [];
+        if (!items.length) list.innerHTML = '<div class="cg-empty">لا توجد عناصر. تواصل معنا لإضافتها.</div>';
+        items.forEach(function (it) {
+          var row = document.createElement("div"); row.className = "cg-item";
+          var name = document.createElement("span"); name.textContent = it.name_ar; row.appendChild(name);
+          if (it.city) { var s = document.createElement("small"); s.textContent = it.city; row.appendChild(s); }
+          row.dataset.t = norm(it.name_ar + " " + (it.name_en || "") + " " + (it.city || ""));
+          row.onclick = function () { stack.push({ id: it.id, name: it.name_ar }); load(); };
+          list.appendChild(row);
+        });
+      }).catch(function () { list.innerHTML = '<div class="cg-empty">تعذّر التحميل، حاول مرة أخرى.</div>'; });
+    }
+
+    function submit(stage) {
+      var dep = stack[2];
+      $("msg").textContent = "جارٍ التسجيل…";
+      fetch("/api/catalog/join", {
+        method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ department_id: dep.id, stage: stage })
+      }).then(function (r) { return r.json(); }).then(function (r) {
+        if (!r.ok) {
+          $("msg").textContent = r.error === "suspended" ? "هذه الجامعة موقوفة مؤقتاً. تواصل مع إدارة المنصة." :
+            r.error === "unauthorized" ? "سجّل دخولك أولاً." : "تعذّر التسجيل، حاول مرة أخرى.";
+          return;
+        }
+        try { localStorage.setItem("iq.dept", JSON.stringify({ id: dep.id, name: dep.name + " — " + stack[1].name })); } catch (e) { /* لا شيء */ }
+        $("list").innerHTML = '<div class="jn-done"><b>تم تسجيلك بنجاح</b>جارٍ فتح صفحة قسمك…</div>';
+        $("msg").textContent = "";
+        setTimeout(function () { location.href = "platform.html?dept=" + dep.id; }, 900);
+      }).catch(function () { $("msg").textContent = "تعذّر الاتصال بالخادم."; });
+    }
+
+    // الطالب المسجّل مسبقاً يذهب إلى قسمه، إلا إن طلب تغيير قسمه
+    var change = /[?&]change=1/.test(location.search);
+    get("me").then(function (d) {
+      if (d && d.error === "unauthorized") { location.href = "login.html?next=join.html"; return; }
+      if (d && d.profile && !change) {
+        $("lead").textContent = "أنت مسجّل في " + d.profile.department + " — " + d.profile.university + ". يمكنك تغيير قسمك من هنا.";
+      }
+      load();
+    }).catch(load);
+  })();
+  </script>
+</body>
+</html>

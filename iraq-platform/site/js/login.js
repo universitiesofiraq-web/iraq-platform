@@ -26,7 +26,11 @@
     if (s && Number(s.id) > 0) { location.href = "dept.html?id=" + Number(s.id); return; }
     fetch("/api/sync", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
       var v = d && d.data && d.data["iq.dept"] && d.data["iq.dept"].v;
-      location.href = v && Number(v.id) > 0 ? "dept.html?id=" + Number(v.id) : "index.html";
+      if (v && Number(v.id) > 0) { location.href = "dept.html?id=" + Number(v.id); return; }
+      // طالب جديد بلا قسم محفوظ: صفحة التسجيل التي تعرض كل الجامعات
+      return fetch("/api/catalog/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (m) {
+        location.href = m && m.profile ? "platform.html?dept=" + Number(m.profile.department_id) : "join.html";
+      });
     }).catch(function () { location.href = "index.html"; });
   }
 
