@@ -48,7 +48,7 @@ test("only explicit verified activation exposes the university and its children"
   assert.equal((await read("subject?id=21")).status, 404);
   assert.equal((await platform(1)).status, 200);
   assert.equal((await platform(2)).status, 404);
-  assert.deepEqual((await (await api(root, 1)).json()).totals, { directory: 2, active: 1, registered: 0, suspended: 0 });
+  assert.deepEqual((await (await api(root, 1)).json()).totals, { directory: 2, active: 1, registered: 0, suspended: 0, not_onboarded: 1, waiting: 0 });
   assert.equal((await api(root, 1, { id: 1, action: "suspend" })).status, 200);
   assert.equal((await read("department?id=1")).status, 404);
   assert.equal((await (await api(root + "?filter=suspended", 1)).json()).items.length, 1);
@@ -95,4 +95,42 @@ test("a student registering never activates a university; only authorized admins
   assert.equal((await join(9, { department_id: 1, stage: 3 })).status, 403);
   assert.equal(sql.prepare("SELECT state FROM university_onboarding WHERE university_id=1").get().state, "suspended");
   assert.deepEqual((await (await read("universities?view=join", 9)).json()).items.map(r => r.id), [2]);
+});
+
+test("university visibility: admin sees every directory row, activation never deletes or duplicates", async () => {
+  const { DB, sql } = database();
+  seedAcademic(sql);
+  sql.exec("INSERT INTO users (id,google_sub,email,name,role,active,created_at) VALUES (9,'9','s9@example.test','طالب','student',1,0)");
+  const env = { DB, ADMIN_EMAILS: "owner@example.test" };
+  const api = (path, id, body) => handleOnboarding(signedRequest(sql, path, id, body), env);
+  const cat = (path, id, body) => handleCatalog(signedRequest(sql, "/api/catalog/" + path, id, body), env);
+  const count = table => sql.prepare("SELECT COUNT(*) AS n FROM " + table).get().n;
+  const before = count("universities");
+  // طالب ينضم إلى جامعة غير مفعّلة: تظهر للإدارة ضمن «غير مفعّلة» مع عدد المنتظرين
+  await cat("join", 9, { department_id: 1, stage: 2 });
+  const pending = await (await api(root + "?filter=not_onboarded", 1)).json();
+  assert.deepEqual(pending.items.map(r => r.id).sort(), [1, 2]);
+  assert.equal(pending.items.find(r => r.id === 1).students, 1);
+  assert.equal(pending.totals.waiting, 1);
+  assert.equal((await (await api(root + "?filter=directory", 1)).json()).items.length, before);
+  // التفعيل مرتين: صف واحد، ولا حذف من الدليل
+  assert.equal((await api(root, 1, { id: 1, action: "activate" })).status, 200);
+  assert.equal((await api(root, 1, { id: 1, action: "activate" })).status, 409);
+  assert.equal(count("university_onboarding"), 1);
+  assert.equal(count("universities"), before);
+  assert.deepEqual((await (await cat("universities", 9)).json()).items.map(r => r.id), [1]);
+  assert.deepEqual((await (await api(root + "?filter=not_onboarded", 1)).json()).items.map(r => r.id), [2]);
+  // غير المفعّلة محفوظة في القاعدة وتبقى في الدليل
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM universities WHERE id=2").get().n, 1);
+  // جامعة مفعّلة لا تُحذف من الدليل حتى لو فرغت من الكليات
+  sql.exec("INSERT INTO universities (id,slug,name_ar,is_active) VALUES (50,'x50','جامعة فارغة',1)");
+  sql.exec("INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by) VALUES (50,'active',1,1,1,1)");
+  assert.equal((await cat("delete", 1, { type: "university", id: 50 })).status, 409);
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM universities WHERE id=50").get().n, 1);
+  // دمج جامعة مفعّلة في أخرى بلا حالة: الحالة تنتقل ولا تختفي ولا تتكرر
+  sql.exec("INSERT INTO universities (id,slug,name_ar,is_active) VALUES (51,'x51','جامعة الهدف',1)");
+  assert.equal((await cat("import", 1, { merges: [["جامعة فارغة", "جامعة الهدف"]] })).status, 200);
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM universities WHERE id=50").get().n, 0);
+  assert.equal(sql.prepare("SELECT state FROM university_onboarding WHERE university_id=51").get().state, "active");
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding WHERE university_id=50").get().n, 0);
 });

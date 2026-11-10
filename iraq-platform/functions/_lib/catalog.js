@@ -151,6 +151,15 @@ export async function handleCatalog(req, env) {
         const c = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${kids}=?`).bind(id).first();
         if (c && c.n) return fail("not_empty", 409);
       }
+      if (type === "university") { // جامعة مفعّلة أو موقوفة لا تُحذف من الدليل؛ سجلها غير المفعّل يُزال معها
+        const o = await env.DB.prepare("SELECT state FROM university_onboarding WHERE university_id=?").bind(id).first();
+        if (o && o.state !== "registered") return fail("onboarded", 409);
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM university_onboarding WHERE university_id=? AND state='registered'").bind(id),
+          env.DB.prepare("DELETE FROM universities WHERE id=?").bind(id)
+        ]);
+        return json({ ok: true });
+      }
       await env.DB.prepare(`DELETE FROM ${tbl} WHERE id=?`).bind(id).run();
       return json({ ok: true });
     }
@@ -205,6 +214,9 @@ async function importData(env, b) {
     if (f && t && f.id !== t.id) {
       await env.DB.batch([
         env.DB.prepare("UPDATE colleges SET university_id=? WHERE university_id=?").bind(t.id, f.id),
+        // حالة التفعيل تنتقل إلى الجامعة الباقية إن لم يكن لها حالة، فلا تختفي جامعة مفعّلة بالدمج ولا يتكرر سجلها
+        env.DB.prepare("UPDATE OR IGNORE university_onboarding SET university_id=? WHERE university_id=?").bind(t.id, f.id),
+        env.DB.prepare("DELETE FROM university_onboarding WHERE university_id=?").bind(f.id),
         env.DB.prepare("DELETE FROM universities WHERE id=?").bind(f.id)
       ]);
       out.merged++;

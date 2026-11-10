@@ -9,6 +9,7 @@ const filters = {
   active: "o.state='active'",
   registered: "o.state='registered'",
   suspended: "o.state='suspended'",
+  not_onboarded: "o.state IS NULL", // في الدليل ولم تُسجَّل ولم تُفعَّل بعد
   directory: "1=1"
 };
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -34,7 +35,10 @@ async function list(env, filter) {
     `SELECT COUNT(*) AS directory,
             COUNT(CASE WHEN o.state='active' THEN 1 END) AS active,
             COUNT(CASE WHEN o.state='registered' THEN 1 END) AS registered,
-            COUNT(CASE WHEN o.state='suspended' THEN 1 END) AS suspended
+            COUNT(CASE WHEN o.state='suspended' THEN 1 END) AS suspended,
+            COUNT(CASE WHEN o.state IS NULL THEN 1 END) AS not_onboarded,
+            COUNT(CASE WHEN (o.state IS NULL OR o.state='registered') AND EXISTS (SELECT 1 FROM user_profile p JOIN colleges c ON c.id=p.college_id
+              WHERE c.university_id=u.id AND p.stage_id IS NOT NULL) THEN 1 END) AS waiting
      FROM universities u LEFT JOIN university_onboarding o ON o.university_id=u.id`
   ).first();
   return json({ ok: true, filter, totals, items: rows.results || [] });
