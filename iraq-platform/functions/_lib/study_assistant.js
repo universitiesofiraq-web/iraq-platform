@@ -328,6 +328,8 @@ export async function handleStudyAssistant(req, env, opts = {}) {
     return fail("NOT_FOUND", 404, "المسار غير موجود.");
   } catch (e) {
     if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "نفّذ ملف migrations/0008_ai_study_assistant.sql على قاعدة البيانات.");
-    return fail("SERVER_ERROR", 500, "حدث خطأ في الخادم.");
+    console.error("study-assistant", sub, e && e.name, e && e.message);
+    const detail = clip((e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : ""), 200);
+    return json({ ok: false, error: { code: "SERVER_ERROR", message: "حدث خطأ في الخادم.", detail } }, 500);
   }
 }

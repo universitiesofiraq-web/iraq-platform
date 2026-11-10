@@ -75,7 +75,7 @@
 
   function render(d, action) {
     out.textContent = "";
-    if (!d.ok) { out.textContent = (d.error && d.error.message) || "تعذّر الاتصال بالمساعد."; return; }
+    if (!d.ok) { out.textContent = ((d.error && d.error.message) ? d.error.message + (d.error.detail ? " [" + d.error.detail + "]" : "") : "تعذّر الاتصال بالمساعد."); return; }
     if (action === "quiz_from_pages" && d.data && d.data.questions) {
       d.data.questions.forEach(function (q, i) {
         var p = document.createElement("p"); p.textContent = (i + 1) + ". " + q.question; out.appendChild(p);

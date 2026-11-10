@@ -10,7 +10,7 @@
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d.status = r.status; return d; }); });
   }
   function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-  function errText(d) { return (d && d.error && d.error.message) || "تعذّر الاتصال بالمساعد."; }
+  function errText(d) { return (d && d.error && d.error.message) ? d.error.message + (d.error.detail ? " [" + d.error.detail + "]" : "") : "تعذّر الاتصال بالمساعد."; }
   function quota(q) { if (q) $("quota").textContent = "الطلبات المتبقية اليوم: " + q.remaining + " من " + q.dailyLimit; }
 
   function cites(list) {
