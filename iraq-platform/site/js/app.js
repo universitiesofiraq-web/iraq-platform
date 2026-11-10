@@ -31,10 +31,22 @@
   };
   /* حالة الخطأ: إن لم تُحمَّل البيانات تظهر رسالة بدل صفحة فارغة */
   MS.dataError = function () {
-    if (typeof COURSES !== "undefined" && typeof SITE !== "undefined") return false;
+    var loadError = window.IQ_LOAD_ERROR;
+    if (!loadError && typeof COURSES !== "undefined" && typeof SITE !== "undefined") return false;
     var box = document.createElement("div");
     box.className = "load-error";
     box.setAttribute("role", "alert");
+    if (loadError && window.IQApi) {
+      IQApi.showError(box, loadError);
+      var back = document.createElement("a");
+      back.href = "catalog.html";
+      back.textContent = "العودة إلى الجامعات";
+      box.appendChild(back);
+      var main = document.querySelector("main");
+      if (main) { main.before(box); main.style.setProperty("display", "none", "important"); }
+      else document.body.prepend(box);
+      return true;
+    }
     box.textContent = "تعذّر تحميل بيانات المواد. حدّث الصفحة، وإن استمر الخطأ فأبلغ مُعدّ الموقع.";
     if (window.I18N) box.textContent = I18N.t(box.textContent);
     document.body.insertBefore(box, document.body.firstChild);
