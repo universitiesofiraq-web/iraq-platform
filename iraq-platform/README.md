@@ -9,7 +9,9 @@
 
 ## التشغيل على حساب Cloudflare الجديد
 1. أنشئ مشروع Pages مربوطاً بمستودع GitHub (مجلد النشر: `site`).
-2. أنشئ قاعدة D1 باسم `DB` ونفّذ migrations بالترتيب 0001 ثم 0002 ثم 0003.
+2. أنشئ قاعدة D1 باسم `DB` فقط. الترحيلات في `migrations/` تُطبَّق تلقائياً عند أول طلب API بعد كل نشر (`functions/_lib/migrate.js`).
+   - عند إضافة ملف ترحيل جديد: شغّل `node scripts/gen-migrations.mjs` ثم ارفع الناتج مع الملف (اختبار `tests/migrate.test.mjs` يفشل إن نسيت).
+   - اجعل كل جملة `IF NOT EXISTS` حتى تُعاد بأمان.
 3. أنشئ KV وربطه باسم `LECTURES`.
 4. أضف المتغيرات: `GOOGLE_CLIENT_ID`، `ADMIN_EMAILS`، `UPLOAD_CODES` (أسرار بيدك فقط).
 5. أنشئ مشروع Google Cloud جديداً لتسجيل الدخول وأضف رابط الموقع الجديد.

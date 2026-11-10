@@ -25,6 +25,9 @@ async function workspace(env, type, id, permission) {
       c.id AS college_id, c.name_ar AS college, u.id AS university_id, u.name_ar AS university,
       rep.id AS representative_id, rep.name AS representative, rep.active AS representative_active,
       (SELECT COUNT(*) FROM user_profile p JOIN users member ON member.id=p.user_id WHERE p.stage_id=st.id AND member.active=1) AS students,
+      (SELECT COUNT(*) FROM user_profile p JOIN users member ON member.id=p.user_id
+         WHERE p.stage_id=st.id AND member.active=1
+         AND NOT EXISTS (SELECT 1 FROM student_verification v WHERE v.user_id=p.user_id AND v.stage_id=p.stage_id)) AS unverified,
       (SELECT COUNT(*) FROM terms t JOIN subjects sb ON sb.term_id=t.id WHERE t.stage_id=st.id) AS subjects
      ${joins}
      LEFT JOIN scopes sc ON sc.type='stage' AND sc.node_id=st.id AND sc.level='rep'
@@ -127,9 +130,41 @@ async function stageAnnouncements(req, env, user, permission, stageId, student) 
   return json({ ok: true, id: result.meta.last_row_id });
 }
 
+// تأكيد الممثل لطلاب مرحلته: verify / unverify لطالب بمعرّفه، و verify_all لكل غير المؤكدين
+async function verifyStudents(env, actor, permission, stageId, body) {
+  if (!(await permission.manage("stage", stageId))) return fail("forbidden", 403);
+  if (!(await chainOf(env, "stage", stageId))) return fail("not_found", 404);
+  const now = Date.now();
+  const at = new Date(now).toISOString();
+  if (body.action === "verify_all") {
+    const result = await env.DB.prepare(
+      `INSERT OR REPLACE INTO student_verification (user_id,stage_id,verified_by,verified_at)
+       SELECT p.user_id,p.stage_id,?,? FROM user_profile p JOIN users u ON u.id=p.user_id
+       WHERE p.stage_id=? AND u.active=1`
+    ).bind(actor.id, now, stageId).run();
+    await env.DB.prepare(
+      "INSERT INTO scope_audit(actor_id,target_user_id,action,type,node_id,created_at) VALUES(?,?,'stage_verify_all','stage',?,?)"
+    ).bind(actor.id, actor.id, stageId, at).run();
+    return json({ ok: true, verified: result.meta.changes });
+  }
+  const uid = body.user_id;
+  if (!positive(uid)) return fail("bad_request", 400);
+  const member = await env.DB.prepare("SELECT 1 AS ok FROM user_profile WHERE user_id=? AND stage_id=?").bind(uid, stageId).first();
+  if (!member) return fail("membership_conflict", 409);
+  const statement = body.action === "verify"
+    ? env.DB.prepare("INSERT OR REPLACE INTO student_verification (user_id,stage_id,verified_by,verified_at) VALUES (?,?,?,?)").bind(uid, stageId, actor.id, now)
+    : env.DB.prepare("DELETE FROM student_verification WHERE user_id=? AND stage_id=?").bind(uid, stageId);
+  const audit = env.DB.prepare(
+    "INSERT INTO scope_audit(actor_id,target_user_id,action,type,node_id,created_at) VALUES(?,?,?,'stage',?,?)"
+  ).bind(actor.id, uid, "stage_" + body.action, stageId, at);
+  await env.DB.batch([statement, audit]);
+  return json({ ok: true });
+}
+
 async function changeStageMembership(req, env, actor, permission, stageId) {
-  if (!(await permission.manage("stage", stageId, "stage"))) return fail("forbidden", 403);
   const body = await req.json().catch(() => null);
+  if (body && ["verify", "unverify", "verify_all"].includes(body.action)) return verifyStudents(env, actor, permission, stageId, body);
+  if (!(await permission.manage("stage", stageId, "stage"))) return fail("forbidden", 403);
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!email || email.length > 254 || !["enroll", "unenroll"].includes(body.action)) return fail("bad_request", 400);
   const [chain, target] = await Promise.all([
@@ -190,11 +225,12 @@ export async function handleAdminWorkspace(req, env) {
     if (req.method !== "GET") return fail("method_not_allowed", 405);
     if (!(await permission.manage("stage", stageId))) return fail("forbidden", 403);
     const { results } = await env.DB.prepare(
-      `SELECT u.id,u.name FROM user_profile p JOIN users u ON u.id=p.user_id
+      `SELECT u.id,u.name,(v.user_id IS NOT NULL) AS verified FROM user_profile p JOIN users u ON u.id=p.user_id
+       LEFT JOIN student_verification v ON v.user_id=p.user_id AND v.stage_id=p.stage_id
        WHERE p.stage_id=? AND u.active=1 AND u.id>? ORDER BY u.id LIMIT 51`
     ).bind(stageId, after).all();
     const page = (results || []).slice(0, 50);
-    return json({ ok: true, items: page.map(({ name }) => ({ name })), next: results?.length > 50 ? page.at(-1).id : null });
+    return json({ ok: true, items: page.map(({ id, name, verified }) => ({ id, name, verified: !!verified })), next: results?.length > 50 ? page.at(-1).id : null });
   }
   const student = route === "/api/stage-announcements";
   if (req.method !== "GET" && (student || req.method !== "POST")) return fail("method_not_allowed", 405);

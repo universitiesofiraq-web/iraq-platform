@@ -1,10 +1,13 @@
 // functions/_middleware.js — تقييد الموقع كله بتسجيل الدخول عند ضبط REQUIRE_LOGIN=1 (ويلزم ربط D1 باسم DB).
 // بدونه يبقى الموقع مفتوحاً كما هو. يحمي الصفحات وملفات PDF لأن Cloudflare يشغّل هذا قبل الملفات الثابتة.
 import { currentUser } from "./_lib/auth.js";
+import { ensureSchema } from "./_lib/migrate.js";
 
 const OPEN = [/^\/(login|privacy|terms)\.html$/, /^\/css\//, /^\/js\//, /^\/assets\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/api\/auth\//];
 
 export async function onRequest({ request, env, next }) {
+  // ترحيل قاعدة البيانات تلقائياً عند أول طلب API بعد النشر (لا يعطّل الموقع إن فشل)
+  if (env.DB && new URL(request.url).pathname.startsWith("/api/")) await ensureSchema(env).catch(() => {});
   if (env.REQUIRE_LOGIN !== "1" || !env.DB) return next();
   const url = new URL(request.url);
   if (OPEN.some((re) => re.test(url.pathname))) return next();

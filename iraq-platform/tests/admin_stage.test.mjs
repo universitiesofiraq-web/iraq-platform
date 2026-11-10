@@ -49,7 +49,7 @@ test("stage appointment is unique, atomic, audited and restricted to an ancestor
   assert.equal((await api("/api/admin/workspace?type=stage&id=12", 3)).status, 403);
   assert.equal((await api("/api/admin/workspace?type=stage&id=12", 7)).status, 200);
   const students = await (await api("/api/admin/stage-students?stage_id=12", 7)).json();
-  assert.deepEqual(students.items, [{ name: "طالب آخر" }]);
+  assert.deepEqual(students.items, [{ id: 7, name: "طالب آخر", verified: false }]);
   assert.equal((await api("/api/admin/stage-students?stage_id=11", 7)).status, 403);
   assert.deepEqual(sql.prepare("SELECT target_user_id, action FROM scope_audit ORDER BY id").all().map(row => [row.target_user_id,row.action]), [[3,"grant"], [3,"revoke"], [7,"grant"]]);
   assert.equal((await scope(2, revoke)).status, 200);
@@ -138,4 +138,22 @@ test("stage scope reaches file review, direct downloads and chunk storage withou
   assert.equal((await (await send("file/" + uuid(4))).text()), pdf);
   assert.equal((await send("abort", 3, { id: uuid(4), courseId:"s12" })).status, 200);
   assert.equal((await (await send("file/" + uuid(4))).text()), pdf);
+});
+
+test("a representative confirms, unconfirms and bulk-confirms students of the stage only", async () => {
+  const { env, sql } = fixture();
+  const api = (path, who, body) => handleAdminWorkspace(signedRequest(sql, path, who, body), env);
+  const url = "/api/admin/stage-students?stage_id=12";
+  let list = await (await api(url, 5)).json();
+  assert.deepEqual(list.items, [{ id: 7, name: "طالب آخر", verified: false }]);
+  assert.equal((await api(url, 3, { action: "verify", user_id: 7 })).status, 403);
+  assert.equal((await api(url, 5, { action: "verify", user_id: 3 })).status, 409);
+  assert.equal((await api(url, 5, { action: "verify", user_id: 7 })).status, 200);
+  assert.equal((await (await api(url, 5)).json()).items[0].verified, true);
+  assert.equal((await api(url, 5, { action: "unverify", user_id: 7 })).status, 200);
+  assert.equal((await (await api(url, 5)).json()).items[0].verified, false);
+  assert.equal((await api(url, 5, { action: "verify_all" })).status, 200);
+  assert.equal((await (await api(url, 5)).json()).items[0].verified, true);
+  sql.exec("UPDATE user_profile SET stage_id=11 WHERE user_id=7");
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM student_verification v JOIN user_profile p ON p.user_id=v.user_id AND p.stage_id=v.stage_id").get().n, 0);
 });

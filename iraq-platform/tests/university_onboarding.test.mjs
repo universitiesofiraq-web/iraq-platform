@@ -37,11 +37,10 @@ test("only explicit verified activation exposes the university and its children"
   assert.equal((await api(root, 1, { id: 1, action: "register", manager_id: 2 }, "https://foreign.test")).status, 403);
   assert.equal((await api(root, 1, { id: 2, action: "register", manager_id: 4 })).status, 409);
   assert.equal((await api(root, 1, { id: 1, action: "register", manager_id: 2 })).status, 200);
-  assert.equal((await api(root, 1, { id: 1, action: "activate" })).status, 409);
   assert.equal((await platform(1)).status, 404);
   assert.deepEqual((await (await read("subjects?department_id=1")).json()).items, []);
-  assert.equal((await api(root, 1, { id: 1, action: "verify" })).status, 200);
   assert.equal((await api(root, 1, { id: 1, action: "activate" })).status, 200);
+  assert.equal((await api(root, 1, { id: 1, action: "activate" })).status, 409);
   const index = await (await read("index")).json();
   assert.deepEqual(index.u.map(item => item[0]), [1]);
   assert.deepEqual(index.c.map(item => item[0]), [1]);
@@ -54,6 +53,31 @@ test("only explicit verified activation exposes the university and its children"
   assert.equal((await read("department?id=1")).status, 404);
   assert.equal((await (await api(root + "?filter=suspended", 1)).json()).items.length, 1);
   const audit = await (await api(root + "/audit", 1)).json();
-  assert.deepEqual(audit.items.map(row => row.state), ["suspended", "active", "registered", "registered"]);
+  assert.deepEqual(audit.items.map(row => row.state), ["suspended", "active", "registered"]);
   assert.ok(audit.items.every(row => row.actor === "المالك"));
+});
+
+test("a student registering activates a new university, but never a suspended one", async () => {
+  const { DB, sql } = database();
+  seedAcademic(sql);
+  sql.exec("INSERT INTO users (id,google_sub,email,name,role,active,created_at) VALUES (9,'9','s9@example.test','طالب جديد','student',1,0)");
+  const env = { DB, ADMIN_EMAILS: "owner@example.test" };
+  const read = (path, id) => handleCatalog(signedRequest(sql, "/api/catalog/" + path, id), env);
+  const join = (id, body) => handleCatalog(signedRequest(sql, "/api/catalog/join", id, body), env);
+  assert.equal((await read("universities?view=join")).status, 401);
+  assert.equal((await read("universities?view=join", 9)).status, 200);
+  assert.deepEqual((await (await read("universities?view=join", 9)).json()).items.map(r => r.id).sort(), [1, 2]);
+  assert.deepEqual((await (await read("universities", 9)).json()).items, []);
+  assert.equal((await join(9, { department_id: 1, stage: 99 })).status, 400);
+  assert.equal((await join(4, { department_id: 1, stage: 2 })).status, 401);
+  const ok = await join(9, { department_id: 1, stage: 2 });
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).university_activated, true);
+  assert.deepEqual((await (await read("universities", 9)).json()).items.map(r => r.id), [1]);
+  assert.equal((await (await read("me", 9)).json()).profile.department_id, 1);
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_onboarding_audit").get().n, 1);
+  sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
+  assert.equal((await join(9, { department_id: 1, stage: 3 })).status, 403);
+  assert.equal((await read("universities?view=join", 9)).status, 200);
+  assert.deepEqual((await (await read("universities?view=join", 9)).json()).items.map(r => r.id), [2]);
 });

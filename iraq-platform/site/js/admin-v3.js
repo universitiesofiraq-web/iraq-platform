@@ -244,7 +244,7 @@ function renderUniversities() {
   });
   const choices = element("div", undefined, "filters");
   choices.setAttribute("aria-label", "نطاق عرض الجامعات");
-  for (const key of ["active", "directory", "suspended"]) {
+  for (const key of ["active", "suspended", "directory"]) {
     const choice = button(labels[key], () => {
       if (filter !== key) { filter = key; loadUniversities(); }
     });
@@ -254,7 +254,7 @@ function renderUniversities() {
   const ov = listing.overview?.totals || {};
   const totals = stats([
     ["الطلاب المسجّلون", ov.students || 0],
-    ["الجامعات المفعّلة", ov.active ?? listing.totals.active],
+    ["الجامعات المفعّلة", ov.active ?? listing.totals?.active ?? 0],
     ["الملفات المنشورة", ov.files || 0],
     ["ملفات بانتظار المراجعة", ov.pending || 0],
     ["بلاغات مفتوحة", ov.reports || 0],
@@ -451,7 +451,7 @@ function stagePanels(data) {
   const files = panel("المحاضرات والملفات", "المواد والملفات ضمن هذه المرحلة.");
   const news = panel("إعلانات المرحلة");
   const reports = panel("البلاغات");
-  const students = panel("طلبة المرحلة", "تظهر الحسابات المرتبطة بهذه المرحلة في سجلات المنصة.");
+  const students = panel("طلبة المرحلة", "الطلاب المسجّلون في مرحلتك. أكّد من تعرفه أنه طالب في قسمك.");
   files.card.id = "stage-files";
   news.card.id = "stage-announcements";
   reports.card.id = "stage-reports";
@@ -543,7 +543,21 @@ function stagePanels(data) {
           return;
         }
         const list = element("ul", undefined, "list");
-        for (const student of items) list.append(element("li", student.name));
+        for (const student of items) {
+          const row = element("li");
+          row.append(element("strong", student.name));
+          if (student.verified) row.append(element("span", "مؤكَّد", "status"));
+          else row.append(element("span", "غير مؤكَّد", "status"),
+            button("تأكيد", async () => {
+              try { await api("/api/admin/stage-students?stage_id=" + scope.id, { action: "verify", user_id: student.id }); await loadStudents(after); }
+              catch (error) { showNotice(error.message, true); }
+            }, "primary"));
+          if (student.verified) row.append(button("إلغاء التأكيد", async () => {
+            try { await api("/api/admin/stage-students?stage_id=" + scope.id, { action: "unverify", user_id: student.id }); await loadStudents(after); }
+            catch (error) { showNotice(error.message, true); }
+          }));
+          list.append(row);
+        }
         target.replaceChildren(list);
         if (next) target.append(button("الصفحة التالية", () => loadStudents(next)));
         if (after) target.append(button("الصفحة الأولى", () => loadStudents()));
@@ -564,7 +578,11 @@ function stagePanels(data) {
   }
 
   $("content").append(files.card, news.card, reports.card, students.card);
-  studentsBody.append(button("عرض الطلبة المرتبطين", () => loadStudents()));
+  students.head.append(button("تأكيد كل الطلبة", () => confirmAction("تأكيد كل طلبة المرحلة", stageLabel(scope.stage), [], async () => {
+    await api("/api/admin/stage-students?stage_id=" + scope.id, { action: "verify_all" });
+    await loadStudents();
+  }), "primary"));
+  loadStudents();
   loadFiles();
   loadNews();
   loadReports();
@@ -623,6 +641,7 @@ function renderScope(data, reload) {
     badge.dataset.state = row.representative_active ? "active" : "registered";
     card.append(badge);
     if (row.representative) card.append(element("p", row.representative));
+    card.append(element("p", number(row.students || 0) + " طالب" + (row.unverified ? " · " + number(row.unverified) + " بانتظار التأكيد" : ""), "muted"));
     const actions = element("div", undefined, "actions");
     if (!stageOnly) actions.append(link("عرض المرحلة", workspaceLink("stage", row.id), "button"));
     if (data.can_assign) {
