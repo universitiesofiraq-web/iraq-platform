@@ -120,6 +120,7 @@
     <div class="acts"><button class="mg-btn" id="cfmNo" type="button">إلغاء</button><button class="mg-btn danger" id="cfmYes" type="button">إزالة</button></div>
   </dialog>
 
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     "use strict";
@@ -130,32 +131,73 @@
     var ERR = { user_not_found: "هذا البريد لم يسجّل دخوله إلى المنصة بعد.", forbidden: "لا تملك صلاحية لهذا التعيين: المسؤول يعيّن مسؤولاً من مستوى أدنى فقط.", bad_request: "تحقق من البريد المكتوب.", not_found: "العنصر غير موجود." };
 
     var ME = null, ROWS = [], UNIS = [], TREE = null, openNodes = {};
+    var treeVersion = 0, directoryRequest = null;
 
     function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
     function api(method, path, body) {
       var o = { method: method, headers: {} };
       if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
-      return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
+      return IQApi.request("/api/" + path, o).catch(function (error) { return { ok: false, error: error.code || "network" }; });
     }
-    function cat(p) { return fetch("/api/catalog/" + p + (ME && ME.admin ? (p.includes("?") ? "&" : "?") + "view=directory" : "")).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }).catch(function () { return []; }); }
+    function cat(p) { return IQApi.request("/api/catalog/" + p + (ME && ME.admin ? (p.includes("?") ? "&" : "?") + "view=directory" : "")).then(function (d) { return d.items; }); }
     var tt;
     function toast(t, ok) { var n = $("toast"); n.textContent = t; n.className = "mg-toast on " + (ok ? "ok" : "err"); clearTimeout(tt); tt = setTimeout(function () { n.classList.remove("on"); }, 3500); }
     function skel(box, n) { box.textContent = ""; for (var i = 0; i < n; i++) box.appendChild(el("div", null, "mg-skel")); }
     function key(type, id) { return type + ":" + id; }
 
     /* ===== تحميل البيانات ===== */
-    function loadRows() { return api("GET", "auth/scopes").then(function (d) { if (d.ok) ROWS = d.items || []; return d.ok; }); }
+    function loadRows() { return IQApi.request("/api/auth/scopes").then(function (d) { ROWS = d.items || []; return true; }); }
 
-    var TREES = {};
+    var TREES = {}, treeRequests = {};
+    function treeFromIndex(data, uid) {
+      var colleges = new Map();
+      data.c.forEach(function (c) {
+        if (c[1] === uid) colleges.set(c[0], { id: c[0], name_ar: c[2], departments: [] });
+      });
+      data.d.forEach(function (d) {
+        var college = colleges.get(d[1]);
+        if (college) college.departments.push({ id: d[0], name_ar: d[2] });
+      });
+      return Array.from(colleges.values());
+    }
+    function indexUrl(uid) {
+      var query = new URLSearchParams();
+      if (uid) query.set("university_id", uid);
+      if (ME && ME.admin) query.set("view", "directory");
+      return "/api/catalog/index?" + query;
+    }
     function fetchTree(uid, force) {
       if (TREES[uid] && !force) return Promise.resolve(TREES[uid]);
-      return cat("colleges?university_id=" + uid).then(function (cols) {
-        return Promise.all(cols.map(function (c) { return cat("departments?college_id=" + c.id).then(function (ds) { c.departments = ds; return c; }); }));
-      }).then(function (cols) { TREES[uid] = cols; return cols; });
+      if (force) { directoryRequest = null; delete treeRequests[uid]; }
+      if (!treeRequests[uid]) {
+        var pending = IQApi.request(indexUrl(uid)).then(function (data) {
+          var tree = treeFromIndex(data, uid);
+          if (treeRequests[uid] === pending) TREES[uid] = tree;
+          return tree;
+        });
+        treeRequests[uid] = pending;
+        pending.then(function () { if (treeRequests[uid] === pending) delete treeRequests[uid]; },
+          function () { if (treeRequests[uid] === pending) delete treeRequests[uid]; });
+      }
+      return treeRequests[uid];
+    }
+    function fetchAllTrees() {
+      if (!directoryRequest) {
+        directoryRequest = IQApi.request(indexUrl()).then(function (data) {
+          UNIS.forEach(function (u) { TREES[u.id] = treeFromIndex(data, u.id); });
+        }).catch(function (error) { directoryRequest = null; throw error; });
+      }
+      return directoryRequest;
     }
     function loadTree(uid, force) {
+      var version = ++treeVersion;
       skel($("tree"), 5);
-      return fetchTree(uid, force).then(function (cols) { TREE = cols; render(); });
+      return fetchTree(uid, force).then(function (cols) {
+        if (version !== treeVersion) return;
+        TREE = cols; render();
+      }).catch(function (error) {
+        if (version === treeVersion) IQApi.showError($("tree"), error, function () { loadTree(uid, true); });
+      });
     }
     /* تطبيع عربي: يتجاهل الهمزات والتشكيل والتاء المربوطة والياء المقصورة */
     function norm(t) {
@@ -372,7 +414,7 @@
         if (!TREE) return;
         if ($("q").value.trim() && UNIS.length > 1) {
           $("cnt").textContent = "جارٍ البحث في كل الجامعات…";
-          Promise.all(UNIS.map(function (u) { return fetchTree(u.id); })).then(render);
+          fetchAllTrees().then(render).catch(function (error) { $("cnt").textContent = IQApi.errorText(error); });
         } else render();
       }, 200);
     };
@@ -383,7 +425,7 @@
       if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) { e.preventDefault(); $("q").focus(); }
     });
 
-    api("GET", "auth/me").then(function (d) {
+    IQApi.request("/api/auth/me").then(function (d) {
       ME = d && d.user;
       if (!ME) { $("gate").textContent = ""; var a = el("a", "تسجيل الدخول"); a.href = "login.html?next=manage.html"; $("gate").appendChild(document.createTextNode("سجّل الدخول أولاً: ")); $("gate").appendChild(a); return; }
       var isRep = ME.admin || (ME.scopes || []).some(function (x) { return x.level === "rep"; });
@@ -401,7 +443,14 @@
         s.value = String(first);
         return loadTree(first);
       });
-    }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
+    }).catch(function (error) {
+      $("gate").classList.remove("mg-hide");
+      IQApi.showError($("gate"), error);
+      if (error.code === "unauthorized") {
+        var login = el("a", "تسجيل الدخول"); login.href = "login.html?next=manage.html";
+        $("gate").appendChild(login);
+      }
+    });
   })();
   </script>
   <script src="js/upload-link.js"></script>
