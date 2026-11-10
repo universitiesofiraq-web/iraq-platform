@@ -112,6 +112,7 @@
       fetch("/api/sync", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: { "iq.dept": { t: Date.now(), v: { id: id, name: info.name_ar + " — " + info.college } } } }) }).catch(function () {}); // حفظ في الحساب إن كان مسجّلاً
       $("back").href = "catalog.html?u=" + info.university_id + "&n=" + encodeURIComponent(info.university) + "&c=" + info.college_id + "&cn=" + encodeURIComponent(info.college);
       var tools = $("tools");
+      var sa = el("a", "🤖 مساعد الدراسة والمرشد"); sa.href = "study-assistant.html"; tools.appendChild(sa);
       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (m) { // زر الرفع لمن يملك صلاحيته فقط
         var u = m && m.user;
         if (u && (u.admin || (u.scopes || []).length || u.role === "uploader" || u.role === "rep")) { var up = el("a", "رفع ملف"); up.href = "contribute.html"; tools.insertBefore(up, tools.firstChild); }

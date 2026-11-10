@@ -1,0 +1,40 @@
+/* مساعد الدراسة: صفحة study-assistant.html ولوحة «اكتب وظلّل» (.sab-*). الألوان من متغيرات iq.css مع بدائل للاستوديو. */
+.sa [hidden]{display:none!important}
+.sa{max-width:860px;margin:0 auto;padding:16px}
+.sa h1{font-size:1.5rem;margin:8px 0 4px}
+.sa h2{font-size:1.05rem;margin:20px 0 8px}
+.sa-sub,.sa-hint,.sa-quota{color:var(--ink2);font-size:.9rem}
+.sa-msg{background:var(--gold-soft);border:1px solid var(--gold);border-radius:var(--r);padding:12px}
+.sa-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.sa-tabs button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer;min-height:44px}
+.sa-tabs button[aria-selected="true"]{background:var(--lapis);border-color:var(--lapis);color:#fff}
+.sa textarea,.sa input,.sa select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--surface);color:var(--ink)}
+.sa label{display:block;font-weight:600;margin-bottom:6px}
+.sa-row{display:flex;gap:8px;margin-top:8px}
+.sa-row select{flex:1}
+.sa-go{border:0;border-radius:10px;background:var(--tile);color:#fff;font:inherit;font-weight:600;padding:10px 18px;cursor:pointer;min-height:44px}
+.sa-go:disabled{opacity:.6;cursor:wait}
+.sa-out{margin-top:16px}
+.sa-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);white-space:pre-wrap;line-height:1.8}
+.sa-card.err{border-color:var(--bad);color:var(--bad)}
+.sa-cites{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;white-space:normal}
+.sa-cite{border:1px solid var(--line);background:var(--gold-soft);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:.82rem;cursor:pointer;text-decoration:none}
+.sa-q{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;white-space:normal}
+.sa-q button{display:block;width:100%;text-align:start;margin:6px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px;font:inherit;cursor:pointer}
+.sa-q button.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--surface))}
+.sa-q button.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.sa-map ul{margin:4px 0;padding-inline-start:20px}
+.sa-kb{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sa-kb small{color:var(--ink2)}
+.sa-kbform{display:grid;gap:8px;margin-top:12px}
+.sa-del{border:1px solid var(--line);background:transparent;color:var(--bad);border-radius:8px;padding:4px 10px;cursor:pointer;font:inherit}
+/* داخل «اكتب وظلّل» */
+.sab-fab{position:fixed;right:16px;bottom:16px;z-index:60;border:0;border-radius:999px;background:#14307A;color:#fff;font:600 15px system-ui,sans-serif;padding:12px 16px;box-shadow:0 8px 24px rgba(10,26,58,.25);cursor:pointer;min-height:44px}
+.sab-panel{position:fixed;right:16px;bottom:76px;z-index:60;width:min(400px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:#fff;color:#0A1A3A;border:1px solid #D9E1EF;border-radius:14px;box-shadow:0 12px 32px rgba(10,26,58,.25);padding:14px;direction:rtl;font:14px/1.7 system-ui,sans-serif}
+.sab-panel[hidden]{display:none}
+.sab-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.sab-acts button{border:1px solid #D9E1EF;background:#F4F7FC;color:#0A1A3A;border-radius:10px;padding:8px;font:inherit;cursor:pointer;min-height:44px}
+.sab-acts button:disabled{opacity:.6;cursor:wait}
+.sab-note{color:#56648A;font-size:12px}
+.sab-out{white-space:pre-wrap;margin-top:8px}
+.sab-out .sa-cite{background:#FBF1D9;border-color:#E0A93B}

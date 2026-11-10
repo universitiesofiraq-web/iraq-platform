@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مساعد الدراسة | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <link rel="stylesheet" href="css/study-assistant.css?v=1">
+</head>
+<body>
+  <header class="iq-top">
+    <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
+  </header>
+  <main class="sa">
+    <h1>مساعد الدراسة والمرشد الأكاديمي</h1>
+    <p class="sa-sub" id="who">…</p>
+    <p class="sa-msg" id="gate" hidden></p>
+    <div class="sa-tabs" role="tablist" id="tabs">
+      <button type="button" role="tab" data-tab="ask" aria-selected="true">💬 اسأل عن محاضراتك</button>
+      <button type="button" role="tab" data-tab="advisor">🏛️ دليل القسم الشامل</button>
+      <button type="button" role="tab" data-tab="quiz">🧪 اختبرني</button>
+      <button type="button" role="tab" data-tab="mindmap">🗺️ خريطة ذهنية</button>
+    </div>
+    <section id="pane-chat">
+      <label for="q" id="qLabel">سؤالك</label>
+      <textarea id="q" rows="3" maxlength="2000"></textarea>
+      <div class="sa-row"><select id="doc" aria-label="المحاضرة"><option value="">كل محاضراتي المفهرسة</option></select><button type="button" class="sa-go" id="go">إرسال</button></div>
+      <p class="sa-hint" id="hint">المساعد يعرف المحاضرات التي فتحتها في «اكتب وظلّل» وهو مسجّل دخولك. افتح أي ملف PDF من صفحة المادة ليُضاف.</p>
+      <div id="out" class="sa-out" aria-live="polite"></div>
+    </section>
+    <section id="pane-kb" hidden>
+      <div id="kbPlatform"></div>
+      <h2>ملاحظات القسم (يضيفها ممثل القسم)</h2>
+      <div id="kbList"></div>
+      <form id="kbForm" class="sa-kbform" hidden>
+        <select id="kbCat" aria-label="النوع"><option value="schedule">جدول المحاضرات والمختبرات</option><option value="exam">مواعيد الامتحانات</option><option value="grading">نظام السعي والدرجات</option><option value="announcement">تبليغ</option><option value="course">مادة/وحدة</option><option value="lab">مختبر</option><option value="general">عام</option></select>
+        <input id="kbTitle" maxlength="200" placeholder="العنوان">
+        <textarea id="kbContent" rows="4" maxlength="6000" placeholder="المحتوى"></textarea>
+        <button type="submit" class="sa-go">إضافة</button>
+      </form>
+    </section>
+    <p class="sa-quota" id="quota"></p>
+  </main>
+  <script src="js/study-assistant.js?v=1"></script>
+  <script src="js/upload-link.js"></script>
+</body>
+</html>
