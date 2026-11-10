@@ -9,6 +9,7 @@ import { currentUser } from "./auth.js";
 import { policy, isGlobalAdmin } from "./scope.js";
 import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 import { resolveInvite } from "./invites.js";
+import { serviceErrorResponse } from "./service-errors.js";
 
 const NOT_SUSPENDED =
   "NOT EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='suspended')";
@@ -27,6 +28,39 @@ const slugify = (s) =>
 async function all(env, sql, ...args) {
   const r = await env.DB.prepare(sql).bind(...args).all();
   return r.results || [];
+}
+
+// Cache only public search metadata in this worker. University visibility is read
+// on every request, so suspending a university also removes its cached children.
+const searchIndexes = new WeakMap();
+async function searchIndex(env, visible, publicView, args = []) {
+  const u = await all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, u.kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`, ...args)
+    .catch(error => {
+      if (!/no such column: (?:u\.)?kind/i.test(String(error?.message))) throw error;
+      return all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, NULL AS kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`, ...args);
+    });
+  if (!u.length) return { ok: true, u: [], c: [], d: [] };
+  const key = JSON.stringify(u);
+  const cached = publicView && searchIndexes.get(env.DB);
+  if (cached && cached.key === key && cached.expires > Date.now()) return cached.pending;
+  const entry = { key, expires: Date.now() + 60000 };
+  const eligible = `c.university_id IN (SELECT u.id FROM universities u WHERE ${visible})`;
+  entry.pending = Promise.all([
+    all(env, `SELECT c.id, c.university_id, c.name_ar, c.name_en FROM colleges c WHERE ${eligible} ORDER BY c.name_ar`, ...args),
+    all(env, `SELECT d.id, d.college_id, d.name_ar FROM departments d JOIN colleges c ON c.id=d.college_id WHERE ${eligible} ORDER BY d.name_ar`, ...args)
+  ]).then(([c, d]) => ({
+    ok: true,
+    u: u.map(r => [r.id, r.name_ar, r.name_en, r.city, r.kind || ""]),
+    c: c.map(r => [r.id, r.university_id, r.name_ar, r.name_en]),
+    d: d.map(r => [r.id, r.college_id, r.name_ar])
+  }));
+  if (publicView) searchIndexes.set(env.DB, entry);
+  try {
+    return await entry.pending;
+  } catch (error) {
+    if (searchIndexes.get(env.DB) === entry) searchIndexes.delete(env.DB);
+    throw error;
+  }
 }
 
 export async function handleCatalog(req, env) {
@@ -51,18 +85,9 @@ export async function handleCatalog(req, env) {
         return json({ ok: true, items: await all(env, `SELECT st.id, st.number FROM stages st JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE st.department_id=? AND ${visible} ORDER BY st.number`, id) });
       }
       if (part === "index") {
-        const [u, c, d] = await Promise.all([
-          all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, u.kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`)
-            .catch(() => all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, NULL AS kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`)),
-          all(env, `SELECT c.id, c.university_id, c.name_ar, c.name_en FROM colleges c JOIN universities u ON u.id=c.university_id WHERE ${visible} ORDER BY c.name_ar`),
-          all(env, `SELECT d.id, d.college_id, d.name_ar FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE ${visible} ORDER BY d.name_ar`)
-        ]);
-        return json({
-          ok: true,
-          u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city, r.kind || ""]),
-          c: c.map((r) => [r.id, r.university_id, r.name_ar, r.name_en]),
-          d: d.map((r) => [r.id, r.college_id, r.name_ar])
-        });
+        const id = q.has("university_id") ? num(q.get("university_id")) : null;
+        if (q.has("university_id") && !Number.isSafeInteger(id)) return fail("bad_request", 400);
+        return json(await searchIndex(env, id ? `${visible} AND u.id=?` : visible, !directory && !joining, id ? [id] : []));
       }
       if (part === "universities")
         return json({ ok: true, items: await all(env, `SELECT u.id, u.slug, u.name_ar, u.name_en, u.city FROM universities u WHERE ${visible} ORDER BY u.name_ar`) });
@@ -119,6 +144,7 @@ export async function handleCatalog(req, env) {
 
     if (req.method === "POST" && part === "join") return await join(req, env, url);
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
+    searchIndexes.delete(env.DB);
     const origin = req.headers.get("origin");
     if (origin && origin !== url.origin) return fail("forbidden", 403);
     if (!req.headers.get("content-type")?.includes("application/json")) return fail("bad_request", 400);
@@ -192,8 +218,7 @@ export async function handleCatalog(req, env) {
     } else return fail("bad_request", 400);
     return json({ ok: true, id: r.meta && r.meta.last_row_id });
   } catch (e) {
-    console.error("catalog error", e);
-    return fail("server", 500);
+    return serviceErrorResponse(e);
   }
 }
 
