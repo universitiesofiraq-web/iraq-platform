@@ -21,7 +21,13 @@
     return fetch(API + path, { method: method || "GET", credentials: "same-origin", headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d.status = r.status; return d; }); });
   }
-  function errText(d) { return d && d.error && d.error.message ? d.error.message + (d.error.detail ? " [" + d.error.detail + "]" : "") : "تعذّر الاتصال بالمرشد. تحقق من الإنترنت وحاول مرة أخرى."; }
+  function errText(d) {
+    var error = d && d.error;
+    var code = typeof error === "string" ? error : error && error.code;
+    if (code === "database_quota_exceeded") return "بلغت الخدمة حد الاستخدام اليومي. حاول لاحقًا.";
+    if (code === "service_unavailable" || code === "server" || code === "SERVER_ERROR") return "المساعد غير متاح مؤقتًا. أعد المحاولة بعد قليل.";
+    return error && typeof error.message === "string" ? error.message : "تعذّر الاتصال بالمساعد. أعد المحاولة.";
+  }
 
   /* ---------- حفظ المحادثة في هذه الجلسة فقط ---------- */
   function loadHist() { try { var h = JSON.parse(sessionStorage.getItem(hkey())); if (Array.isArray(h)) st.hist = h.slice(-30); } catch (e) { st.hist = []; } }
