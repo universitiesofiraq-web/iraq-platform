@@ -58,8 +58,13 @@ export async function resolvePlatformStudent(req, env) {
   };
 }
 
+/* اليوم بتوقيت بغداد (UTC+3) كي يتجدد الحد عند منتصف الليل المحلي */
+export function dayKeyOf(now) {
+  return new Date(new Date(now).getTime() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 export async function quotaStatus(env, userId, limit, now) {
-  const dayKey = iso(now).slice(0, 10);
+  const dayKey = dayKeyOf(now);
   const r = await env.DB.prepare(
     "SELECT COALESCE(SUM(units), 0) AS used FROM ai_quota_ledger WHERE user_id = ? AND day_key = ? AND status IN ('reserved','committed')"
   ).bind(userId, dayKey).first();
@@ -348,8 +353,15 @@ async function run(env, principal, body, now, limit) {
     return fail("AI_NOT_CONFIGURED", 503, "المساعد الذكي غير مفعّل بعد على الخادم.");
   }
   const reservation = rid("qres");
-  await env.DB.prepare("INSERT INTO ai_quota_ledger (reservation_id, user_id, task, units, status, day_key, created_at, updated_at) VALUES (?, ?, ?, 1, 'reserved', ?, ?, ?)")
-    .bind(reservation, principal.userId, task, quota.dayKey, iso(now), iso(now)).run();
+  const globalCap = Number(env.GLOBAL_DAILY_UNITS) > 0 ? Number(env.GLOBAL_DAILY_UNITS) : 0;
+  if (globalCap) {
+    const g = await env.DB.prepare("SELECT COALESCE(SUM(units),0) AS used FROM ai_quota_ledger WHERE day_key = ? AND status IN ('reserved','committed')").bind(quota.dayKey).first();
+    if (Number((g && g.used) || 0) >= globalCap) return fail("SERVICE_BUSY", 429, "المساعد مزدحم حالياً بسبب كثرة الاستخدام. حاول لاحقاً أو غداً.");
+  }
+  // حجز ذرّي: لا يُدرَج إلا إن بقي للطالب رصيد (يمنع تجاوز الحد بطلبات متوازية)
+  const ins = await env.DB.prepare("INSERT INTO ai_quota_ledger (reservation_id, user_id, task, units, status, day_key, created_at, updated_at) SELECT ?, ?, ?, 1, 'reserved', ?, ?, ? WHERE (SELECT COALESCE(SUM(units),0) FROM ai_quota_ledger WHERE user_id = ? AND day_key = ? AND status IN ('reserved','committed')) < ?")
+    .bind(reservation, principal.userId, task, quota.dayKey, iso(now), iso(now), principal.userId, quota.dayKey, limit).run();
+  if (ins && ins.meta && ins.meta.changes === 0) return fail("QUOTA_EXHAUSTED", 429, "انتهت حصتك اليومية من طلبات المساعد. حاول غداً.");
   const settle = (status) => env.DB.prepare("UPDATE ai_quota_ledger SET status = ?, updated_at = ? WHERE reservation_id = ?").bind(status, iso(now), reservation).run();
   try {
     let chunks = task === "advisor" ? [] : await retrieveChunks(env, principal.userId, { documentId, pageNumbers: body.pageNumbers, question: question || selected });
@@ -544,7 +556,6 @@ export async function handleStudyAssistant(req, env, opts = {}) {
   } catch (e) {
     if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "نفّذ ملف migrations/0008_ai_study_assistant.sql و0012_ai_dept_index.sql على قاعدة البيانات.");
     console.error("study-assistant", sub, e && e.name, e && e.message);
-    const detail = clip((e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : ""), 200);
-    return json({ ok: false, error: { code: "SERVER_ERROR", message: "حدث خطأ في الخادم.", detail } }, 500);
+    return json({ ok: false, error: { code: "SERVER_ERROR", message: "حدث خطأ في الخادم." } }, 500);
   }
 }
