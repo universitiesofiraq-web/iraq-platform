@@ -120,3 +120,26 @@ test("directory errors are distinct from an empty active directory", async () =>
   assert.match(screen.get("notice").textContent, /تعذّر الاتصال/);
   assert.match(screen.get("notice").textContent, /إعادة المحاولة/);
 });
+
+test("department administrators start in their server-validated department and can select only its stages", async () => {
+  const screen = dashboard(path => {
+    if (path === "/api/auth/me") return { ok: true, user: { name: "م", scopes: [{ type: "department", node_id: 1, level: "rep" }] } };
+    assert.equal(path, "/api/admin/workspace?type=department&id=1");
+    return { ok: true, scope: { type: "department", id: 1, university: "البصرة", college: "الطب", department: "طب الزهراء" },
+      can_assign: true, items: [{ id: 12, number: 2, department: "طب الزهراء", students: 2, subjects: 3 }] };
+  });
+  await tick();
+  assert.match(screen.get("title").textContent, /إدارة طب الزهراء/);
+  assert.match(screen.get("content").textContent, /المرحلة الثانية/);
+  assert.match(screen.get("content").textContent, /تعيين ممثل/);
+  assert.doesNotMatch(screen.get("sidebar-nav").textContent, /الإدارة العامة/);
+});
+
+test("a forged scope URL shows the server rejection without drawing management data", async () => {
+  const screen = dashboard(path => path === "/api/auth/me"
+    ? { ok: true, user: { name: "م", scopes: [{ type: "department", node_id: 1, level: "rep" }] } }
+    : { ok: false, error: "forbidden" }, "?type=department&id=2");
+  await tick();
+  assert.equal(screen.get("content").hidden, true);
+  assert.match(screen.get("notice").textContent, /لا يسمح نطاقك/);
+});

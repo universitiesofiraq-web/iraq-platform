@@ -13,6 +13,7 @@ const errors = {
   onboarding_transition_conflict: "تغيّرت حالة الجامعة أو أن شروط الإجراء غير مستوفاة. حدّث القائمة وتحقق من تعيين مسؤول نشط.",
   inactive_account: "الحساب المختار غير نشط.",
   admin_locked: "صلاحية هذا الحساب محمية.",
+  assignment_conflict: "تعذّر التعيين. تحقق من الحساب أو حدّث اللوحة إذا تغيّر الممثل.",
   bad_request: "تحقق من الحقول المطلوبة."
 };
 let me;
@@ -224,7 +225,7 @@ function transition(item, action, text) {
 
 function universityActions(item) {
   const actions = element("div", undefined, "actions");
-  actions.append(button("تعديل", () => profileForm(item)));
+  actions.append(link("إدارة الجامعة", workspaceLink("university", item.id), "button"), button("تعديل", () => profileForm(item)));
   if (item.state === "not_onboarded") actions.append(button("تسجيل", () => managerForm(item), "primary"));
   else {
     actions.append(button("المسؤول", () => managerForm(item)));
@@ -382,6 +383,122 @@ function showGlobal() {
   loadUniversities();
 }
 
+const roles = {
+  university: "مسؤول الجامعة",
+  college: "مشرف الكلية",
+  department: "مسؤول القسم",
+  stage: "ممثل المرحلة"
+};
+const ordinals = ["", "الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
+
+function stageLabel(stage) {
+  return "المرحلة " + (ordinals[stage] || number(stage));
+}
+
+function workspaceLink(type, id) {
+  return "admin.html?" + new URLSearchParams({ type, id });
+}
+
+function assignmentForm(row, revoke, reload) {
+  const email = element("input");
+  email.type = "email"; email.dir = "ltr"; email.required = true; email.maxLength = 254;
+  const action = revoke ? "سحب التعيين" : row.representative_id ? "استبدال الممثل" : "تعيين ممثل";
+  const fields = revoke ? [] : [field("بريد الحساب المسجل", email)];
+  confirmAction(action, [stageLabel(row.number), row.department].join(" — "), fields, async () => {
+    const target = revoke ? { user_id: 0 } : { user_email: email.value };
+    await api("/api/admin/stage-representative", {
+      stage_id: row.id, expected_user_id: row.representative_id || 0, ...target
+    });
+    await reload();
+  });
+}
+
+function renderScope(data, reload) {
+  const { scope, items } = data;
+  const { type, id, university, college, department, stage } = scope;
+  const stageOnly = type === "stage";
+  const name = stageOnly ? stageLabel(stage) : scope[type];
+  $("title").textContent = (stageOnly ? "لوحة ممثل " : "إدارة ") + name;
+  $("description").textContent = stageOnly
+    ? "ملفات ومحاضرات وإعلانات هذه المرحلة ضمن النطاق المصرّح به."
+    : "تابع المراحل الدراسية وممثليها ضمن نطاق مسؤوليتك.";
+  $("breadcrumb").textContent = ["الإدارة", university, college, department, stageOnly && stageLabel(stage)].filter(Boolean).join(" / ");
+  $("role").textContent = me.admin ? (me.owner ? "مالك المنصة" : "مدير عام") : roles[type];
+  $("scope-label").textContent = stageOnly ? "مرحلة واحدة" : name;
+  const nav = [["نظرة عامة", workspaceLink(type, id)]];
+  if (!stageOnly) {
+    nav.push(["المراحل الدراسية", "#stage-list"], ["الفرق والتعيينات", "manage.html"],
+      ["المحاضرات والملفات", "admin-tools.html#files"], ["البلاغات", "admin-tools.html#reports"]);
+  }
+  if (me.admin) nav.push(["الإدارة العامة", "admin.html"]);
+  navigation(nav);
+  const controls = [];
+  const assignments = me.scopes?.filter(entry => entry.level === "rep" && Object.hasOwn(roles, entry.type)) || [];
+  if (assignments.length > 1) {
+    const select = element("select");
+    select.setAttribute("aria-label", "تبديل نطاق الإدارة");
+    for (const entry of assignments) {
+      select.append(new Option(roles[entry.type] + " · " + number(entry.node_id), workspaceLink(entry.type, entry.node_id)));
+    }
+    select.value = workspaceLink(type, id);
+    select.addEventListener("change", () => { location.href = select.value; });
+    controls.push(select);
+  }
+  $("page-actions").replaceChildren(...controls);
+
+  const banner = element("section", undefined, "scope-banner");
+  banner.append(element("h2", stageOnly ? stageLabel(stage) + " — " + department : name),
+    element("p", stageOnly ? "نطاق العمل الإداري لهذه المرحلة فقط." : "المراحل التي تقع ضمن " + name + "."));
+  const summary = stats([
+    ["المراحل الدراسية", items.length],
+    ["الممثلون النشطون", items.filter(row => row.representative_active).length],
+    ["الطلبة المرتبطون بالمراحل", items.reduce((sum, row) => sum + row.students, 0)],
+    ["المواد الدراسية", items.reduce((sum, row) => sum + row.subjects, 0)]
+  ]);
+  const stages = panel("المراحل الدراسية وممثلوها");
+  stages.card.id = "stage-list";
+  if (!items.length) stages.card.append(empty("لا توجد مراحل دراسية مسجلة في هذا النطاق."));
+  const cards = element("div", undefined, "stage-grid");
+  for (const row of items) {
+    const card = element("article", undefined, "card");
+    card.append(element("h3", stageLabel(row.number)), element("p", row.department, "muted"));
+    const badge = element("span", row.representative_active ? "ممثل معيّن" : row.representative_id ? "الممثل غير نشط" : "لم يُعيّن ممثل", "status");
+    badge.dataset.state = row.representative_active ? "active" : "registered";
+    card.append(badge);
+    if (row.representative) card.append(element("p", row.representative));
+    const actions = element("div", undefined, "actions");
+    if (!stageOnly) actions.append(link("عرض المرحلة", workspaceLink("stage", row.id), "button"));
+    if (data.can_assign) {
+      actions.append(button(row.representative_id ? "استبدال الممثل" : "تعيين ممثل", () => assignmentForm(row, false, reload)));
+      if (row.representative_id) actions.append(button("سحب التعيين", () => assignmentForm(row, true, reload)));
+    }
+    card.append(actions);
+    cards.append(card);
+  }
+  stages.card.append(cards);
+  const hierarchy = panel("التسلسل والصلاحيات");
+  hierarchy.card.append(empty(stageOnly
+    ? "تنحصر إدارة الملفات والإعلانات في المرحلة المعروضة."
+    : "مسؤول القسم هو المرجع الإداري لقسمه. يبقى إشراف الكلية محصورًا في كليتها."));
+  const grid = element("div", undefined, "panel-grid");
+  grid.append(stages.card, hierarchy.card);
+  $("content").replaceChildren(banner, summary, grid);
+  $("content").hidden = false;
+}
+
+async function showScoped(type, id) {
+  showNotice("جارٍ تحميل نطاق الإدارة…");
+  $("content").hidden = true;
+  try {
+    const data = await api("/api/admin/workspace?type=" + encodeURIComponent(type) + "&id=" + id);
+    renderScope(data, () => showScoped(type, id));
+    showNotice();
+  } catch (error) {
+    showNotice(error.message, true);
+    if (me.admin) $("notice").append(" ", link("العودة إلى الإدارة العامة", "admin.html"));
+  }
+}
+
 function setupChrome() {
   const theme = $("theme");
   function apply(dark) {
@@ -409,10 +526,16 @@ async function boot() {
     me = (await api("/api/auth/me")).user;
     $("account").textContent = me.name;
     $("account").hidden = $("sidebar-account").hidden = false;
-    if (me.admin) showGlobal();
-    else if (me.scopes?.some(scope => scope.level === "rep")) {
-      location.replace("admin-tools.html");
-    } else showNotice("لا توجد صلاحية إدارة لهذا الحساب.", true);
+    const params = new URLSearchParams(location.search);
+    const type = params.get("type"), id = Number(params.get("id"));
+    if (Object.hasOwn(roles, type) && Number.isSafeInteger(id) && id > 0) {
+      await showScoped(type, id);
+    } else if (me.admin) showGlobal();
+    else {
+      const first = me.scopes?.find(entry => entry.level === "rep" && Object.hasOwn(roles, entry.type));
+      if (first) await showScoped(first.type, first.node_id);
+      else showNotice("لا توجد صلاحية إدارة لهذا الحساب.", true);
+    }
   } catch (error) {
     showNotice(error.message, true);
     $("notice").append(" ", link("تسجيل الدخول", "login.html?next=admin.html"));

@@ -46,11 +46,19 @@ async function workspace(env, type, id, permission) {
 }
 
 async function stageRep(env, user, body) {
-  const { stage_id: stageId, expected_user_id: expected, user_id: target } = body;
-  if (!positive(stageId) || !Number.isSafeInteger(expected) || expected < 0 ||
-      !Number.isSafeInteger(target) || target < 0 || expected === target) return fail("bad_request", 400);
+  const { stage_id: stageId, expected_user_id: expected } = body;
+  if (!positive(stageId) || !Number.isSafeInteger(expected) || expected < 0) return fail("bad_request", 400);
   if (!(await (await policy(env, user)).manage("stage", stageId, "stage"))) return fail("forbidden", 403);
   if (!(await chainOf(env, "stage", stageId))) return fail("not_found", 404);
+  let target = body.user_id;
+  if (target === undefined && typeof body.user_email === "string") {
+    const email = body.user_email.trim().toLowerCase();
+    if (!email || email.length > 254) return fail("bad_request", 400);
+    const account = await env.DB.prepare("SELECT id FROM users WHERE lower(email)=? AND active=1").bind(email).first();
+    if (!account) return fail("assignment_conflict", 409);
+    target = account.id;
+  }
+  if (!Number.isSafeInteger(target) || target < 0 || expected === target) return fail("bad_request", 400);
   let mutation;
   if (!target) {
     mutation = env.DB.prepare("DELETE FROM scopes WHERE type='stage' AND level='rep' AND node_id=? AND user_id=?").bind(stageId, expected);
