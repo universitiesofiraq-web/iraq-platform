@@ -143,6 +143,33 @@ async function googleLogin(req, env, now, opts) {
   return json({ ok: true, user: publicUser(u) }, 200, { "set-cookie": cookie });
 }
 
+/* حذف الحساب: تُمسح بيانات الطالب الشخصية ويُجهَّل سجل المستخدم (يبقى الصف لسلامة المفاتيح الأجنبية) */
+async function deleteAccount(req, env, user) {
+  const b = await readJson(req);
+  if (!b || b.confirm !== "DELETE") return fail("bad_request", 400);
+  const id = user.id, sid = String(id);
+  const stmts = [
+    ["DELETE FROM sessions WHERE user_id = ?", id], ["DELETE FROM user_data WHERE user_id = ?", id],
+    ["DELETE FROM user_profile WHERE user_id = ?", id], ["DELETE FROM user_scopes WHERE user_id = ?", id],
+    ["DELETE FROM scopes WHERE user_id = ?", id], ["DELETE FROM rep_requests WHERE user_id = ?", id],
+    ["DELETE FROM pdf_notes WHERE user_id = ?", id], ["DELETE FROM pdf_assets WHERE user_id = ?", id],
+    ["DELETE FROM student_verification WHERE user_id = ?", id], ["DELETE FROM chat_members WHERE user_id = ?", id],
+    ["DELETE FROM chat_silence WHERE user_id = ?", id], ["DELETE FROM chat_reports WHERE reporter_id = ?", id],
+    ["INSERT INTO chat_message_archive(message_id,body,reason,created_at) SELECT id,body,'account_deleted',strftime('%s','now')*1000 FROM chat_messages WHERE sender_id = ? AND length(body)>0", id],
+    ["UPDATE chat_messages SET body='', deleted_at=COALESCE(deleted_at, strftime('%s','now')*1000), pinned_at=NULL, pinned_by=NULL WHERE sender_id = ?", id],
+    ["DELETE FROM ai_messages WHERE user_id = ?", sid], ["DELETE FROM ai_conversations WHERE user_id = ?", sid],
+    ["DELETE FROM ai_document_chunks WHERE user_id = ?", sid], ["DELETE FROM ai_documents WHERE user_id = ?", sid],
+    ["DELETE FROM ai_artifacts WHERE user_id = ?", sid], ["DELETE FROM ai_quiz_attempts WHERE user_id = ?", sid],
+    ["DELETE FROM ai_notebook_notes WHERE user_id = ?", sid]
+  ];
+  for (const [q, v] of stmts) {
+    try { await env.DB.prepare(q).bind(v).run(); } catch (e) { /* جدول غير موجود بعد */ }
+  }
+  await env.DB.prepare("UPDATE users SET email = ?, name = ?, google_sub = ?, active = 0 WHERE id = ?")
+    .bind("deleted-" + id + "@deleted.invalid", "حساب محذوف", "deleted-" + id, id).run();
+  return json({ ok: true }, 200, { "set-cookie": cookieHeader("", req, 0) });
+}
+
 async function logout(req, env) {
   const token = readCookie(req);
   if (token) await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha(token)).run();
@@ -287,6 +314,7 @@ export async function handleAuth(req, env, opts = {}) {
   }
   if (!user) return fail("unauthorized", 401);
 
+  if (p === "/api/auth/delete" && req.method === "POST") return deleteAccount(req, env, user);
   if (p === "/api/auth/global-admins") return handleGlobalAdmins(req, env, user);
 
   if (p === "/api/sync" && req.method === "GET") return syncGet(user, env);

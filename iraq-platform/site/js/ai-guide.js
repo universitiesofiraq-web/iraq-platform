@@ -107,10 +107,10 @@
 
   /* ---------- فقاعات المحادثة ---------- */
   function addUser(text) {
-    var b = el("div", "ag-msg ag-user"); b.appendChild(el("div", "ag-bubble", text)); thread.appendChild(b); scroll(); return b;
+    var b = el("div", "ag-msg ag-user"); var ub = el("div", "ag-bubble", text); ub.setAttribute("dir", "auto"); b.appendChild(ub); thread.appendChild(b); scroll(); return b;
   }
   function addBot(d, fromHist) {
-    var b = el("div", "ag-msg ag-bot"), bub = el("div", "ag-bubble");
+    var b = el("div", "ag-msg ag-bot"), bub = el("div", "ag-bubble"); bub.setAttribute("dir", "auto");
     if (!d.ok) { bub.classList.add("err"); bub.appendChild(el("p", null, d.text || errText(d))); if (!fromHist && st.last) { var r = el("button", "ag-retry", "إعادة المحاولة"); r.type = "button"; r.addEventListener("click", function () { b.remove(); send(st.last.q, st.last.mode, true, st.last.extra); }); bub.appendChild(r); } }
     else if (d.task === "quiz" && d.data && d.data.questions && d.data.questions.length) bub.appendChild(quizView(d.data));
     else if (d.task === "mindmap" && d.data && d.data.root) bub.appendChild(mapView(d.data));

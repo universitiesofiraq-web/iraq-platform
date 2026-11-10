@@ -1,3 +1,4 @@
+import { readUploads } from "./d1manifest.js";
 // functions/_lib/study_dept.js — فهرس ملفات القسم المشترك + البحث بالمعنى (Vectorize اختياري) + أدوات المرشد.
 const clip = (s, n) => String(s == null ? "" : s).slice(0, n);
 const CHUNK = 1000;
@@ -22,7 +23,7 @@ export function manifestItems(m) { return Array.isArray(m) ? m : (m && m.items) 
 export async function deptFiles(env, names) {
   if (!env.LECTURES) return [];
   try {
-    const m = await env.LECTURES.get("manifest.json", { type: "json" });
+    const m = await readUploads(env);
     return manifestItems(m).filter((e) => e && e.kind !== "link" && names.has(e.course) && e.status !== "pending" && e.status !== "rejected" && !e.draft);
   } catch { return []; }
 }

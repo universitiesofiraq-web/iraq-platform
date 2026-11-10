@@ -2,6 +2,7 @@
 // يتطلب ربط KV باسم LECTURES وسرّ UPLOAD_CODES من لوحة Cloudflare. بدون الربط: القائمة فارغة وبقية المسارات 503.
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
+import { d1Manifest } from "../_lib/d1manifest.js";
 import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
 import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
@@ -42,6 +43,7 @@ export async function onRequest({ request, env }) {
   }
   return handle(request, {
     store: kvStore(env.LECTURES),
+    manifest: env.DB ? d1Manifest(env.DB, env.LECTURES) : undefined, // القائمة في D1 (تُستورد من KV مرة واحدة)
     env: (k) => env[k],
     ip: request.headers.get("CF-Connecting-IP") || "",
     now: () => Date.now(),

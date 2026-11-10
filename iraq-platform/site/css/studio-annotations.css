@@ -6,7 +6,7 @@
 .st-ann-sum[hidden]{display:none}
 /* 16px: iOS Safari zooms the page into smaller inputs */
 .st-notes #st-notes-q{font-size:16px}
-.st-notes #st-notes-q:focus{outline:none;border-color:var(--st-teal,#168c8c);background:#fff;box-shadow:0 0 0 3px #168c8c2e}
+.st-notes #st-notes-q:focus{outline:none;border-color:var(--st-teal,#0f6e6e);background:#fff;box-shadow:0 0 0 3px #0f6e6e2e}
 .st-notes .st-chip{padding:0 12px}
 .st-notes .st-chip[hidden]{display:none}
 
@@ -26,7 +26,7 @@
 .st-ann-img.has-img svg{display:none}
 
 /* per-page count on thumbnails (the page number sits at the other corner) */
-.st-th-b{position:absolute;inset-block-start:6px;inset-inline-start:6px;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 7px;border-radius:11px;background:var(--st-teal,#168c8c);color:#fff;font:700 11px/1 system-ui;box-shadow:0 1px 4px #12304a33;pointer-events:none;font-variant-numeric:tabular-nums}
+.st-th-b{position:absolute;inset-block-start:6px;inset-inline-start:6px;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 7px;border-radius:11px;background:var(--st-teal,#0f6e6e);color:#fff;font:700 11px/1 system-ui;box-shadow:0 1px 4px #12304a33;pointer-events:none;font-variant-numeric:tabular-nums}
 .st-th-b[hidden]{display:none}
 .st-th-b svg{flex:0 0 auto}
 .st-blank.st-pulse{outline:4px solid #2fd0d0;outline-offset:4px}

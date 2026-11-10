@@ -108,12 +108,14 @@ async function authenticate(req, deps) {
 }
 
 async function readManifest(deps) {
+  if (deps.manifest) return deps.manifest.read();
   const m = await deps.store.get(MANIFEST, { type: "json" });
   return Array.isArray(m) ? m : [];
 }
 
 /* تعديل القائمة بكتابة مشروطة؛ إن كتب مساعدان معاً يعيد الثاني المحاولة بدل أن يضيع ملف */
 async function updateManifest(deps, mutate) {
+  if (deps.manifest) return deps.manifest.update(mutate);
   for (let i = 0; i < 6; i++) {
     const cur = await deps.store.getWithMetadata(MANIFEST, { type: "json" });
     const list = cur && Array.isArray(cur.data) ? cur.data : [];

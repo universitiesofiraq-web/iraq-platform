@@ -1,3 +1,4 @@
+import { readUploads } from "./d1manifest.js";
 import { currentUser } from "./auth.js";
 import { isGlobalAdmin } from "./scope.js";
 
@@ -24,7 +25,7 @@ export async function storedCounts(env) {
   if (!env.LECTURES) return null;
   try {
     const [manifest, reports, subjects] = await Promise.all([
-      env.LECTURES.get("manifest.json", "json"), env.LECTURES.get("reports.json", "json"),
+      readUploads(env), env.LECTURES.get("reports.json", "json"),
       env.DB.prepare(`SELECT sb.id, c.university_id AS u FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
         JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id`).all()
     ]);

@@ -3,7 +3,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var active = null, rooms = [], messages = new Map(), more = false, loading = false;
   var replyTo = null, editing = null, me = null, polling = false;
-  var pollTimer = null, pollDelay = 10000, roomsUpdatedAt = 0;
+  var pollTimer = null, pollDelay = 15000, roomsUpdatedAt = 0;
   var removedCount = null, historyEpoch = 0, roomSignature, requestSignature;
   var stamp = new Intl.DateTimeFormat("ar-IQ", { hour: "2-digit", minute: "2-digit" });
 
@@ -215,7 +215,7 @@
         }
       }
       if (Date.now() - roomsUpdatedAt >= 30000) await refreshRooms();
-      pollDelay = 10000;
+      pollDelay = 15000;
     } catch (err) {
       pollDelay = Math.min(60000, pollDelay * 2);
       status(errorText(err));
@@ -302,7 +302,7 @@
       if (requestedRoom && !rooms.some(function (r) { return r.id === requestedRoom; })) {
         $("joinStatus").textContent = "هذه المجموعة تظهر للأعضاء المقبولين.";
       } else if (first) await openRoom(first);
-      pollDelay = 10000;
+      pollDelay = 15000;
       schedulePoll();
     } catch (err) {
       $("roomList").textContent = "";

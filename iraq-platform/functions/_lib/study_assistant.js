@@ -1,3 +1,4 @@
+import { readUploads } from "./d1manifest.js";
 // functions/_lib/study_assistant.js — مساعد الدراسة الذكي والمرشد الأكاديمي للقسم (/api/study-assistant/*).
 // مبني على حزمة الدمج (iraq-platform-cloudflare-integration-pack) ومربوط ببيانات المنصة الحقيقية:
 //   - الهوية من جلسة المنصة (currentUser) فقط؛ أي userId أو isAdmin في جسم الطلب يُرفض.
@@ -59,8 +60,13 @@ export async function resolvePlatformStudent(req, env) {
   };
 }
 
+/* اليوم بتوقيت بغداد (UTC+3) كي يتجدد الحد عند منتصف الليل المحلي */
+export function dayKeyOf(now) {
+  return new Date(new Date(now).getTime() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 export async function quotaStatus(env, userId, limit, now) {
-  const dayKey = iso(now).slice(0, 10);
+  const dayKey = dayKeyOf(now);
   const r = await env.DB.prepare(
     "SELECT COALESCE(SUM(units), 0) AS used FROM ai_quota_ledger WHERE user_id = ? AND day_key = ? AND status IN ('reserved','committed')"
   ).bind(userId, dayKey).first();
@@ -81,7 +87,7 @@ export async function discoverExistingPlatformData(env, principal) {
       out.push({ category: "course", title: "المواد الدراسية في قسم الطالب (المرحلة والكورس والأستاذ)", content: JSON.stringify(subj.map((s) => ({ name: s.name_ar, en: s.name_en, professor: s.professor, credits: s.credits, stage: s.stage, term: s.term }))) });
       if (env.LECTURES) {
         try {
-          const m = await env.LECTURES.get("manifest.json", { type: "json" });
+          const m = await readUploads(env);
           const names = new Map(subj.map((s) => ["s" + s.id, s.name_ar]));
           const items = (Array.isArray(m) ? m : (m && m.items) || [])
             .filter((e) => e && names.has(e.course) && e.status !== "pending" && e.status !== "rejected" && !e.draft)
@@ -153,7 +159,7 @@ export async function buildStudentData(env, principal, now) {
     const perSubject = new Map(); let items = [];
     if (env.LECTURES) {
       try {
-        const m = await env.LECTURES.get("manifest.json", { type: "json" });
+        const m = await readUploads(env);
         items = (Array.isArray(m) ? m : (m && m.items) || []).filter((e) => e && names.has(e.course) && e.status !== "pending" && e.status !== "rejected" && !e.draft);
       } catch { items = []; }
     }
@@ -349,8 +355,15 @@ async function run(env, principal, body, now, limit) {
     return fail("AI_NOT_CONFIGURED", 503, "المساعد الذكي غير مفعّل بعد على الخادم.");
   }
   const reservation = rid("qres");
-  await env.DB.prepare("INSERT INTO ai_quota_ledger (reservation_id, user_id, task, units, status, day_key, created_at, updated_at) VALUES (?, ?, ?, 1, 'reserved', ?, ?, ?)")
-    .bind(reservation, principal.userId, task, quota.dayKey, iso(now), iso(now)).run();
+  const globalCap = Number(env.GLOBAL_DAILY_UNITS) > 0 ? Number(env.GLOBAL_DAILY_UNITS) : 0;
+  if (globalCap) {
+    const g = await env.DB.prepare("SELECT COALESCE(SUM(units),0) AS used FROM ai_quota_ledger WHERE day_key = ? AND status IN ('reserved','committed')").bind(quota.dayKey).first();
+    if (Number((g && g.used) || 0) >= globalCap) return fail("SERVICE_BUSY", 429, "المساعد مزدحم حالياً بسبب كثرة الاستخدام. حاول لاحقاً أو غداً.");
+  }
+  // حجز ذرّي: لا يُدرَج إلا إن بقي للطالب رصيد (يمنع تجاوز الحد بطلبات متوازية)
+  const ins = await env.DB.prepare("INSERT INTO ai_quota_ledger (reservation_id, user_id, task, units, status, day_key, created_at, updated_at) SELECT ?, ?, ?, 1, 'reserved', ?, ?, ? WHERE (SELECT COALESCE(SUM(units),0) FROM ai_quota_ledger WHERE user_id = ? AND day_key = ? AND status IN ('reserved','committed')) < ?")
+    .bind(reservation, principal.userId, task, quota.dayKey, iso(now), iso(now), principal.userId, quota.dayKey, limit).run();
+  if (ins && ins.meta && ins.meta.changes === 0) return fail("QUOTA_EXHAUSTED", 429, "انتهت حصتك اليومية من طلبات المساعد. حاول غداً.");
   const settle = (status) => env.DB.prepare("UPDATE ai_quota_ledger SET status = ?, updated_at = ? WHERE reservation_id = ?").bind(status, iso(now), reservation).run();
   try {
     let chunks = task === "advisor" ? [] : await retrieveChunks(env, principal.userId, { documentId, pageNumbers: body.pageNumbers, question: question || selected });

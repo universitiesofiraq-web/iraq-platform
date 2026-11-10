@@ -65,6 +65,40 @@ async function searchIndex(env, visible, publicView, args = []) {
 
 export async function handleCatalog(req, env) {
   const url = new URL(req.url);
+  const part = /^\/api\/catalog\/([a-z]+)$/.exec(url.pathname)?.[1];
+  const publicLists = ["index", "universities", "colleges", "departments", "subjects", "stages"];
+  const cache = typeof caches !== "undefined" && caches.default;
+  if (req.method !== "GET" || !publicLists.includes(part) || url.searchParams.has("view") || !cache || !env.DB) {
+    return handleCatalogRaw(req, env);
+  }
+  try {
+    // Every cached list is gated by the current active universities. Responses
+    // containing account permissions never enter this shared cache.
+    const active = await all(env, "SELECT university_id FROM university_onboarding WHERE state='active' ORDER BY university_id");
+    const cacheUrl = new URL(req.url);
+    cacheUrl.searchParams.set("_visibility", active.map(row => row.university_id).join(","));
+    const key = new Request(cacheUrl, { method: "GET" });
+    let hit;
+    try { hit = await cache.match(key); } catch { /* Cache availability does not determine database access. */ }
+    if (hit) {
+      const response = new Response(hit.body, hit);
+      response.headers.set("cache-control", "no-store");
+      return response;
+    }
+    const response = await handleCatalogRaw(req, env);
+    if (response?.status === 200) {
+      const stored = new Response(response.clone().body, response);
+      stored.headers.set("cache-control", "public, max-age=300");
+      try { await cache.put(key, stored); } catch { /* The original response remains usable. */ }
+    }
+    return response;
+  } catch (error) {
+    return serviceErrorResponse(error);
+  }
+}
+
+async function handleCatalogRaw(req, env) {
+  const url = new URL(req.url);
   const m = url.pathname.match(/^\/api\/catalog\/([a-z]+)$/);
   if (!m) return null;
   if (!env.DB) return fail("not_configured", 503);

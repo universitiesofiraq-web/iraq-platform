@@ -104,11 +104,11 @@
         <div id="teams"></div>
         <h2>إضافة عضو</h2>
         <div class="ad-form">
-          <input id="tEmail" type="email" dir="ltr" placeholder="name@gmail.com">
-          <select id="tLevel"><option value="uploader">رافع: ملفاته تظهر بعد موافقة الممثل</option><option value="rep">ممثل: إدارة كاملة لهذا النطاق</option></select>
-          <select id="tUni"><option value="">اختر الجامعة</option></select>
-          <select id="tCol"><option value="">— كل الجامعة —</option></select>
-          <select id="tDep"><option value="">— كل الكلية —</option></select>
+          <input aria-label="name@gmail.com" id="tEmail" type="email" dir="ltr" placeholder="name@gmail.com">
+          <select id="tLevel" aria-label="مستوى الصلاحية"><option value="uploader">رافع: ملفاته تظهر بعد موافقة الممثل</option><option value="rep">ممثل: إدارة كاملة لهذا النطاق</option></select>
+          <select id="tUni" aria-label="الجامعة"><option value="">اختر الجامعة</option></select>
+          <select id="tCol" aria-label="الكلية"><option value="">— كل الجامعة —</option></select>
+          <select id="tDep" aria-label="القسم"><option value="">— كل الكلية —</option></select>
           <button id="tAdd" type="button">إضافة</button>
         </div>
       </section>
@@ -127,7 +127,7 @@
 
       <section class="ad-panel" id="p-ann">
         <div class="ad-form">
-          <input id="aTitle" maxlength="120" placeholder="عنوان التبليغ">
+          <input aria-label="عنوان التبليغ" id="aTitle" maxlength="120" placeholder="عنوان التبليغ">
           <textarea id="aBody" maxlength="1000" placeholder="نص التبليغ"></textarea>
           <button id="aAdd" type="button">نشر التبليغ للجميع</button>
         </div>

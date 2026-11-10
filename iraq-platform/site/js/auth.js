@@ -119,6 +119,13 @@
       return api("GET", "auth/me").then(function (r) { user = r.status === 200 ? r.data.user : null; return user; });
     },
     afterLogin: function (u) { user = u; },
+    deleteAccount: function () {
+      return api("POST", "auth/delete", { confirm: "DELETE" }).then(function (r) {
+        if (r.status !== 200) throw new Error("delete_failed");
+        SYNC.concat([TKEY]).forEach(lsDel);
+        user = null;
+      });
+    },
     logout: function () {
       return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
         SYNC.concat([TKEY]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك

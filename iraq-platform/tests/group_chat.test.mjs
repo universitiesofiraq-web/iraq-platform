@@ -230,6 +230,8 @@ test("stage managers can review reports without membership but only in scope", a
 test("auto groups: every stage gets a default group and students join without a code", async () => {
   const { env, call, q } = fixture();
   env.GROUP_CHAT_AUTO = "1";
+  assert.equal((await call(2, "rooms")).data.items.length, 0, "unverified student does not auto-join");
+  q("INSERT INTO student_verification(user_id,stage_id,verified_by,verified_at) VALUES(2,11,1,1),(3,11,1,1),(4,21,1,1)");
   const r2 = await call(2, "rooms");
   assert.equal(r2.data.items.length, 1);
   const r3 = await call(3, "rooms");
@@ -243,4 +245,27 @@ test("auto groups: every stage gets a default group and students join without a 
   assert.equal((await call(3, "messages?room_id=" + r2.data.items[0].id)).data.items.length, 1);
   q("INSERT INTO chat_join_requests(group_id,user_id,status,requested_at) VALUES(?,?,'revoked',1)", r2.data.items[0].id, 1);
   assert.equal((await call(1, "rooms")).data.items.length, 0, "no profile stage, no auto membership");
+});
+
+test("silence blocks sending, and edits/deletes are archived for moderation evidence", async () => {
+  const { call, env } = fixture();
+  const a = (await call(1, "create", { stage_id: 11, name: "A" })).data;
+  await call(2, "join", { invite_code: a.invite_code });
+  await call(1, "manage", { room_id: a.id, action: "approve", id: 2 });
+  const m = await call(2, "send", { room_id: a.id, body: "نص أصلي", client_id: "cccccccc-cccc-4444-cccc-cccccccccccc" });
+  assert.equal(m.code, 201);
+  assert.equal((await call(2, "edit", { room_id: a.id, message_id: m.data.item.id, body: "نص معدّل" })).code, 200);
+  assert.equal((await call(1, "delete", { room_id: a.id, message_id: m.data.item.id })).code, 200);
+  const rows = (await env.DB.prepare("SELECT body, reason FROM chat_message_archive WHERE message_id=? ORDER BY id").bind(m.data.item.id).all()).results;
+  assert.deepEqual(rows.map(r => r.reason), ["edit", "delete"]);
+  assert.equal(rows[0].body, "نص أصلي");
+  assert.equal((await call(2, "silence", { room_id: a.id, user_id: 3, minutes: 5 })).code, 403); // الطالب ليس مشرفاً
+  assert.equal((await call(1, "silence", { room_id: a.id, user_id: 2, minutes: 5 })).code, 200);
+  await new Promise(r => setTimeout(r, 1300));
+  const blocked = await call(2, "send", { room_id: a.id, body: "x", client_id: "dddddddd-dddd-4444-dddd-dddddddddddd" });
+  assert.equal(blocked.code, 403);
+  assert.equal(blocked.data.error || blocked.data.code, "silenced");
+  assert.equal((await call(1, "silence", { room_id: a.id, user_id: 2, minutes: 0 })).code, 200);
+  const ok = await call(2, "send", { room_id: a.id, body: "x", client_id: "eeeeeeee-eeee-4444-eeee-eeeeeeeeeeee" });
+  assert.equal(ok.code, 201);
 });

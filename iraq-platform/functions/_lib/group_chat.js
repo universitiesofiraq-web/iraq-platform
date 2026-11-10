@@ -57,13 +57,16 @@ async function audit(env, groupId, messageId, actorId, action, now) {
     .bind(groupId, messageId, actorId, action, now).run();
 }
 
-/* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند أول دخول، وينضم إليها الطالب تلقائياً
+/* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند دخول أول طالب مؤكَّد، وينضم إليها الطالب المؤكَّد تلقائياً
    (إلا من رُفض أو أُلغيت عضويته من المشرف). العضوية تبقى مشروطة بمرحلة ملفه الشخصي. */
 const DEFAULT_GROUP = "مجموعة المرحلة";
 async function autoJoin(env, userId, now) {
   const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
   if (!p || !p.stage_id) return;
   const stage = p.stage_id;
+  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي */
+  const ok = await env.DB.prepare("SELECT 1 AS x FROM student_verification WHERE user_id=? AND stage_id=?").bind(userId, stage).first();
+  if (!ok) return;
   const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
   if (!has) {
     if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;
@@ -79,9 +82,15 @@ async function autoJoin(env, userId, now) {
     .bind(userId, now, stage, userId, userId).run();
 }
 
+async function archiveBody(env, messageId, reason, now) {
+  try {
+    await env.DB.prepare("INSERT INTO chat_message_archive(message_id,body,reason,created_at) SELECT id,body,?,? FROM chat_messages WHERE id=? AND length(body)>0").bind(reason, now, messageId).run();
+  } catch (_) { /* قبل تنفيذ 0017 لا نمنع الحذف */ }
+}
+
 export async function handleGroupChat(req, env, opts = {}) {
   const url = new URL(req.url);
-  const match = /^\/api\/group-chat\/(rooms|create|join|manage|messages|send|edit|delete|pin|read|mute|rotate-code|report)$/.exec(url.pathname.replace(/\/$/, ""));
+  const match = /^\/api\/group-chat\/(rooms|create|join|manage|messages|send|edit|delete|pin|read|mute|rotate-code|report|silence)$/.exec(url.pathname.replace(/\/$/, ""));
   if (!match) return null;
   if (env.GROUP_CHAT_ENABLED !== "1") return fail("feature_disabled", 503);
   if (!env.DB) return fail("not_configured", 503);
@@ -210,6 +219,10 @@ export async function handleGroupChat(req, env, opts = {}) {
         const parent = await env.DB.prepare("SELECT group_id, deleted_at FROM chat_messages WHERE id=?").bind(parentId).first();
         if (!parent || parent.group_id !== groupId || parent.deleted_at) return fail("bad_reply", 400);
       }
+      const sil = await env.DB.prepare("SELECT until_at FROM chat_silence WHERE group_id=? AND user_id=?").bind(groupId, user.id).first().catch(() => null);
+      if (sil && sil.until_at > now) return fail("silenced", 403);
+      const hourly = await env.DB.prepare("SELECT COUNT(*) AS n FROM chat_messages WHERE sender_id=? AND created_at>?").bind(user.id, now - 3600000).first();
+      if (hourly && hourly.n >= 120) return fail("slow_down", 429);
       const recent = await env.DB.prepare("SELECT created_at FROM chat_messages WHERE sender_id=? ORDER BY id DESC LIMIT 1").bind(user.id).first();
       if (recent && now - recent.created_at < 1200) return fail("slow_down", 429);
       const ins = await env.DB.prepare("INSERT INTO chat_messages(group_id,sender_id,client_id,body,reply_to,created_at) VALUES(?,?,?,?,?,?)")
@@ -238,6 +251,15 @@ export async function handleGroupChat(req, env, opts = {}) {
       await env.DB.prepare("UPDATE chat_groups SET invite_hash=? WHERE id=?").bind(inv.hash, groupId).run();
       return json({ ok: true, invite_code: inv.code });
     }
+    if (op === "silence") {
+      if (!(await canManage("stage", g.stage_id))) return fail("forbidden", 403);
+      const target = idOf(b.user_id), mins = Math.min(Math.max(Number(b.minutes) || 0, 0), 60 * 24 * 30);
+      if (!target || target === user.id) return fail("bad_request", 400);
+      if (!mins) await env.DB.prepare("DELETE FROM chat_silence WHERE group_id=? AND user_id=?").bind(groupId, target).run();
+      else await env.DB.prepare("INSERT OR REPLACE INTO chat_silence(group_id,user_id,until_at,set_by,created_at) VALUES(?,?,?,?,?)").bind(groupId, target, now + mins * 60000, user.id, now).run();
+      await audit(env, groupId, null, user.id, mins ? "silence:" + target : "unsilence:" + target, now);
+      return json({ ok: true });
+    }
     const messageId = idOf(b.message_id);
     if (!messageId) return fail("bad_request", 400);
     const m = await env.DB.prepare("SELECT id, group_id, sender_id, created_at, deleted_at, pinned_at FROM chat_messages WHERE id=?")
@@ -247,6 +269,8 @@ export async function handleGroupChat(req, env, opts = {}) {
       if (m.deleted_at) return fail("not_found", 404);
       const reason = safeName(b.reason, 500);
       if (!reason) return fail("bad_request", 400);
+      const rc = await env.DB.prepare("SELECT COUNT(*) AS n FROM chat_reports WHERE reporter_id=? AND created_at>?").bind(user.id, now - 86400000).first();
+      if (rc && rc.n >= 20) return fail("slow_down", 429);
       await env.DB.prepare("INSERT OR IGNORE INTO chat_reports(message_id,reporter_id,reason,created_at) VALUES(?,?,?,?)")
         .bind(messageId, user.id, reason, now).run();
       return json({ ok: true });
@@ -257,11 +281,13 @@ export async function handleGroupChat(req, env, opts = {}) {
       if (m.deleted_at || !ownRecent) return fail("forbidden", 403);
       const newBody = safeName(b.body, MAX_BODY);
       if (!newBody) return fail("bad_request", 400);
+      await archiveBody(env, messageId, "edit", now);
       await env.DB.prepare("UPDATE chat_messages SET body=?,edited_at=? WHERE id=?").bind(newBody, now, messageId).run();
       return json({ ok: true, item: await message(env, messageId) });
     }
     if (op === "delete") {
       if (m.deleted_at || (!ownRecent && !canMod)) return fail("forbidden", 403);
+      await archiveBody(env, messageId, "delete", now);
       await env.DB.prepare("UPDATE chat_messages SET body='',deleted_at=?,pinned_at=NULL,pinned_by=NULL WHERE id=?")
         .bind(now, messageId).run();
       await audit(env, groupId, messageId, user.id, "delete", now);
