@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>القسم | المنصة العراقية</title>
+  <script src="js/api-client.js"></script>
   <script>if(!/[?&]manage=1/.test(location.search)){var m=/[?&]id=(\d+)/.exec(location.search);if(m)location.replace("platform.html?dept="+m[1]);}</script>
   <link rel="icon" type="image/png" href="assets/icon-192.png">
   <meta name="theme-color" content="#13294B">
@@ -89,8 +90,8 @@
     }
 
     function loadSubjects() {
-      fetch("/api/catalog/subjects?department_id=" + id).then(function (r) { return r.json(); }).then(function (d) { render(d.items || []); })
-        .catch(function () { $("subs").innerHTML = '<div class="sj-empty">تعذّر التحميل.</div>'; });
+      IQApi.request("/api/catalog/subjects?department_id=" + id).then(function (d) { render(d.items || []); })
+        .catch(function (error) { IQApi.showError($("subs"), error, loadSubjects); });
     }
 
     $("addf").onsubmit = function (e) {
@@ -102,7 +103,7 @@
         });
     };
 
-    fetch("/api/catalog/department?id=" + id).then(function (r) { return r.json(); }).then(function (d) {
+    IQApi.request("/api/catalog/department?id=" + id).then(function (d) {
       if (!d.ok) { $("title").textContent = "القسم غير موجود"; $("subs").innerHTML = ""; return; }
       info = d.item; can = !!d.can;
       $("title").textContent = info.name_ar;
@@ -126,7 +127,7 @@
       fetch("/api/uploads").then(function (r) { return r.json(); }).then(function (u) {
         (u.items || []).forEach(function (x) { var m = /^s(\d+)$/.exec(x.courseId || ""); if (m) { counts[m[1]] = (counts[m[1]] || 0) + 1; (files[m[1]] = files[m[1]] || []).push(x); } });
       }).catch(function () {}).then(loadSubjects);
-    }).catch(function () { $("title").textContent = "تعذّر التحميل"; });
+    }).catch(function (error) { $("title").textContent = "تعذّر تحميل القسم"; IQApi.showError($("subs"), error); });
   })();
   </script>
 </body>
