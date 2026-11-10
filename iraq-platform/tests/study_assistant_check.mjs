@@ -8,7 +8,8 @@ let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log("FAIL", m); } };
 
 const aiCalls = [];
-const AI = { async run(model, input) { aiCalls.push({ model, input }); const u = JSON.parse(input.messages.at(-1).content);
+let failBig = false;
+const AI = { async run(model, input) { aiCalls.push({ model, input }); if (failBig && /70b/.test(model)) throw new Error("capacity"); const u = JSON.parse(input.messages.at(-1).content);
   if (u.task === "quiz") return { response: 'هنا {"title":"t","questions":[{"question":"q","options":["a","b","c","d"],"correctIndex":1,"explanation":"e","pageNumber":2}]}' };
   return { response: "جواب (ص 2)" }; } };
 const manifest = [{ id: "x", course: "s1", number: 1, title: "Kidney", label: "PDF", type: "lecture" }, { id: "y", course: "s99", number: 1, title: "Other", label: "PDF" }];
@@ -92,6 +93,14 @@ ok(q.status === 200 && q.body.data && q.body.data.questions[0].correctIndex === 
 ok((await call("POST", "/api/study-assistant/notebook/actions", { actionType: "nope" }, a)).status === 400, "bad action");
 const ex = await call("POST", "/api/study-assistant/notebook/actions", { actionType: "explain_page", documentId: DOC, pageNumbers: [2] }, a);
 ok(ex.status === 200 && JSON.parse(aiCalls.at(-1).input.messages[1].content).studentQuestion.includes("ص 2"), "explain page without selection");
+
+// النموذج الأقوى أولاً، ثم رجوع تلقائي للأخف عند تعذّره
+ok(aiCalls.at(-1).model.includes("70b"), "strong model is the default");
+failBig = true;
+const nb = aiCalls.length;
+const fb = await call("POST", "/api/study-assistant/assistant/run", { question: "fallback?" }, b);
+ok(fb.status === 200 && aiCalls.length - nb === 2 && aiCalls.at(-1).model.includes("8b"), "falls back to the lighter model when the strong one fails");
+failBig = false;
 
 // الحصة: 3 في اليوم، استُعملت كلها لـ a
 ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x" }, a)).body.error?.code === "QUOTA_EXHAUSTED", "quota exhausted");

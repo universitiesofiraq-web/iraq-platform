@@ -254,9 +254,19 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
     return { mode: "gemini", text: String((((d.candidates || [])[0] || {}).content || { parts: [{}] }).parts[0].text || "").trim() };
   }
   if (env.AI) {
-    const model = env.CF_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fp8";
-    const out = await env.AI.run(model, { messages: [{ role: "system", content: sys }, ...(history || []), { role: "user", content: user }], max_tokens: 1500 });
-    return { mode: "cloudflare", text: String((out && (out.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content))) || "").trim() };
+    /* الأقوى أولاً (llama-3.3-70b)، وإن تعذّر لأي سبب (نفاد الحصة أو ضغط) نرجع تلقائياً للنموذج الأخف بدل الفشل */
+    const models = [env.CF_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fp8"].filter((m, i, a) => a.indexOf(m) === i);
+    const messages = [{ role: "system", content: sys }, ...(history || []), { role: "user", content: user }];
+    let lastErr;
+    for (const model of models) {
+      try {
+        const out = await env.AI.run(model, { messages, max_tokens: 1500 });
+        const text = String((out && (out.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content))) || "").trim();
+        if (text) return { mode: "cloudflare", text, model };
+        lastErr = new Error("empty_response");
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
   }
   return null;
 }
