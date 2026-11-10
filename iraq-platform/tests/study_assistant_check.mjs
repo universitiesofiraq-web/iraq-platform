@@ -9,9 +9,11 @@ const ok = (c, m) => { n++; if (!c) { fails++; console.log("FAIL", m); } };
 
 const aiCalls = [];
 const ctxOf = (c) => JSON.parse(c.input.messages[0].content.split("<<<CONTEXT_JSON>>>\n")[1]);
+let toolMode = null;
 let failBig = false, failMid = false;
 const AI = { async run(model, input) { aiCalls.push({ model, input }); if (failBig && /gpt-oss/.test(model)) throw new Error("capacity"); if (failMid && /70b/.test(model)) throw new Error("capacity"); const u = ctxOf({ input });
   if (u.task === "quiz") return { response: 'هنا {"title":"t","questions":[{"question":"q","options":["a","b","c","d"],"correctIndex":1,"explanation":"e","pageNumber":2}]}' };
+  if (toolMode) { const last = input.messages.at(-1).content; if (/^نتيجة الأداة/.test(last)) return { response: "جواب من الأداة: " + last.slice(0, 400) }; return { response: toolMode }; }
   return { response: "جواب (ص 2)" }; } };
 const manifest = [{ id: "x", course: "s1", number: 1, title: "Kidney", label: "PDF", type: "lecture" }, { id: "y", course: "s99", number: 1, title: "Other", label: "PDF" }];
 const env = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: "boss@x.com", AI, DAILY_QUOTA_UNITS: "5",
@@ -134,5 +136,24 @@ ok((await call("POST", "/api/study-assistant/department/knowledge", { title: "t"
 delete env.AI;
 ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x" }, b)).body.error.code === "AI_NOT_CONFIGURED", "no AI binding → 503");
 
+
+/* فهرس القسم المشترك + الأدوات */
+env.AI = AI;
+const cc = await login({ sub: "cc", email: "cc@x.com", name: "C" });
+await setDept(cc, 1);
+ok((await call("POST", "/api/study-assistant/dept/index", { fileId: "x", pages: [{ n: 1, text: "kidney nephron filtration" }] }, cc)).status === 403, "student cannot index dept files");
+ok((await call("POST", "/api/study-assistant/dept/index", { fileId: "y", pages: [{ n: 1, text: "kidney nephron filtration" }] }, boss)).status === 404, "cannot index file outside department");
+const dix = await call("POST", "/api/study-assistant/dept/index", { fileId: "x", pages: [{ n: 1, text: "intro" }, { n: 4, text: "The glomerulus filtration rate depends on nephron pressure and plasma flow" }] }, boss);
+ok(dix.status === 200 && dix.body.chunks === 1, "manager indexes dept file");
+const dst = (await call("GET", "/api/study-assistant/dept/status", null, boss)).body;
+ok(dst.canManage && dst.indexed === 1 && dst.files[0].indexed, "status shows indexed file");
+ok((await call("GET", "/api/study-assistant/dept/status", null, cc)).body.files.length === 0, "student sees no file list");
+toolMode = 'TOOL: {"name":"search_materials","args":{"query":"glomerulus filtration"}}';
+const dtr = await call("POST", "/api/study-assistant/assistant/run", { task: "ask", question: "ما هو glomerulus filtration؟" }, cc);
+ok(dtr.body.ok && /جواب من الأداة/.test(dtr.body.answer) && /glomerulus/.test(dtr.body.answer), "tool loop runs search_materials and answers");
+ok(dtr.body.citations.some((x) => x.fileUrl === "/api/file/x" && x.pageNumber === 4), "dept citation has fileUrl and page");
+toolMode = null;
+const dhy = await call("POST", "/api/study-assistant/assistant/run", { task: "ask", question: "اشرح glomerulus filtration" }, cc);
+ok(dhy.body.ok && dhy.body.citations.some((x) => x.fileUrl), "auto hybrid retrieval cites dept chunk");
 console.log(fails ? `STUDY ASSISTANT FAILED: ${fails}/${n}` : `STUDY ASSISTANT OK: ${n} checks`);
 process.exit(fails ? 1 : 0);

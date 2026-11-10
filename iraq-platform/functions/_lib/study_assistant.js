@@ -8,6 +8,7 @@
 // جدول الحصص والامتحانات ونظام السعي غير موجودة كجداول في المنصة بعد؛ يضيفها ممثل القسم كملاحظات قسم (category).
 import { currentUser } from "./auth.js";
 import { policy } from "./scope.js";
+import { searchDept, indexDeptFile, deptFiles, TOOL_HELP, parseToolCall, runTool } from "./study_dept.js";
 
 export const TASKS = ["ask", "advisor", "summarize", "explain", "translate", "quiz", "mindmap"];
 export const NOTEBOOK_ACTIONS = { explain_page: "explain", summarize_selection: "summarize", quiz_from_pages: "quiz", translate_paragraph: "translate" };
@@ -253,9 +254,9 @@ function aiText(out) {
   return "";
 }
 
-export async function callAiProvider(env, { task, question, chunks, departmentKnowledge, studentProfile, studentData, history, targetLang }) {
+export async function callAiProvider(env, { task, question, chunks, departmentKnowledge, studentProfile, studentData, history, targetLang, extraMessages, useTools }) {
   const mode = String(env.AI_PROVIDER_MODE || "cloudflare").toLowerCase();
-  const sys = systemPrompt(task, targetLang) + "\n<<<CONTEXT_JSON>>>\n" + JSON.stringify({ task, targetLang, studentProfile, studentData, departmentKnowledge, approvedChunks: chunks });
+  const sys = systemPrompt(task, targetLang) + (useTools ? "\n" + TOOL_HELP : "") + "\n<<<CONTEXT_JSON>>>\n" + JSON.stringify({ task, targetLang, studentProfile, studentData, departmentKnowledge, approvedChunks: chunks });
   if (mode === "gemini" && env.GEMINI_API_KEY) {
     const model = env.GEMINI_MODEL || "gemini-2.5-flash";
     const res = await (env.__fetch || fetch)(
@@ -263,7 +264,7 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
       {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [...(history || []).map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] })), { role: "user", parts: [{ text: question }] }] })
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [...(history || []).map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] })), { role: "user", parts: [{ text: question }] }, ...(extraMessages || []).map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] }))] })
       }
     );
     if (!res.ok) throw new Error("gemini_http_" + res.status);
@@ -273,7 +274,7 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
   if (env.AI) {
     /* سلسلة نماذج: الأقوى أولاً (gpt-oss-120b)، ثم llama-3.3-70b، ثم الأخف. إن تعذّر نموذج (نفاد الحصة، ضغط، إيقاف) ننتقل للتالي بدل أن يرى الطالب خطأ */
     const models = [env.CF_AI_MODEL || "@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fp8"].filter((m, i, a) => a.indexOf(m) === i);
-    const messages = [{ role: "system", content: sys }, ...(history || []), { role: "user", content: question }];
+    const messages = [{ role: "system", content: sys }, ...(history || []), { role: "user", content: question }, ...(extraMessages || [])];
     let lastErr;
     for (const model of models) {
       try {
@@ -369,21 +370,56 @@ async function run(env, principal, body, now, limit) {
     const needsData = task === "advisor" || /محاضر|تبليغ|اعلان|إعلان|درج|معدل|ماد[ةه]|مواد|قسم|كلي[ةه]|جامع|ملف|ملازم|امتحان|سعي|مفضل|مراجع|مرحل|كم |آخر|اخر|أحدث|احدث|اسمي|معلومات|تقدم|قرأت|فتحت|جدول|دوام|عطل/.test(question + " " + selected);
     const studentData = needsData ? fullData : { today: fullData.today, weekday: fullData.weekday, profile: fullData.profile };
     const departmentKnowledge = !needsData ? [] : [...kb, ...(await discoverExistingPlatformData(env, principal))].filter((x) => x.category !== "lecture" && x.category !== "announcement" || kb.includes(x));
-    const out = await callAiProvider(env, {
-      task,
-      question: selected ? (question ? question + "\n\nالنص المحدد:\n" : "النص المحدد:\n") + selected : question,
-      chunks,
-      departmentKnowledge,
-      studentData,
-      history,
+    /* فهرس القسم المشترك: بحث بالمعنى/الكلمات في كل محاضرات القسم، ويُدمج مع مقاطع الطالب الخاصة */
+    const q = question || selected;
+    const lectureish = /محاضر|ملف|صفح|ملزم|لخص|لخّص|اشرح|شرح|اختبر|خريط|ما هو|ما هي|ماذا|كيف|لماذا|what|explain|define/i.test(q);
+    let deptHits = [];
+    if (task !== "advisor" && principal.departmentKey && (lectureish || env.VEC) && q.trim().split(/\s+/).length >= 2) {
+      try { deptHits = await searchDept(env, principal.departmentKey, q, { limit: 5 }); } catch (e) { if (!notMigrated(e)) throw e; }
+    }
+    if (deptHits.length) chunks = [...chunks, ...deptHits].slice(0, 10);
+    const askQuestion = selected ? (question ? question + "\n\nالنص المحدد:\n" : "النص المحدد:\n") + selected : question;
+    const baseArgs = {
+      task, question: askQuestion, chunks, departmentKnowledge, studentData, history,
       studentProfile: { university: principal.university, college: principal.college, department: principal.department },
       targetLang: body.targetLang === "en" ? "en" : "ar"
-    });
+    };
+    /* حلقة الأدوات: يطلب النموذج أداة بسطر TOOL: ... فننفّذها على الخادم (حتى 3 مرات) ثم يجيب */
+    const toolCites = [];
+    let out;
+    if (task === "ask") {
+      const names = new Map();
+      if (principal.departmentId) {
+        const subj = (await env.DB.prepare("SELECT sb.id, sb.name_ar FROM subjects sb JOIN terms t ON t.id = sb.term_id JOIN stages st ON st.id = t.stage_id WHERE st.department_id = ?").bind(principal.departmentId).all()).results || [];
+        subj.forEach((x) => names.set("s" + x.id, x.name_ar));
+      }
+      let files = null;
+      const tctx = {
+        principal, names, cites: toolCites,
+        loadFiles: async () => (files || (files = await deptFiles(env, names))),
+        loadGrades: () => loadGrades(env, principal.userId), gradeSummary,
+        announcements: async (n) => ((await env.DB.prepare("SELECT title, body, author_name, created_at FROM announcements ORDER BY created_at DESC LIMIT ?").bind(n).all()).results || []).map((a) => ({ title: a.title, body: clip(a.body, 500), by: a.author_name, date: dayOf(toMs(a.created_at)) }))
+      };
+      const extra = [];
+      for (let i = 0; i < 4; i++) {
+        out = await callAiProvider(env, { ...baseArgs, extraMessages: extra, useTools: i < 3 });
+        const call = i < 3 ? parseToolCall(out.text) : null;
+        if (!call) break;
+        let result;
+        try { result = await runTool(env, tctx, call); } catch (e) { result = { error: notMigrated(e) ? "الفهرس غير جاهز." : "تعذّر تنفيذ الأداة." }; }
+        extra.push({ role: "assistant", content: "TOOL: " + JSON.stringify(call) }, { role: "user", content: "نتيجة الأداة " + call.name + ":\n" + clip(JSON.stringify(result), 6000) + "\nأجب الآن عن سؤال الطالب اعتماداً على هذه النتيجة (أو اطلب أداة أخرى إن لزم)." });
+      }
+      if (parseToolCall(out.text)) out = { ...out, text: "تعذّر إكمال البحث، أعد صياغة سؤالك." };
+    } else out = await callAiProvider(env, baseArgs);
     await settle("committed");
     const data = task === "quiz" || task === "mindmap" ? parseJsonOut(out.text) : null;
     return json({
       ok: true, task, answer: out.text, data, providerMode: out.mode,
-      citations: chunks.slice(0, 4).map((c) => ({ documentId: c.documentId, pageNumber: Number(c.pageNumber), chunkId: c.chunkId, excerpt: clip(c.content, 180) })),
+      citations: (() => {
+        const seen = new Set();
+        return [...chunks, ...toolCites].filter((c) => { const k = (c.fileId || c.documentId) + ":" + c.pageNumber; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 5)
+          .map((c) => ({ documentId: c.documentId, pageNumber: Number(c.pageNumber), chunkId: c.chunkId, excerpt: clip(c.content, 180), ...(c.fileId ? { fileUrl: "/api/file/" + encodeURIComponent(c.fileId), title: c.title || null } : {}) }));
+      })(),
       quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 }
     });
   } catch (e) {
@@ -471,6 +507,26 @@ export async function handleStudyAssistant(req, env, opts = {}) {
         return json({ ok: true, deleted: cur.length - next.length, ...gradeSummary(next) });
       }
     }
+    if (sub === "/dept/status" && method === "GET") {
+      if (!principal.departmentId) return json({ ok: true, canManage: false, files: [] });
+      const names = new Map(((await env.DB.prepare("SELECT sb.id, sb.name_ar FROM subjects sb JOIN terms t ON t.id = sb.term_id JOIN stages st ON st.id = t.stage_id WHERE st.department_id = ?").bind(principal.departmentId).all()).results || []).map((x) => ["s" + x.id, x.name_ar]));
+      const done = new Map();
+      try { ((await env.DB.prepare("SELECT file_id, pages, chunks FROM ai_dept_files WHERE department_key = ?").bind(principal.departmentKey).all()).results || []).forEach((r) => done.set(r.file_id, r)); } catch (e) { if (!notMigrated(e)) throw e; }
+      const files = (await deptFiles(env, names)).map((e) => ({ id: e.id, subject: names.get(e.course), title: e.title || e.label || "", number: e.number || null, indexed: done.has(e.id), chunks: done.has(e.id) ? done.get(e.id).chunks : 0 }));
+      return json({ ok: true, canManage: canManageDept, semantic: !!env.VEC, total: files.length, indexed: files.filter((f) => f.indexed).length, files: canManageDept ? files : [] });
+    }
+    if (sub === "/dept/index" && method === "POST") {
+      if (!principal.departmentKey) return fail("NO_DEPARTMENT", 400, "اختر قسمك أولاً.");
+      if (!canManageDept) return fail("FORBIDDEN", 403, "فهرسة ملفات القسم لممثل القسم أو المشرف فقط.");
+      const fileId = clip(body.fileId, 80);
+      const names = new Map(((await env.DB.prepare("SELECT sb.id, sb.name_ar FROM subjects sb JOIN terms t ON t.id = sb.term_id JOIN stages st ON st.id = t.stage_id WHERE st.department_id = ?").bind(principal.departmentId).all()).results || []).map((x) => ["s" + x.id, x.name_ar]));
+      const entry = (await deptFiles(env, names)).find((e) => e.id === fileId);
+      if (!entry) return fail("FILE_NOT_IN_DEPARTMENT", 404, "الملف ليس ضمن مواد قسمك.");
+      const pages = (Array.isArray(body.pages) ? body.pages : []).filter((p) => p && typeof p.text === "string");
+      if (!pages.length) return fail("NO_PAGES", 400);
+      const r = await indexDeptFile(env, { deptKey: principal.departmentKey, fileId, subject: names.get(entry.course), title: entry.title || entry.label || "", pages, by: principal.userId, now });
+      return json({ ok: true, fileId, ...r });
+    }
     if (method === "POST" && sub === "/documents/index") return await indexDocument(env, principal, body, now);
     if (method === "GET" && sub === "/documents") {
       const items = (await env.DB.prepare("SELECT id, filename AS title, r2_object_key AS file, page_count, text_page_count, created_at FROM ai_documents WHERE user_id = ? ORDER BY created_at DESC LIMIT 200").bind(principal.userId).all()).results || [];
@@ -486,7 +542,7 @@ export async function handleStudyAssistant(req, env, opts = {}) {
     }
     return fail("NOT_FOUND", 404, "المسار غير موجود.");
   } catch (e) {
-    if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "نفّذ ملف migrations/0008_ai_study_assistant.sql على قاعدة البيانات.");
+    if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "نفّذ ملف migrations/0008_ai_study_assistant.sql و0012_ai_dept_index.sql على قاعدة البيانات.");
     console.error("study-assistant", sub, e && e.name, e && e.message);
     const detail = clip((e && e.name ? e.name + ": " : "") + (e && e.message ? e.message : ""), 200);
     return json({ ok: false, error: { code: "SERVER_ERROR", message: "حدث خطأ في الخادم.", detail } }, 500);

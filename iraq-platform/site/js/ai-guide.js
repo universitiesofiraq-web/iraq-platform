@@ -14,7 +14,7 @@
   var ctxBar;
   function ctx() { try { return st.ctxFn ? st.ctxFn() : null; } catch (e) { return null; } }
   function hkey() { var c = ctx(); return c && c.documentId ? HKEY + "." + c.documentId : HKEY; }
-  var root, thread, input, sendBtn, docSel, chipsBox, quotaEl, whoEl, foot, gradesBox, modeBtns = [], opener = null;
+  var idxBox, idxBtn, root, thread, input, sendBtn, docSel, chipsBox, quotaEl, whoEl, foot, gradesBox, modeBtns = [], opener = null;
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function req(path, method, body) {
@@ -56,9 +56,10 @@
     var box = el("div", "ag-cites");
     (list || []).forEach(function (c) {
       var d = null; st.docs.forEach(function (x) { if (x.id === c.documentId) d = x; });
-      var cx = ctx(), a = el(cx && cx.onCite ? "button" : (d && d.file ? "a" : "span"), "ag-cite", "ص " + c.pageNumber);
+      var cx = ctx(), a = el(c.fileUrl ? "a" : (cx && cx.onCite ? "button" : (d && d.file ? "a" : "span")), "ag-cite", (c.title ? c.title.slice(0, 24) + " · " : "") + "ص " + c.pageNumber);
       if (c.excerpt) a.title = c.excerpt;
-      if (cx && cx.onCite) { a.type = "button"; a.addEventListener("click", function () { cx.onCite(c); }); }
+      if (c.fileUrl) { a.href = "pdf-notes.html?file=" + encodeURIComponent(c.fileUrl) + "#page=" + c.pageNumber; a.target = "_blank"; a.rel = "noopener"; }
+      else if (cx && cx.onCite) { a.type = "button"; a.addEventListener("click", function () { cx.onCite(c); }); }
       else if (d && d.file) { a.href = "pdf-notes.html?file=" + encodeURIComponent(d.file) + "#page=" + c.pageNumber; a.target = "_blank"; a.rel = "noopener"; }
       box.appendChild(a);
     });
@@ -225,6 +226,70 @@
   }
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; }
 
+  /* ---------- فهرسة ملفات القسم (لممثل القسم/المشرف): تُستخرج النصوص في متصفحه وتُرسل للخادم ---------- */
+  var PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise(function (ok, no) {
+      var s = document.createElement("script"); s.src = PDFJS; s.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_W; ok(window.pdfjsLib); }; s.onerror = function () { no(new Error("pdfjs")); };
+      document.head.appendChild(s);
+    });
+  }
+  function buildIdx() {
+    var box = el("div", "ag-grades"); box.hidden = true;
+    box.appendChild(el("strong", null, "فهرسة ملفات القسم"));
+    var info = el("p", "ag-gsum", "…"); info.className = "ag-gsum ag-idxinfo"; box.appendChild(info);
+    var bar = el("progress"); bar.max = 100; bar.value = 0; bar.hidden = true; bar.style.width = "100%"; box.appendChild(bar);
+    var go = el("button", "ag-send", "ابدأ فهرسة الملفات الجديدة"); go.type = "button"; box.appendChild(go);
+    var note = el("small", "ag-quota", "بعد الفهرسة يجيب المرشد كل طالب في القسم من نصوص المحاضرات مع رقم الصفحة. يمكنك ترك النافذة مفتوحة حتى تنتهي."); box.appendChild(note);
+    box._info = info; box._bar = bar; box._go = go;
+    go.addEventListener("click", function () { runIdx(box); });
+    return box;
+  }
+  function refreshIdx(box) {
+    return req("dept/status").then(function (d) {
+      if (!d.ok) { box._info.textContent = errText(d); return null; }
+      box._st = d;
+      box._info.textContent = "ملفات القسم: " + d.total + " — المفهرس منها: " + d.indexed + (d.semantic ? " — البحث بالمعنى مفعّل" : " — البحث بالكلمات (فعّل Vectorize للبحث بالمعنى)");
+      box._go.disabled = d.indexed >= d.total; return d;
+    });
+  }
+  function runIdx(box) {
+    var d = box._st; if (!d) return;
+    var todo = d.files.filter(function (f) { return !f.indexed; });
+    if (!todo.length) return;
+    box._go.disabled = true; box._bar.hidden = false; box._bar.value = 0;
+    var failed = 0;
+    loadPdfJs().then(function () {
+      var i = 0;
+      function next() {
+        if (i >= todo.length) { box._bar.hidden = true; box._info.textContent = failed ? "اكتملت الفهرسة مع تعذّر " + failed + " ملف." : "اكتملت فهرسة كل الملفات ✓"; return refreshIdx(box); }
+        var f = todo[i++];
+        box._info.textContent = "فهرسة (" + i + "/" + todo.length + "): " + (f.title || f.subject || "");
+        box._bar.value = Math.round(((i - 1) / todo.length) * 100);
+        return window.pdfjsLib.getDocument({ url: "/api/file/" + encodeURIComponent(f.id), withCredentials: true }).promise.then(function (pdf) {
+          var pages = [], n = 1;
+          function page() {
+            if (n > pdf.numPages || n > 600) return;
+            var cur = n++;
+            return pdf.getPage(cur).then(function (p) { return p.getTextContent(); }).then(function (tc) {
+              pages.push({ n: cur, text: tc.items.map(function (it) { return it.str; }).join(" ") }); return page();
+            });
+          }
+          return page().then(function () {
+            var out = [], batch = Promise.resolve();
+            return req("dept/index", "POST", { fileId: f.id, pages: pages.filter(function (p) { return p.text.trim().length > 15; }) }).then(function (r) { if (!r.ok) failed++; });
+          });
+        }).catch(function () { failed++; }).then(next);
+      }
+      return next();
+    }).catch(function () { box._info.textContent = "تعذّر تحميل مكتبة قراءة PDF."; box._go.disabled = false; });
+  }
+  function toggleIdx(on) {
+    thread.hidden = on; foot.hidden = on; idxBox.hidden = !on; chipsBox.hidden = on || st.hist.length > 0;
+    if (on) refreshIdx(idxBox);
+  }
+
   /* ---------- بناء النافذة ---------- */
   function build() {
     if (st.built) return; st.built = true;
@@ -239,11 +304,14 @@
     var clr = el("button", "ag-tool", "مسح"); clr.type = "button"; clr.title = "مسح المحادثة"; clr.addEventListener("click", function () { st.hist = []; saveHist(); welcome(); setMode("ask"); }); head.appendChild(clr);
     var gb = el("button", "ag-tool", "درجاتي"); gb.type = "button"; gb.title = "سجّل درجاتك ليعرفها المرشد";
     gb.addEventListener("click", function () { toggleGrades(!st.gradesOpen); gb.textContent = st.gradesOpen ? "رجوع للمحادثة" : "درجاتي"; }); head.appendChild(gb);
+    idxBtn = el("button", "ag-tool", "فهرسة القسم"); idxBtn.type = "button"; idxBtn.hidden = true; idxBtn.title = "لممثل القسم: اجعل المرشد يعرف نصوص كل محاضرات القسم";
+    idxBtn.addEventListener("click", function () { var on = idxBox.hidden; if (on && st.gradesOpen) { toggleGrades(false); gb.textContent = "درجاتي"; } toggleIdx(on); idxBtn.textContent = on ? "رجوع للمحادثة" : "فهرسة القسم"; }); head.appendChild(idxBtn);
     var x = el("button", "ag-x", "×"); x.type = "button"; x.setAttribute("aria-label", "إغلاق"); x.addEventListener("click", close); head.appendChild(x);
     dlg.appendChild(head);
     ctxBar = el("div", "ag-ctx"); ctxBar.hidden = true; dlg.appendChild(ctxBar);
     thread = el("div", "ag-thread"); thread.setAttribute("aria-live", "polite"); dlg.appendChild(thread);
     gradesBox = buildGrades(); dlg.appendChild(gradesBox);
+    idxBox = buildIdx(); dlg.appendChild(idxBox);
     chipsBox = el("div", "ag-chips"); dlg.appendChild(chipsBox);
     foot = el("div", "ag-foot");
     docSel = el("select", "ag-doc"); docSel.setAttribute("aria-label", "المحاضرة"); docSel.hidden = true;
@@ -292,7 +360,7 @@
     req("me").then(function (d) {
       if (d.status === 401) { gate(); whoEl.textContent = ""; return; }
       if (!d.ok) { addBot({ ok: false, text: errText(d) }); return; }
-      st.me = d.principal; input.disabled = false; sendBtn.disabled = false;
+      st.me = d.principal; idxBtn.hidden = !(st.me && st.me.canManageDepartment); input.disabled = false; sendBtn.disabled = false;
       whoEl.textContent = st.me.department ? [st.me.college, st.me.department].filter(Boolean).join(" — ") : "لم تختر قسمك بعد";
       quota(d.quota);
       return req("documents").then(function (r) {
