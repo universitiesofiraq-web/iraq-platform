@@ -8,8 +8,8 @@
 import { currentUser as defaultCurrentUser } from "./auth.js";
 
 export const TRANSLATE_MODEL = "@cf/meta/m2m100-1.2b";
-export const EXPLAIN_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
-export const EXPLAIN_FALLBACK = "@cf/meta/llama-3.1-8b-instruct";
+export const EXPLAIN_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
+export const EXPLAIN_FALLBACK = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 export const MAX_CHARS = 2000;
 const MAX_BODY = 64 * 1024;
 const WINDOW_MS = 10 * 60 * 1000, PER_WINDOW = 20;

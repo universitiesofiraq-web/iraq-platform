@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v36";
+var V = "ms-v37";
 var SHELL = ["platform.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }).then(function () { return self.skipWaiting(); }));
@@ -14,7 +14,7 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  if (/^\/api\/(auth\/|admin\/|catalog\/|platform(?:$|\/)|sync|stage-announcements|announcements|pdfnotes|ai\/)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
+  if (/^\/api\/(auth\/|admin\/|catalog\/|platform(?:$|\/)|sync|stage-announcements|announcements|pdfnotes|ai\/|study-assistant\/)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
   var isPdf = /\.pdf$/i.test(url.pathname);
   e.respondWith(
     (isPdf ? caches.match(req).then(function (hit) { return hit || fetchAndStore(req); })

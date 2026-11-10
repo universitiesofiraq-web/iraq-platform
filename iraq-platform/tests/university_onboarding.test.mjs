@@ -9,9 +9,9 @@ import { database, seedAcademic, signedRequest } from "./helpers/d1.mjs";
 const root = "/api/admin/universities";
 
 test("onboarding migration is repeatable and preserves old directory rows and scopes", () => {
-  const { sql } = database(7);
+  const { sql } = database(8);
   seedAcademic(sql);
-  const migration = readFileSync(new URL("../migrations/0008_university_onboarding.sql", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../migrations/0009_university_onboarding.sql", import.meta.url), "utf8");
   sql.exec(migration);
   sql.exec(migration);
   assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM universities WHERE is_active=1").get().n, 2);
