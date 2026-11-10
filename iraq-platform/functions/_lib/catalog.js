@@ -6,7 +6,7 @@
 //   subject {department_id,stage,term,name_ar,name_en?,professor?}
 // حذف (للمشرف): POST /api/catalog/delete { type, id }  (university|college|department|subject)
 import { currentUser } from "./auth.js";
-import { policy } from "./scope.js";
+import { policy, isAdminUser } from "./scope.js";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -18,13 +18,6 @@ const num = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : n
 const txt = (v, max = 120) => String(v || "").trim().slice(0, max);
 const slugify = (s) =>
   "u" + Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36);
-
-async function isAdmin(req, env) {
-  const u = await currentUser(req, env);
-  if (!u) return false;
-  const list = String(env.ADMIN_EMAILS || "").toLowerCase().split(",").map((x) => x.trim());
-  return u.role === "admin" || list.includes(String(u.email || "").toLowerCase());
-}
 
 async function all(env, sql, ...args) {
   const r = await env.DB.prepare(sql).bind(...args).all();
@@ -111,7 +104,7 @@ export async function handleCatalog(req, env) {
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
     const me = await currentUser(req, env);
     if (!me) return fail("forbidden", 403);
-    const admin = await isAdmin(req, env);
+    const admin = isAdminUser(me, env);
     let b;
     try { b = await req.json(); } catch { return fail("bad_request", 400); }
     const type = String(b.type || "");

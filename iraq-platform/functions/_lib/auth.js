@@ -132,7 +132,8 @@ async function googleLogin(req, env, now, opts) {
     u = { id: r.meta && r.meta.last_row_id, email, name, role: isAdmin ? "admin" : "student", active: 1 };
   } else {
     if (!u.active) return fail("disabled", 403);
-    const role = isAdmin ? "admin" : u.role;
+    // Revoke any previously stored admin role when removed from ADMIN_EMAILS.
+    const role = isAdmin ? "admin" : u.role === "admin" ? "student" : u.role;
     await env.DB.prepare("UPDATE users SET email = ?, name = ?, role = ? WHERE id = ?").bind(email, name, role, u.id).run();
     u = { ...u, email, name, role };
   }
@@ -176,17 +177,23 @@ async function syncPut(req, user, env) {
 
 async function adminUsers(env) {
   const rows = await env.DB.prepare("SELECT id, email, name, role, active, created_at FROM users ORDER BY id").all();
-  return json({ ok: true, users: rows.results || [] });
+  const admins = new Set(adminList(env));
+  const users = (rows.results || []).map((u) => ({
+    ...u,
+    role: admins.has(String(u.email || "").toLowerCase()) ? "admin" : u.role === "admin" ? "student" : u.role
+  }));
+  return json({ ok: true, users });
 }
 
 async function adminUpdate(req, env) {
   const b = await readJson(req);
   if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
+  const target = await env.DB.prepare("SELECT email FROM users WHERE id = ?").bind(b.id).first();
+  if (!target) return fail("not_found", 404);
+  // Neither role nor active state of listed administrators may be edited here.
+  if (adminList(env).includes(String(target.email || "").toLowerCase())) return fail("admin_locked", 409);
   if (b.role !== undefined) {
     if (!ROLES.includes(b.role)) return fail("bad_role", 400);
-    const t = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(b.id).first();
-    if (!t) return fail("not_found", 404);
-    if (t.role === "admin") return fail("admin_locked", 409); // المشرف يُحدَّد من ADMIN_EMAILS لا من هنا
     await env.DB.prepare("UPDATE users SET role = ? WHERE id = ?").bind(b.role, b.id).run();
   }
   if (typeof b.active === "boolean") {
@@ -232,7 +239,7 @@ export function uploadAccount(env) {
     if (!u) return null;
     const pol = await policy(env, u);
     const anyRep = pol.scopes.some((s) => s.level === "rep");
-    if (!pol.admin && !pol.legacyUploader && !pol.scopes.length) return null;
+    if (!pol.admin && !pol.scopes.length) return null;
     return {
       name: u.name,
       role: pol.admin ? "admin" : anyRep ? "rep" : "uploader",
@@ -270,7 +277,7 @@ export async function handleAuth(req, env, opts = {}) {
   if (p === "/api/sync" && req.method === "PUT") return syncPut(req, user, env);
 
   if (isAnn && req.method === "POST") {
-    if (!ANNOUNCE_ROLES.includes(user.role)) return fail("forbidden", 403);
+    if (!isAdminUser(user, env)) return fail("forbidden", 403);
     return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
   }
 
@@ -279,7 +286,7 @@ export async function handleAuth(req, env, opts = {}) {
     if (r) return r;
   }
 
-  if (user.role !== "admin") return fail("forbidden", 403);
+  if (!isAdminUser(user, env)) return fail("forbidden", 403);
   if (p === "/api/auth/users" && req.method === "GET") return adminUsers(env);
   if (p === "/api/auth/user" && req.method === "POST") return adminUpdate(req, env);
   return fail("not_found", 404);
