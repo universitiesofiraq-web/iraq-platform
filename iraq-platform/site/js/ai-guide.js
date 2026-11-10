@@ -6,13 +6,11 @@
   var API = "/api/study-assistant/";
   var HKEY = "iq.guide.history";
   var MODES = [
-    { id: "ask", label: "اسألني أي شيء", ph: "اسألني عن محاضراتك أو تبليغاتك أو درجاتك أو أي سؤال…", chips: ["ما آخر محاضرة نزلت؟", "ما آخر تبليغ؟", "كم عدد المحاضرات في قسمي؟", "ما درجاتي ومعدلي؟", "لخّص لي أهم نقاط المحاضرة"] },
-    { id: "quiz", label: "اختبرني", ph: "موضوع الاختبار (اختياري)", chips: ["اختبرني من هذه المحاضرة", "اختبار سريع على أهم المفاهيم"] },
-    { id: "mindmap", label: "خريطة ذهنية", ph: "موضوع الخريطة (اختياري)", chips: ["خريطة ذهنية لهذه المحاضرة"] },
-    { id: "advisor", label: "دليل القسم", ph: "اسأل عن قسمك: المواد، الامتحانات، السعي…", chips: ["ما المواد المرفوعة لقسمي؟", "ما مواعيد الامتحانات؟", "كيف يُحتسب السعي؟"] },
-    { id: "grades", label: "درجاتي", grades: true }
+    { id: "ask", ph: "اسألني أي شيء…", chips: ["ما آخر محاضرة نزلت؟", "ما آخر تبليغ؟", "كم عدد المحاضرات في قسمي؟", "ما درجاتي ومعدلي؟", "لخّص لي أهم نقاط المحاضرة"] }
   ];
-  var st = { mode: "ask", busy: false, me: null, docs: [], hist: [], built: false, last: null, ctxFn: null, timer: null };
+  /* نية الطلب تُفهم من الكلام نفسه: اختبار أو خريطة ذهنية، وما عداهما دردشة عادية */
+  function intent(q) { if (/خريطة ذهنية|mind ?map/i.test(q)) return "mindmap"; if (/اختبرني|اختبر معلوماتي|أعطني (اختبار|أسئلة)|اعطني (اختبار|أسئلة)|quiz me/i.test(q)) return "quiz"; return "ask"; }
+  var st = { gradesOpen: false, mode: "ask", busy: false, me: null, docs: [], hist: [], built: false, last: null, ctxFn: null, timer: null };
   var ctxBar;
   function ctx() { try { return st.ctxFn ? st.ctxFn() : null; } catch (e) { return null; } }
   function hkey() { var c = ctx(); return c && c.documentId ? HKEY + "." + c.documentId : HKEY; }
@@ -140,13 +138,15 @@
     return out;
   }
   function send(text, mode, isRetry, extra) {
-    mode = mode || st.mode; text = String(text == null ? input.value : text).trim();
+    text = String(text == null ? input.value : text).trim();
     if (st.busy) return;
     if (!text && mode !== "quiz" && mode !== "mindmap") return;
     var q = text || (mode === "quiz" ? "اختبرني من هذه المحاضرة" : "خريطة ذهنية لهذه المحاضرة");
+    if (!mode || mode === "ask") mode = intent(q);
     st.last = { q: q, mode: mode, extra: extra };
     if (!isRetry) { addUser(q); input.value = ""; autosize(); }
     var typing = el("div", "ag-msg ag-bot"); var tb = el("div", "ag-bubble ag-typing"); tb.appendChild(el("span")); tb.appendChild(el("span")); tb.appendChild(el("span")); typing.appendChild(tb); thread.appendChild(typing); scroll();
+    chipsBox.hidden = true;
     setBusy(true);
     var body = { task: mode, question: q }, cx = ctx();
     if (cx && cx.documentId && mode !== "advisor") {
@@ -172,18 +172,20 @@
 
   /* ---------- الأوضاع والاقتراحات ---------- */
   function setMode(id) {
-    st.mode = id;
-    var m = MODES.filter(function (x) { return x.id === id; })[0];
-    modeBtns.forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.mode === id)); });
-    var g = !!m.grades;
-    thread.hidden = g; chipsBox.hidden = g; foot.hidden = g; gradesBox.hidden = !g;
-    if (g) { loadGrades(); return; }
-    input.placeholder = m.ph;
-    docSel.hidden = id === "advisor" || st.docs.length === 0 || !!(ctx() && ctx().documentId);
+    st.mode = "ask";
+    var cx = ctx();
+    input.placeholder = cx && cx.documentId ? "اسألني عن الملف أو عن أي شيء آخر…" : MODES[0].ph;
+    docSel.hidden = st.docs.length === 0 || !!(cx && cx.documentId);
     chipsBox.textContent = "";
-    var cx = ctx(), list = m.chips.map(function (c) { return { t: c }; });
-    if (cx && cx.documentId && id === "ask") list = (cx.chips || []).concat(list.slice(0, 2));
-    list.forEach(function (c) { var b = el("button", "ag-chip", c.t); b.type = "button"; b.addEventListener("click", function () { send(c.q || c.t, c.mode || id, false, { page: !!c.page }); }); chipsBox.appendChild(b); });
+    var list = MODES[0].chips.map(function (c) { return { t: c }; });
+    if (cx && cx.documentId) list = (cx.chips || []).concat(list.slice(0, 2));
+    list.forEach(function (c) { var b = el("button", "ag-chip", c.t); b.type = "button"; b.addEventListener("click", function () { send(c.q || c.t, c.mode, false, { page: !!c.page }); }); chipsBox.appendChild(b); });
+    chipsBox.hidden = st.gradesOpen || st.hist.length > 0;
+  }
+  function toggleGrades(on) {
+    st.gradesOpen = !!on;
+    thread.hidden = on; foot.hidden = on; gradesBox.hidden = !on; chipsBox.hidden = on || st.hist.length > 0;
+    if (on) loadGrades();
   }
 
   /* ---------- درجاتي: يسجّلها الطالب بنفسه ويراها المرشد ---------- */
@@ -234,12 +236,11 @@
     var t = el("strong", "ag-title", "✨ المرشد الذكي"); t.id = "agTitle"; ht.appendChild(t);
     whoEl = el("small", "ag-who", "…"); ht.appendChild(whoEl); head.appendChild(ht);
     var full = el("a", "ag-tool", "فتح كاملاً"); full.href = "study-assistant.html"; full.title = "فتح الصفحة الكاملة (دليل القسم وإضافة الملاحظات)"; head.appendChild(full);
-    var clr = el("button", "ag-tool", "مسح"); clr.type = "button"; clr.title = "مسح المحادثة"; clr.addEventListener("click", function () { st.hist = []; saveHist(); welcome(); }); head.appendChild(clr);
+    var clr = el("button", "ag-tool", "مسح"); clr.type = "button"; clr.title = "مسح المحادثة"; clr.addEventListener("click", function () { st.hist = []; saveHist(); welcome(); setMode("ask"); }); head.appendChild(clr);
+    var gb = el("button", "ag-tool", "درجاتي"); gb.type = "button"; gb.title = "سجّل درجاتك ليعرفها المرشد";
+    gb.addEventListener("click", function () { toggleGrades(!st.gradesOpen); gb.textContent = st.gradesOpen ? "رجوع للمحادثة" : "درجاتي"; }); head.appendChild(gb);
     var x = el("button", "ag-x", "×"); x.type = "button"; x.setAttribute("aria-label", "إغلاق"); x.addEventListener("click", close); head.appendChild(x);
     dlg.appendChild(head);
-    var tabs = el("div", "ag-tabs"); tabs.setAttribute("role", "tablist");
-    MODES.forEach(function (m) { var b = el("button", "ag-tab", m.label); b.type = "button"; b.setAttribute("role", "tab"); b.dataset.mode = m.id; b.addEventListener("click", function () { setMode(m.id); input.focus(); }); tabs.appendChild(b); modeBtns.push(b); });
-    dlg.appendChild(tabs);
     ctxBar = el("div", "ag-ctx"); ctxBar.hidden = true; dlg.appendChild(ctxBar);
     thread = el("div", "ag-thread"); thread.setAttribute("aria-live", "polite"); dlg.appendChild(thread);
     gradesBox = buildGrades(); dlg.appendChild(gradesBox);
