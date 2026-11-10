@@ -56,6 +56,11 @@ async function change(req, env, user) {
           WHERE university_id=? AND manager_id<>?
           AND ${managerExists} AND m.id=? AND s.node_id=university_onboarding.university_id)`)
         .bind(managerId, now, user.id, id, managerId, managerId);
+  } else if (action === "edit_profile") {
+    const name = typeof body.name_ar === "string" ? body.name_ar.trim() : "";
+    const city = typeof body.city === "string" ? body.city.trim() : "";
+    if (!name || name.length > 120 || city.length > 120) return fail("bad_request", 400);
+    statement = env.DB.prepare("UPDATE universities SET name_ar=?,city=? WHERE id=?").bind(name, city || null, id);
   } else if (action === "verify") {
     statement = env.DB.prepare(`UPDATE university_onboarding SET verified_at=?,updated_at=?,updated_by=?
       WHERE university_id=? AND state='registered' AND verified_at IS NULL

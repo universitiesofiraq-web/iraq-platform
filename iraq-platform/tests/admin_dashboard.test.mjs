@@ -1,0 +1,122 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+
+const script = readFileSync(new URL("../site/js/admin-v3.js", import.meta.url), "utf8");
+const html = readFileSync(new URL("../site/admin.html", import.meta.url), "utf8");
+const tick = () => new Promise(resolve => setImmediate(resolve));
+
+class Element {
+  constructor(tag, owner) {
+    this.tagName = tag;
+    this.owner = owner;
+    this.children = [];
+    this.attrs = new Map();
+    this.dataset = {};
+    this.events = {};
+    this.hidden = false;
+    this.value = "";
+  }
+  get firstElementChild() { return this.children[0]; }
+  get lastElementChild() { return this.children.at(-1); }
+  get textContent() { return this._text ?? this.children.map(x => x.textContent).join(" "); }
+  set textContent(text) { this._text = String(text); this.children = []; }
+  get isConnected() { return true; }
+  append(...nodes) {
+    if (this._text) this.children.push({ textContent: this._text });
+    this._text = undefined;
+    this.children.push(...nodes.map(node => node instanceof Element ? node : { textContent: String(node) }));
+  }
+  replaceChildren(...nodes) { this._text = undefined; this.children = []; this.append(...nodes); }
+  addEventListener(type, callback) { this.events[type] = callback; }
+  setAttribute(key, value) { this.attrs.set(key, value); }
+  removeAttribute(key) { this.attrs.delete(key); }
+  toggleAttribute(key, force = !this.attrs.has(key)) {
+    if (force) this.attrs.set(key, ""); else this.attrs.delete(key);
+    return force;
+  }
+  showModal() { this.open = true; }
+  close() { this.open = false; }
+  createTHead() { return this.section("thead"); }
+  createTBody() { return this.section("tbody"); }
+  insertRow() { return this.section("tr"); }
+  insertCell() { return this.section("td"); }
+  section(tag) { const node = new Element(tag, this.owner); this.append(node); return node; }
+}
+
+export function dashboard(responseFor, search = "") {
+  const roots = new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([, id]) => [id, new Element(id)]));
+  const sidebar = new Element("aside");
+  const requests = [];
+  const go = { href: "", search, replace(path) { this.href = path; } };
+  const lookup = (node, id) => {
+    if (node.id === id) return node;
+    for (const child of node.children || []) {
+      const found = lookup(child, id);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  const doc = {
+    documentElement: new Element("html"),
+    getElementById(id) { return roots.get(id) ?? lookup(roots.get("content"), id); },
+    createElement(tag) { return new Element(tag); },
+    querySelector() { return sidebar; }
+  };
+  vm.runInNewContext(script, {
+    document: doc, Node: Element, location: go, URLSearchParams, window: {},
+    localStorage: { getItem: () => null },
+    Option: class extends Element {
+      constructor(text, value) { super("option"); this.textContent = text; this.value = String(value); }
+    },
+    async fetch(path, options) {
+      requests.push({ path, options });
+      const result = await responseFor(path, options);
+      return { ok: result.ok !== false, json: async () => result };
+    }
+  });
+  return { get: doc.getElementById.bind(doc), requests, go };
+}
+
+const university = (id, name_ar, city, state = "active") =>
+  ({ id, name_ar, city, state, colleges: 2, departments: 3, manager_id: state === "active" ? 2 : null });
+const baseApi = path => {
+  if (path === "/api/auth/me") return { ok: true, user: { name: "مالك", admin: true, owner: true } };
+  if (path.endsWith("/audit")) return { ok: true, items: [] };
+  if (path.includes("?filter=active")) return { ok: true, totals: { directory: 2 }, items: [university(1,"جامعة البصرة","البصرة")] };
+  if (path.includes("?filter=directory")) return { ok: true, totals: { directory: 2 }, items: [university(1,"جامعة البصرة","البصرة"), university(2,"جامعة بغداد","بغداد","not_onboarded")] };
+  throw new Error("Unexpected request " + path);
+};
+
+test("general dashboard fetches active universities by default and can switch to the directory", async () => {
+  const screen = dashboard(baseApi);
+  await tick();
+  assert.ok(screen.requests.some(({ path }) => path === "/api/admin/universities?filter=active"));
+  assert.match(screen.get("content").textContent, /جامعة البصرة/);
+  assert.doesNotMatch(screen.get("content").textContent, /جامعة بغداد/);
+  screen.get("content").children[0].children.at(-1).events.click();
+  await tick();
+  assert.match(screen.get("content").textContent, /جامعة بغداد/);
+  screen.get("search").value = "بَغداد";
+  screen.get("search").events.input();
+  assert.match(screen.get("content").textContent, /جامعة بغداد/);
+  assert.doesNotMatch(screen.get("content").textContent, /جامعة البصرة/);
+});
+
+test("student and unauthenticated sessions never call privileged endpoints", async () => {
+  for (const me of [{ ok: true, user: { name: "طالب", admin: false, scopes: [] } }, { ok: false, error: "unauthorized" }]) {
+    const screen = dashboard(() => me);
+    await tick();
+    assert.deepEqual(screen.requests.map(x => x.path), ["/api/auth/me"]);
+    assert.notEqual(screen.get("notice").textContent, "");
+  }
+});
+
+test("directory errors are distinct from an empty active directory", async () => {
+  const screen = dashboard(path => path.includes("?filter=") ? { ok: false, error: "server" } : baseApi(path));
+  await tick();
+  assert.equal(screen.get("content").hidden, true);
+  assert.match(screen.get("notice").textContent, /تعذّر الاتصال/);
+  assert.match(screen.get("notice").textContent, /إعادة المحاولة/);
+});

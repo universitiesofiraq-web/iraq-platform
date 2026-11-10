@@ -1,441 +1,69 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>لوحة المشرف | المنصة العراقية</title>
-  <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <meta name="theme-color" content="#13294B">
+  <meta name="theme-color" content="#102a3d">
+  <title>لوحة الإدارة | منصة الجامعات العراقية</title>
+  <link rel="icon" href="assets/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=1">
-  <style>
-    .ad-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
-    .ad-tabs button{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
-    .ad-tabs button.on{background:#14307A;color:#fff;border-color:#14307A}
-    .ad-panel{display:none}.ad-panel.on{display:block}
-    .ad-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line,#2a3a6a);border-radius:12px;margin-bottom:8px}
-    .ad-row small{opacity:.75;display:block}
-    .ad-row .ad-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-    .ad-row button,.ad-row select{min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
-    .ad-form{display:grid;gap:8px;max-width:560px;margin:12px 0 22px}
-    .ad-form input,.ad-form select,.ad-form textarea{min-height:44px;width:100%;font:inherit;padding:6px 10px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit}
-    .ad-form textarea{min-height:90px}
-    .ad-form button{min-height:44px;border-radius:10px;border:0;background:#E0A93B;color:#0A1C4E;font:inherit;font-weight:600;cursor:pointer}
-    .ad-msg{min-height:1.2em;margin:8px 0}
-    .ad-tag{padding:2px 10px;border-radius:99px;font-size:.8rem;background:rgba(224,169,59,.18);color:#E0A93B}
-    .ad-hide{display:none!important}
-    .ad-uni{border:1px solid var(--line,#2a3a6a);border-radius:14px;padding:12px;margin-bottom:12px}
-    .ad-uni-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-    .ad-uni-h button{min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
-    .ad-none{opacity:.7}
-    /* ===== v2: نظرة عامة، بحث، تأكيد، إشعارات ===== */
-    .ad-tabs{position:sticky;top:0;z-index:5;padding:8px 0;background:var(--bg,#0A1C4E);overflow-x:auto;flex-wrap:nowrap;scrollbar-width:thin}
-    .ad-tabs button{white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
-    .ad-tabs button:focus-visible,.ad-row button:focus-visible,.ad-form button:focus-visible,.ad-card:focus-visible,.ad-dlg button:focus-visible{outline:3px solid #E0A93B;outline-offset:2px}
-    .ad-badge{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#E0A93B;color:#0A1C4E;font-size:.72rem;font-weight:700;display:none;align-items:center;justify-content:center}
-    .ad-badge.on{display:inline-flex}
-    .ad-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:8px 0 18px}
-    .ad-card{display:block;text-align:start;width:100%;padding:14px;border-radius:14px;border:1px solid var(--line,#2a3a6a);background:rgba(255,255,255,.03);color:inherit;font:inherit;cursor:pointer}
-    .ad-card b{display:block;font-size:1.7rem;line-height:1.2}
-    .ad-card span{opacity:.8;font-size:.9rem}
-    .ad-card.warn b{color:#E0A93B}
-    .ad-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
-    .ad-tools input,.ad-tools select{min-height:44px;font:inherit;padding:6px 10px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit}
-    .ad-tools input{flex:1 1 220px}
-    .ad-count{opacity:.75;font-size:.9rem;margin:0 0 8px}
-    .ad-skel{height:58px;border-radius:12px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.10),rgba(255,255,255,.04));background-size:200% 100%;animation:adsk 1.2s linear infinite}
-    @keyframes adsk{to{background-position:-200% 0}}
-    .ad-more{display:block;margin:10px auto;min-height:44px;padding:0 22px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
-    .ad-off{opacity:.6}
-    .ad-toast{position:fixed;inset-inline:16px;bottom:18px;z-index:50;max-width:440px;margin-inline:auto;padding:12px 16px;border-radius:12px;color:#fff;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.4);display:none}
-    .ad-toast.on{display:block}.ad-toast.ok{background:#2f855a}.ad-toast.err{background:#c53030}
-    .ad-dlg{border:1px solid var(--line,#2a3a6a);border-radius:16px;background:var(--bg,#0A1C4E);color:inherit;padding:20px;max-width:380px;width:calc(100% - 32px)}
-    .ad-dlg::backdrop{background:rgba(0,0,0,.55)}
-    .ad-dlg p{margin:0 0 16px;line-height:1.7}
-    .ad-dlg .ad-acts{display:flex;gap:8px;justify-content:flex-end}
-    .ad-dlg button{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;cursor:pointer}
-    .ad-dlg button.danger{background:#c53030;border-color:#c53030;color:#fff}
-    .ad-dlg button.pri{background:#E0A93B;border-color:#E0A93B;color:#0A1C4E;font-weight:600}
-    @media (prefers-reduced-motion:reduce){.ad-skel{animation:none}}
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin-v3.css?v=1">
+  <script type="module" src="js/admin-v3.js?v=1"></script>
 </head>
 <body>
-  <header class="iq-top">
-    <a class="iq-brand" href="platform.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
-    <nav><a href="manage.html">إدارة التعيينات</a><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">حسابي</a></nav>
-  </header>
-  <main class="sj">
-    <h1>لوحة المشرف</h1>
-    <p id="gate" class="sj-empty">جارٍ التحقق من حسابك…</p>
-
-    <div id="app" class="ad-hide">
-      <div class="ad-tabs" role="tablist" aria-label="أقسام لوحة الإدارة">
-        <button data-tab="home" class="ad-admin-only" role="tab">نظرة عامة</button>
-        <button data-tab="users" class="ad-admin-only" role="tab">الحسابات</button>
-        <button data-tab="teams" role="tab">الفرق المستقلة</button>
-        <button data-tab="reqs" class="ad-admin-only" role="tab">طلبات التمثيل <span class="ad-badge" id="b-reqs"></span></button>
-        <button data-tab="files" role="tab">الملفات بانتظار المراجعة <span class="ad-badge" id="b-files"></span></button>
-        <button data-tab="reports" role="tab">البلاغات <span class="ad-badge" id="b-reports"></span></button>
-        <button data-tab="ann" class="ad-admin-only" role="tab">التبليغات</button>
+  <a class="skip" href="#main">انتقل إلى المحتوى</a>
+  <div class="layout">
+    <aside class="sidebar" aria-label="القائمة الإدارية">
+      <a class="brand" href="index.html">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 12 16 5l11 7M7 13h18M9 14v11m7-11v11m7-11v11M5 26h22"/></svg>
+        <span><strong>منصة الجامعات العراقية</strong><small>مساحة الإدارة</small></span>
+      </a>
+      <button id="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar-nav">القائمة الإدارية</button>
+      <nav id="sidebar-nav" hidden></nav>
+      <div class="sidebar-account" id="sidebar-account" hidden>
+        <strong id="role"></strong>
+        <small id="scope-label"></small>
       </div>
-      <p class="ad-msg" id="msg" role="status" aria-live="polite"></p>
-
-      <section class="ad-panel" id="p-home">
-        <h2>نظرة عامة</h2>
-        <div class="ad-stats" id="stats"></div>
-      </section>
-
-      <section class="ad-panel" id="p-users">
-        <div class="ad-tools">
-          <input id="uQ" type="search" placeholder="ابحث بالاسم أو البريد" aria-label="بحث في الحسابات">
-          <select id="uRole" aria-label="تصفية حسب الدور"><option value="">كل الأدوار</option><option value="student">طالب</option><option value="uploader">رافع ملفات</option><option value="rep">ممثل</option><option value="admin">مشرف</option></select>
-          <select id="uState" aria-label="تصفية حسب الحالة"><option value="">كل الحالات</option><option value="on">فعّال</option><option value="off">موقوف</option></select>
+    </aside>
+    <div class="surface">
+      <header class="topbar">
+        <label class="quick-search" id="search-box" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
+          <input id="search" type="search" placeholder="ابحث باسم الجامعة أو المحافظة" aria-label="ابحث باسم الجامعة أو المحافظة">
+        </label>
+        <div class="top-actions">
+          <button id="theme" type="button" aria-pressed="false">الوضع الداكن</button>
+          <span id="account" class="account" hidden></span>
         </div>
-        <p class="ad-count" id="uCount" aria-live="polite"></p>
-        <div id="users"></div>
-        <button class="ad-more ad-hide" id="uMore" type="button">عرض المزيد</button>
-      </section>
-
-      <section class="ad-panel" id="p-teams">
-        <h2>أعضاء الفرق</h2>
-        <div id="teams"></div>
-        <h2>إضافة عضو</h2>
-        <div class="ad-form">
-          <input id="tEmail" type="email" dir="ltr" placeholder="name@gmail.com">
-          <select id="tLevel"><option value="uploader">رافع: ملفاته تظهر بعد موافقة الممثل</option><option value="rep">ممثل: إدارة كاملة لهذا النطاق</option></select>
-          <select id="tUni"><option value="">اختر الجامعة</option></select>
-          <select id="tCol"><option value="">— كل الجامعة —</option></select>
-          <select id="tDep"><option value="">— كل الكلية —</option></select>
-          <button id="tAdd" type="button">إضافة</button>
+      </header>
+      <main id="main" tabindex="-1">
+        <div class="heading">
+          <div>
+            <p class="eyebrow" id="breadcrumb">الرئيسية / الإدارة</p>
+            <h1 id="title">لوحة الإدارة</h1>
+            <p class="muted" id="description"></p>
+          </div>
+          <div class="actions" id="page-actions"></div>
         </div>
-      </section>
-
-      <section class="ad-panel" id="p-reqs">
-        <div id="reqs"></div>
-      </section>
-
-      <section class="ad-panel" id="p-files">
-        <div id="files"></div>
-      </section>
-
-      <section class="ad-panel" id="p-reports">
-        <div id="reports"></div>
-      </section>
-
-      <section class="ad-panel" id="p-ann">
-        <div class="ad-form">
-          <input id="aTitle" maxlength="120" placeholder="عنوان التبليغ">
-          <textarea id="aBody" maxlength="1000" placeholder="نص التبليغ"></textarea>
-          <button id="aAdd" type="button">نشر التبليغ للجميع</button>
-        </div>
-        <div id="anns"></div>
-      </section>
+        <p class="notice" id="notice" role="status" aria-live="polite">جارٍ التحقق من الحساب…</p>
+        <div id="content" hidden></div>
+      </main>
     </div>
-  </main>
-  <div class="ad-toast" id="toast" role="status" aria-live="polite"></div>
-  <dialog class="ad-dlg" id="dlg" aria-labelledby="dlgT"><p id="dlgT"></p><div class="ad-acts"><button id="dlgNo" type="button">إلغاء</button><button id="dlgYes" type="button" class="danger">تأكيد</button></div></dialog>
-
-  <script>
-  (function () {
-    var $ = function (i) { return document.getElementById(i); };
-    var ROLE = { student: "طالب", uploader: "رافع ملفات", rep: "ممثل" };
-    var TY = { university: "جامعة", college: "كلية", department: "قسم" }, LV = { rep: "ممثل", uploader: "رافع" };
-    var ME = null;
-
-    function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-    var toastT;
-    function msg(t, ok) {
-      var m = $("msg"); m.textContent = t || ""; m.style.color = ok ? "#2f855a" : "#c53030";
-      var tt = $("toast"); if (!t) { tt.classList.remove("on"); return; }
-      tt.textContent = t; tt.className = "ad-toast on " + (ok ? "ok" : "err");
-      clearTimeout(toastT); toastT = setTimeout(function () { tt.classList.remove("on"); }, 3500);
-    }
-    function confirmBox(text, yesLabel, danger) {
-      return new Promise(function (res) {
-        var d = $("dlg"), y = $("dlgYes"), n = $("dlgNo"), opener = document.activeElement;
-        $("dlgT").textContent = text; y.textContent = yesLabel || "تأكيد"; y.className = danger === false ? "pri" : "danger";
-        function done(v) { y.onclick = n.onclick = null; d.onclose = null; if (d.open) d.close(); if (opener && opener.focus) opener.focus(); res(v); }
-        y.onclick = function () { done(true); }; n.onclick = function () { done(false); }; d.onclose = function () { done(false); };
-        if (d.showModal) d.showModal(); else d.setAttribute("open", "");
-        n.focus();
-      });
-    }
-    function busy(btn, on) { btn.disabled = on; btn.style.opacity = on ? ".6" : ""; }
-    function skel(box, n) { box.innerHTML = ""; for (var i = 0; i < (n || 4); i++) box.appendChild(el("div", null, "ad-skel")); }
-    function setBadge(id, n) { var b = $(id); if (!b) return; b.textContent = n > 99 ? "99+" : n; b.classList.toggle("on", n > 0); }
-    function api(method, path, body) {
-      var o = { method: method, headers: {} };
-      if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
-      return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
-    }
-    function get(p) { return fetch("/api/catalog/" + p + (p.includes("?") ? "&" : "?") + "view=directory").then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
-    function fill(sel, items, ph) { sel.innerHTML = ""; sel.appendChild(new Option(ph, "")); items.forEach(function (x) { sel.appendChild(new Option(x.name_ar, x.id)); }); }
-    function showTab(name) {
-      document.querySelectorAll(".ad-tabs button").forEach(function (b) { var on = b.dataset.tab === name; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
-      document.querySelectorAll(".ad-panel").forEach(function (p) { p.classList.toggle("on", p.id === "p-" + name); });
-      if (name === "home") loadHome();
-      if (name === "users") loadUsers();
-      if (name === "teams") loadTeams();
-      if (name === "reqs") loadReqs();
-      if (name === "files") loadFiles();
-      if (name === "reports") loadReports();
-      if (name === "ann") loadAnns();
-    }
-    document.querySelectorAll(".ad-tabs button").forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
-
-    /* نظرة عامة (مشرف فقط): أرقام من نفس واجهات API الموجودة */
-    function loadHome() {
-      var box = $("stats"); skel(box, 6);
-      Promise.all([
-        api("GET", "auth/users"), api("GET", "auth/rep-requests"),
-        api("POST", "admin", {}), api("POST", "reports", {}),
-        api("GET", "auth/scopes")
-      ]).then(function (r) {
-        var us = r[0].ok ? r[0].users : null, rq = r[1].ok ? r[1].items : null;
-        var fl = r[2].ok ? r[2].items.filter(function (e) { return e.status === "pending"; }) : null;
-        var rp = r[3].ok ? (r[3].items || []).filter(function (x) { return x.open; }) : null;
-        var reps = r[4].ok ? new Set((r[4].items || []).filter(function (s) { return s.level === "rep"; }).map(function (s) { return String(s.email || "").toLowerCase(); })).size : null;
-        function n(v) { return v == null ? "—" : v.length; }
-        var cards = [
-          ["الحسابات", us && us.length, "users"],
-          ["الحسابات الفعّالة", us && us.filter(function (u) { return u.active; }).length, "users"],
-          ["الممثلون بنطاقات", reps, "teams"],
-          ["طلبات تمثيل بانتظار القرار", rq && rq.length, "reqs", 1],
-          ["ملفات بانتظار المراجعة", fl && fl.length, "files", 1],
-          ["بلاغات مفتوحة", rp && rp.length, "reports", 1]
-        ];
-        box.innerHTML = "";
-        cards.forEach(function (c) {
-          var b = el("button", null, "ad-card" + (c[3] && c[1] > 0 ? " warn" : ""));
-          b.type = "button";
-          b.appendChild(el("b", c[1] == null ? "—" : String(c[1])));
-          b.appendChild(el("span", c[0]));
-          b.onclick = function () { showTab(c[2]); };
-          box.appendChild(b);
-        });
-        setBadge("b-reqs", rq ? rq.length : 0); setBadge("b-files", fl ? fl.length : 0); setBadge("b-reports", rp ? rp.length : 0);
-      }).catch(function () { box.textContent = "تعذّر التحميل."; });
-    }
-    function refreshBadges() {
-      if (ME && ME.admin) api("GET", "auth/rep-requests").then(function (d) { if (d.ok) setBadge("b-reqs", d.items.length); });
-      api("POST", "admin", {}).then(function (d) { if (d.ok) setBadge("b-files", d.items.filter(function (e) { return e.status === "pending"; }).length); });
-      api("POST", "reports", {}).then(function (d) { if (d.ok) setBadge("b-reports", (d.items || []).filter(function (x) { return x.open; }).length); });
-    }
-
-    /* الحسابات (مشرف فقط): بحث وتصفية وعرض تدريجي */
-    var ALL_USERS = [], U_SHOWN = 30, U_STEP = 30;
-    function loadUsers() {
-      skel($("users"), 5);
-      api("GET", "auth/users").then(function (d) {
-        if (!d.ok) { $("users").textContent = "تعذّر التحميل."; return; }
-        ALL_USERS = d.users || []; U_SHOWN = U_STEP; renderUsers();
-      });
-    }
-    function renderUsers() {
-      var q = $("uQ").value.trim().toLowerCase(), role = $("uRole").value, st = $("uState").value;
-      var list = ALL_USERS.filter(function (u) {
-        if (role && u.role !== role) return false;
-        if (st === "on" && !u.active) return false;
-        if (st === "off" && u.active) return false;
-        return !q || ((u.name || "") + " " + (u.email || "")).toLowerCase().indexOf(q) > -1;
-      });
-      var box = $("users"); box.innerHTML = "";
-      $("uCount").textContent = list.length + " من " + ALL_USERS.length + " حساب";
-      if (!list.length) { box.appendChild(el("p", ALL_USERS.length ? "لا توجد نتائج مطابقة." : "لا يوجد مستخدمون بعد.", "ad-none")); $("uMore").classList.add("ad-hide"); return; }
-      list.slice(0, U_SHOWN).forEach(function (u) {
-        var r = el("div", null, "ad-row" + (u.active ? "" : " ad-off"));
-        var l = el("div"); l.appendChild(el("b", u.name || u.email)); l.appendChild(el("small", u.email + " — " + (u.active ? "فعّال" : "موقوف")));
-        r.appendChild(l);
-        var acts = el("div", null, "ad-acts");
-        if (u.role === "admin") {
-          acts.appendChild(el("span", "مشرف عام", "ad-tag"));
-        } else {
-          var s = document.createElement("select");
-          s.setAttribute("aria-label", "دور " + (u.name || u.email));
-          Object.keys(ROLE).forEach(function (k) { s.appendChild(new Option(ROLE[k], k, false, k === u.role)); });
-          s.onchange = function () {
-            var nv = s.value, old = u.role;
-            confirmBox("تغيير دور " + (u.name || u.email) + " إلى «" + ROLE[nv] + "»؟", "تغيير", false).then(function (ok) {
-              if (!ok) { s.value = old; return; }
-              s.disabled = true;
-              api("POST", "auth/user", { id: u.id, role: nv }).then(function (x) { msg(x.ok ? "تم تغيير الدور." : "تعذّر تغيير الدور.", x.ok); if (x.ok) u.role = nv; loadUsers(); });
-            });
-          };
-          acts.appendChild(s);
-          var t = el("button", u.active ? "إيقاف" : "تفعيل"); t.type = "button";
-          t.onclick = function () {
-            var go = function () { busy(t, true); api("POST", "auth/user", { id: u.id, active: !u.active }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadUsers(); }); };
-            if (u.active) confirmBox("إيقاف حساب " + (u.name || u.email) + "؟ لن يتمكن من الدخول إلى المنصة.", "إيقاف").then(function (ok) { if (ok) go(); });
-            else go();
-          };
-          acts.appendChild(t);
-        }
-        r.appendChild(acts);
-        box.appendChild(r);
-      });
-      $("uMore").classList.toggle("ad-hide", list.length <= U_SHOWN);
-    }
-    var uTimer;
-    $("uQ").oninput = function () { clearTimeout(uTimer); uTimer = setTimeout(function () { U_SHOWN = U_STEP; renderUsers(); }, 200); };
-    $("uRole").onchange = $("uState").onchange = function () { U_SHOWN = U_STEP; renderUsers(); };
-    $("uMore").onclick = function () { U_SHOWN += U_STEP; renderUsers(); };
-
-    /* الفرق المستقلة: لكل جامعة ممثلوها ورافعوها */
-    function teamRow(it) {
-      var r = el("div", null, "ad-row");
-      var l = el("div"); l.appendChild(el("b", it.name || it.email)); l.appendChild(el("small", it.email + " — " + TY[it.type] + ": " + it.node));
-      r.appendChild(l);
-      var acts = el("div", null, "ad-acts"); acts.appendChild(el("span", LV[it.level], "ad-tag"));
-      if (it.can_edit) {
-        var x = el("button", "إزالة");
-        x.onclick = function () { confirmBox("إزالة " + (it.name || it.email) + " (" + LV[it.level] + ") من «" + it.node + "»؟", "إزالة").then(function (ok) { if (!ok) return; busy(x, true); api("POST", "auth/scope", { email: it.email, type: it.type, id: it.node_id, level: it.level, action: "remove" }).then(function (d) { msg(d.ok ? "تمت الإزالة." : "تعذّرت الإزالة.", d.ok); loadTeams(); }); }); };
-        acts.appendChild(x);
-      }
-      r.appendChild(acts);
-      return r;
-    }
-    function pickUni(id) {
-      tU.value = String(id);
-      tU.dispatchEvent(new Event("change"));
-      $("tEmail").focus();
-      $("tEmail").scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    function loadTeams() {
-      Promise.all([get("universities"), api("GET", "auth/scopes")]).then(function (res) {
-        var unis = res[0], d = res[1];
-        var box = $("teams"); box.innerHTML = "";
-        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
-        var withRep = unis.filter(function (u) { return d.items.some(function (it) { return it.university_id === u.id && it.level === "rep"; }); });
-        if (!withRep.length) { box.textContent = "لا توجد جامعات لها ممثل بعد."; return; }
-        withRep.forEach(function (u) {
-          var sec = el("div", null, "ad-uni");
-          var head = el("div", null, "ad-uni-h");
-          head.appendChild(el("b", u.name_ar));
-          var add = el("button", "إضافة عضو لهذه الجامعة");
-          add.onclick = function () { pickUni(u.id); };
-          head.appendChild(add);
-          sec.appendChild(head);
-          var rows = d.items.filter(function (it) { return it.university_id === u.id; });
-          if (!rows.length) sec.appendChild(el("small", "لا يوجد ممثل أو رافع لهذه الجامعة بعد.", "ad-none"));
-          rows.forEach(function (it) { sec.appendChild(teamRow(it)); });
-          box.appendChild(sec);
-        });
-      });
-    }
-    var tU = $("tUni"), tC = $("tCol"), tD = $("tDep");
-    tU.onchange = function () { tC.innerHTML = ""; tD.innerHTML = ""; if (tU.value) get("colleges?university_id=" + tU.value).then(function (a) { fill(tC, a, "— كل الجامعة —"); }); };
-    tC.onchange = function () { tD.innerHTML = ""; if (tC.value) get("departments?college_id=" + tC.value).then(function (a) { fill(tD, a, "— كل الكلية —"); }); };
-    $("tAdd").onclick = function () {
-      var email = $("tEmail").value.trim();
-      if (!email || !tU.value) return msg("اكتب البريد واختر الجامعة.");
-      var type = tD.value ? "department" : tC.value ? "college" : "university";
-      var id = Number(tD.value || tC.value || tU.value);
-      api("POST", "auth/scope", { email: email, type: type, id: id, level: $("tLevel").value, action: "add" }).then(function (d) {
-        var ERR = { user_not_found: "هذا البريد لم يسجّل دخوله إلى المنصة بعد.", forbidden: "لا تملك صلاحية على هذا النطاق." };
-        if (d.ok) { msg("تمت الإضافة.", true); $("tEmail").value = ""; loadTeams(); } else msg(ERR[d.error] || "تعذّرت الإضافة.");
-      });
-    };
-
-    /* طلبات التمثيل (مشرف فقط) */
-    function loadReqs() {
-      api("GET", "auth/rep-requests").then(function (d) {
-        var box = $("reqs"); box.innerHTML = "";
-        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
-        setBadge("b-reqs", d.items.length);
-        if (!d.items.length) box.textContent = "لا توجد طلبات بانتظار القرار.";
-        d.items.forEach(function (q) {
-          var r = el("div", null, "ad-row");
-          var l = el("div"); l.appendChild(el("b", q.name || q.email)); l.appendChild(el("small", q.email + " — يطلب تمثيل: " + (q.node || "") + " — " + (q.created_at || "")));
-          r.appendChild(l);
-          var acts = el("div", null, "ad-acts");
-          var ok = el("button", "قبول"); ok.onclick = function () { confirmBox("الموافقة على طلب تمثيل " + (q.name || q.email) + "؟", "قبول", false).then(function (yes) { if (!yes) return; busy(ok, true); api("POST", "auth/rep-request/decide", { id: q.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم تعيينه ممثلاً." : "تعذّر.", x.ok); loadReqs(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(ok, false); }); }); };
-          var no = el("button", "رفض"); no.onclick = function () { confirmBox("رفض طلب " + (q.name || q.email) + "؟", "رفض").then(function (c) { if (!c) return; api("POST", "auth/rep-request/decide", { id: q.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadReqs(); }); }); };
-          acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
-        });
-      });
-    }
-
-    /* الملفات بانتظار المراجعة */
-    function loadFiles() {
-      api("POST", "admin", {}).then(function (d) {
-        var box = $("files"); box.innerHTML = "";
-        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
-        var items = d.items.filter(function (e) { return e.status === "pending"; });
-        setBadge("b-files", items.length);
-        if (!items.length) box.textContent = "لا توجد ملفات بانتظار المراجعة.";
-        items.forEach(function (e) {
-          var r = el("div", null, "ad-row");
-          var l = el("div"); l.appendChild(el("b", e.title || e.label || e.filename || e.id)); l.appendChild(el("small", (e.by ? e.by + " — " : "") + (e.at || "")));
-          r.appendChild(l);
-          var acts = el("div", null, "ad-acts");
-          var ok = el("button", "قبول"); ok.onclick = function () { confirmBox("الموافقة على نشر الملف «" + (e.title || e.label || e.filename || e.id) + "»؟", "قبول", false).then(function (yes) { if (!yes) return; busy(ok, true); api("POST", "review", { id: e.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم القبول." : "تعذّر.", x.ok); loadFiles(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(ok, false); }); }); };
-          var no = el("button", "رفض"); no.onclick = function () { confirmBox("رفض هذا الملف؟", "رفض").then(function (c) { if (!c) return; api("POST", "review", { id: e.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadFiles(); }); }); };
-          acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
-        });
-      });
-    }
-
-    /* البلاغات */
-    function loadReports() {
-      api("POST", "reports", {}).then(function (d) {
-        var box = $("reports"); box.innerHTML = "";
-        if (!d.ok) { box.textContent = "تعذّر التحميل."; return; }
-        var open = (d.items || []).filter(function (r) { return r.open; });
-        setBadge("b-reports", open.length);
-        if (!open.length) box.textContent = "لا توجد بلاغات مفتوحة.";
-        open.forEach(function (rp) {
-          var r = el("div", null, "ad-row");
-          var l = el("div"); l.appendChild(el("b", rp.reason)); l.appendChild(el("small", "ملف: " + rp.id + " — " + (rp.at || "")));
-          r.appendChild(l);
-          var acts = el("div", null, "ad-acts");
-          var done = el("button", "تمّت المعالجة");
-          done.onclick = function () { confirmBox("تأكيد معالجة هذا البلاغ؟", "تمّت المعالجة", false).then(function (yes) { if (!yes) return; busy(done, true); api("POST", "reportdone", { rid: rp.rid }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadReports(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(done, false); }); }); };
-          acts.appendChild(done); r.appendChild(acts); box.appendChild(r);
-        });
-      });
-    }
-
-    /* التبليغات (مشرف فقط) */
-    function loadAnns() {
-      fetch("/api/announcements").then(function (r) { return r.json(); }).then(function (d) {
-        var box = $("anns"); box.innerHTML = "";
-        (d.items || []).forEach(function (a) {
-          var r = el("div", null, "ad-row");
-          var l = el("div"); l.appendChild(el("b", a.title)); l.appendChild(el("small", a.body));
-          r.appendChild(l);
-          var acts = el("div", null, "ad-acts");
-          var x = el("button", "حذف");
-          x.onclick = function () { confirmBox("حذف التبليغ «" + a.title + "» نهائياً؟", "حذف").then(function (ok) { if (ok) api("POST", "announcements/delete", { id: a.id }).then(function (y) { msg(y.ok ? "تم الحذف." : "تعذّر.", y.ok); loadAnns(); }); }); };
-          acts.appendChild(x); r.appendChild(acts); box.appendChild(r);
-        });
-      });
-    }
-    $("aAdd").onclick = function () {
-      var t = $("aTitle").value.trim(), b = $("aBody").value.trim();
-      if (!t || !b) return msg("اكتب العنوان والنص.");
-      api("POST", "announcements", { title: t, body: b }).then(function (d) {
-        if (d.ok) { msg("تم النشر.", true); $("aTitle").value = ""; $("aBody").value = ""; loadAnns(); } else msg("تعذّر النشر.");
-      });
-    };
-
-    /* البوابة: المشرف يرى كل شيء، الممثل يرى فرقه وملفاته وبلاغاته */
-    api("GET", "auth/me").then(function (d) {
-      ME = d && d.user;
-      if (!ME) { $("gate").innerHTML = 'سجّل الدخول أولاً: <a href="login.html">تسجيل الدخول</a>'; return; }
-      var isRep = ME.admin || (ME.scopes || []).some(function (x) { return x.level === "rep"; });
-      if (!isRep) { $("gate").textContent = "هذه الصفحة لمشرفي المنصة وممثلي الأقسام والكليات والجامعات فقط."; return; }
-      $("gate").classList.add("ad-hide");
-      $("app").classList.remove("ad-hide");
-      if (!ME.admin) document.querySelectorAll(".ad-admin-only").forEach(function (b) { b.classList.add("ad-hide"); });
-      get("universities").then(function (a) { fill(tU, a, "اختر الجامعة"); });
-      showTab(ME.admin ? "home" : "teams");
-      if (!ME.admin) refreshBadges();
-    }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
-  })();
-  </script>
-  <script src="js/upload-link.js"></script>
+  </div>
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="dialog-form">
+      <h2 id="dialog-title"></h2>
+      <p class="muted" id="dialog-message"></p>
+      <div id="dialog-fields"></div>
+      <p id="dialog-error" role="alert"></p>
+      <div class="actions">
+        <button class="primary" type="submit" id="dialog-confirm">تأكيد</button>
+        <button type="button" id="dialog-close">إلغاء</button>
+      </div>
+    </form>
+  </dialog>
 </body>
 </html>

@@ -138,7 +138,7 @@ export async function handleScopes(req, env, user, p) {
       if (!mine && !manageable) continue;
       const ch = await chainOf(env, r.type, r.node_id);
       const uni = ch && ch.university ? await env.DB.prepare("SELECT name_ar FROM universities WHERE id=?").bind(ch.university).first() : null;
-      out.push({ email: r.email, name: r.name, type: r.type, node_id: r.node_id, level: r.level, node: await nodeName(env, r.type, r.node_id), can_edit: manageable, university_id: ch ? ch.university : null, university: uni ? uni.name_ar : "" });
+      out.push({ user_id: r.user_id, email: r.email, name: r.name, type: r.type, node_id: r.node_id, level: r.level, node: await nodeName(env, r.type, r.node_id), can_edit: manageable, university_id: ch ? ch.university : null, university: uni ? uni.name_ar : "" });
     }
     return json({ ok: true, admin: pol.admin, items: out });
   }
