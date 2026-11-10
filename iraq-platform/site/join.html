@@ -37,17 +37,19 @@
     <div class="cg-list" id="list"></div>
     <div class="cg-msg" id="msg" role="alert"></div>
   </main>
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
     var TITLES = ["اختر جامعتك", "اختر كليتك", "اختر قسمك", "اختر مرحلتك"];
     var stack = []; // [{id,name}] جامعة، كلية، قسم
     var INV = (new URLSearchParams(location.search).get("inv") || "").toUpperCase();
+    var loadVersion = 0;
     var INFO = null; // معلومات رابط الدعوة إن وُجد
     function loginUrl() { return "login.html?next=" + encodeURIComponent("join.html" + location.search); }
     var STAGE_NAMES = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
     function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
-    function get(p) { return fetch("/api/catalog/" + p, { credentials: "same-origin" }).then(function (r) { return r.json(); }); }
+    function get(p) { return IQApi.request("/api/catalog/" + p, { credentials: "same-origin" }); }
 
     $("qf").addEventListener("input", function () {
       var q = norm(this.value.trim());
@@ -66,6 +68,7 @@
     }
 
     function load() {
+      var request = ++loadVersion;
       var lv = stack.length;
       $("title").textContent = TITLES[lv]; $("qf").value = ""; $("msg").textContent = "";
       $("qf").hidden = lv === 3;
@@ -85,6 +88,7 @@
       var path = ["universities?view=join", "colleges?view=join&university_id=", "departments?view=join&college_id="][lv] + (lv ? stack[lv - 1].id : "");
       list.innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';
       get(path).then(function (d) {
+        if (request !== loadVersion) return;
         if (d && d.error === "unauthorized") { location.href = loginUrl(); return; }
         list.innerHTML = "";
         var items = (d && d.items) || [];
@@ -97,7 +101,11 @@
           row.onclick = function () { stack.push({ id: it.id, name: it.name_ar }); load(); };
           list.appendChild(row);
         });
-      }).catch(function () { list.innerHTML = '<div class="cg-empty">تعذّر التحميل، حاول مرة أخرى.</div>'; });
+      }).catch(function (error) {
+        if (request !== loadVersion) return;
+        if (error.code === "unauthorized") { location.href = loginUrl(); return; }
+        IQApi.showError(list, error, load);
+      });
     }
 
     function submit(stage) {
@@ -153,7 +161,10 @@
         $("lead").textContent = "أنت مسجّل في " + d.profile.department + " — " + d.profile.university + ". يمكنك تغيير قسمك من هنا.";
       }
       load();
-    }).catch(load);
+    }).catch(function (error) {
+      if (error.code === "unauthorized") { location.href = loginUrl(); return; }
+      IQApi.showError($("list"), error);
+    });
   })();
   </script>
 </body>
