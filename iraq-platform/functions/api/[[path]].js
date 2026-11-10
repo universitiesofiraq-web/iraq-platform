@@ -5,11 +5,14 @@ import { kvStore } from "../_lib/kvstore.js";
 import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
 import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
+import { handleOnboarding } from "../_lib/onboarding.js";
 import { handleCatalog } from "../_lib/catalog.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
   if (authRes) return authRes;
+  const onboardingRes = await handleOnboarding(request, env);
+  if (onboardingRes) return onboardingRes;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
   const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط

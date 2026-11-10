@@ -50,7 +50,8 @@
   (function () {
     var $ = function (i) { return document.getElementById(i); };
     var TY = { university: "جامعة", college: "كلية", department: "قسم" }, LV = { rep: "ممثل", uploader: "رافع" };
-    function get(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
+    var viewDirectory = false;
+    function get(p) { return fetch("/api/catalog/" + p + (viewDirectory ? (p.includes("?") ? "&" : "?") + "view=directory" : "")).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
     function post(b) { return fetch("/api/auth/scope", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); }
     function fill(sel, items, ph) { sel.innerHTML = ""; sel.appendChild(new Option(ph, "")); items.forEach(function (x) { sel.appendChild(new Option(x.name_ar, x.id)); }); }
     function msg(t, ok) { var m = $("msg"); m.textContent = t; m.style.color = ok ? "#2f855a" : "#c53030"; }
@@ -96,6 +97,7 @@
       var rep = u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; });
       if (!rep) { $("gate").textContent = "هذه الصفحة لممثلي الأقسام والكليات والجامعات فقط."; return; }
       $("gate").hidden = true; $("body").hidden = false;
+      viewDirectory = !!u.admin;
       get("universities").then(function (a) { fill(U, a, "اختر الجامعة"); });
       load();
     }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });

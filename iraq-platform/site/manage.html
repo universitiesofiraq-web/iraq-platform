@@ -126,7 +126,7 @@
       if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
       return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
     }
-    function cat(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }).catch(function () { return []; }); }
+    function cat(p) { return fetch("/api/catalog/" + p + (ME && ME.admin ? (p.includes("?") ? "&" : "?") + "view=directory" : "")).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }).catch(function () { return []; }); }
     var tt;
     function toast(t, ok) { var n = $("toast"); n.textContent = t; n.className = "mg-toast on " + (ok ? "ok" : "err"); clearTimeout(tt); tt = setTimeout(function () { n.classList.remove("on"); }, 3500); }
     function skel(box, n) { box.textContent = ""; for (var i = 0; i < n; i++) box.appendChild(el("div", null, "mg-skel")); }

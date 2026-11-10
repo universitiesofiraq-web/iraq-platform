@@ -1,0 +1,104 @@
+import { currentUser } from "./auth.js";
+import { isAdminUser } from "./scope.js";
+
+// Queries using this predicate bind the same alias to the university's primary key.
+export const ACTIVE_UNIVERSITY =
+  "EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='active')";
+
+const filters = {
+  active: "o.state='active'",
+  registered: "o.state='registered'",
+  suspended: "o.state='suspended'",
+  directory: "1=1"
+};
+const json = (body, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
+});
+const fail = (error, status) => json({ ok: false, error }, status);
+
+async function list(env, filter) {
+  const rows = await env.DB.prepare(
+    `SELECT u.id, u.name_ar, u.name_en, u.city, COALESCE(o.state, 'not_onboarded') AS state,
+            o.manager_id, m.name AS manager_name, o.verified_at, o.updated_at,
+            (SELECT COUNT(*) FROM colleges c WHERE c.university_id=u.id) AS colleges,
+            (SELECT COUNT(*) FROM departments d JOIN colleges c ON c.id=d.college_id WHERE c.university_id=u.id) AS departments
+     FROM universities u LEFT JOIN university_onboarding o ON o.university_id=u.id
+     LEFT JOIN users m ON m.id=o.manager_id WHERE ${filters[filter]} ORDER BY u.name_ar, u.id`
+  ).all();
+  const totals = await env.DB.prepare(
+    `SELECT COUNT(*) AS directory,
+            COUNT(CASE WHEN o.state='active' THEN 1 END) AS active,
+            COUNT(CASE WHEN o.state='registered' THEN 1 END) AS registered,
+            COUNT(CASE WHEN o.state='suspended' THEN 1 END) AS suspended
+     FROM universities u LEFT JOIN university_onboarding o ON o.university_id=u.id`
+  ).first();
+  return json({ ok: true, filter, totals, items: rows.results || [] });
+}
+
+const managerExists = `EXISTS (SELECT 1 FROM users m JOIN scopes s ON s.user_id=m.id
+  WHERE m.active=1 AND s.type='university' AND s.level='rep'`;
+
+async function change(req, env, user) {
+  const body = await req.json().catch(() => null);
+  if (!body || !Number.isSafeInteger(body.id) || body.id < 1) return fail("bad_request", 400);
+  const { id, action, manager_id: managerId } = body;
+  const now = Date.now();
+  let statement;
+  if (action === "register" || action === "assign_manager") {
+    if (!Number.isSafeInteger(managerId) || managerId < 1) return fail("bad_request", 400);
+    statement = action === "register"
+      ? env.DB.prepare(`INSERT INTO university_onboarding (university_id,state,manager_id,updated_at,updated_by)
+          SELECT u.id,'registered',?,?,? FROM universities u
+          WHERE u.id=? AND ${managerExists} AND m.id=? AND s.node_id=u.id)
+          ON CONFLICT(university_id) DO NOTHING`).bind(managerId, now, user.id, id, managerId)
+      : env.DB.prepare(`UPDATE university_onboarding SET manager_id=?,updated_at=?,updated_by=?
+          WHERE university_id=? AND manager_id<>?
+          AND ${managerExists} AND m.id=? AND s.node_id=university_onboarding.university_id)`)
+        .bind(managerId, now, user.id, id, managerId, managerId);
+  } else if (action === "verify") {
+    statement = env.DB.prepare(`UPDATE university_onboarding SET verified_at=?,updated_at=?,updated_by=?
+      WHERE university_id=? AND state='registered' AND verified_at IS NULL
+      AND ${managerExists} AND m.id=university_onboarding.manager_id AND s.node_id=university_onboarding.university_id)`)
+      .bind(now, now, user.id, id);
+  } else if (action === "activate") {
+    statement = env.DB.prepare(`UPDATE university_onboarding SET state='active',updated_at=?,updated_by=?
+      WHERE university_id=? AND state IN ('registered','suspended') AND verified_at IS NOT NULL
+      AND ${managerExists} AND m.id=university_onboarding.manager_id AND s.node_id=university_onboarding.university_id)`)
+      .bind(now, user.id, id);
+  } else if (action === "suspend") {
+    statement = env.DB.prepare(`UPDATE university_onboarding SET state='suspended',updated_at=?,updated_by=?
+      WHERE university_id=? AND state='active'`).bind(now, user.id, id);
+  } else return fail("bad_request", 400);
+  const result = await statement.run();
+  if (!result.meta.changes) return fail("onboarding_transition_conflict", 409);
+  return json({ ok: true });
+}
+
+export async function handleOnboarding(req, env) {
+  const url = new URL(req.url);
+  if (url.pathname !== "/api/admin/universities" && url.pathname !== "/api/admin/universities/audit") return null;
+  if (!env.DB) return fail("not_configured", 503);
+  const user = await currentUser(req, env);
+  if (!user) return fail("unauthorized", 401);
+  if (!isAdminUser(user, env)) return fail("forbidden", 403);
+  if (req.method === "GET" && url.pathname.endsWith("/audit")) {
+    const { results } = await env.DB.prepare(
+      `SELECT a.id, a.university_id, u.name_ar AS university, p.name AS actor, a.previous_state,
+              a.state, a.verified_at, a.created_at
+       FROM university_onboarding_audit a LEFT JOIN users p ON p.id=a.actor_id
+       LEFT JOIN universities u ON u.id=a.university_id ORDER BY a.id DESC LIMIT 50`
+    ).all();
+    return json({ ok: true, items: results || [] });
+  }
+  if (url.pathname.endsWith("/audit")) return fail("method_not_allowed", 405);
+  if (req.method === "GET") {
+    const filter = url.searchParams.get("filter") || "active";
+    return Object.hasOwn(filters, filter) ? list(env, filter) : fail("bad_request", 400);
+  }
+  if (req.method !== "POST") return fail("method_not_allowed", 405);
+  if (req.headers.get("origin") !== url.origin || !req.headers.get("content-type")?.includes("application/json")) {
+    return fail("forbidden", 403);
+  }
+  return change(req, env, user);
+}

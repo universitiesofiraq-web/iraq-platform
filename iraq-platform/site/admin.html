@@ -171,7 +171,7 @@
       if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
       return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
     }
-    function get(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
+    function get(p) { return fetch("/api/catalog/" + p + (p.includes("?") ? "&" : "?") + "view=directory").then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
     function fill(sel, items, ph) { sel.innerHTML = ""; sel.appendChild(new Option(ph, "")); items.forEach(function (x) { sel.appendChild(new Option(x.name_ar, x.id)); }); }
     function showTab(name) {
       document.querySelectorAll(".ad-tabs button").forEach(function (b) { var on = b.dataset.tab === name; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
