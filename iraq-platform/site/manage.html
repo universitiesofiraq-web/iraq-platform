@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>إدارة التعيينات | المنصة العراقية</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=1">
+  <style>
+    .mg{max-width:1040px;margin:0 auto;padding:18px 16px 60px}
+    .mg h1{margin:6px 0 4px}.mg .sub{opacity:.8;margin:0 0 16px}
+    .mg-hide{display:none!important}
+    .mg-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+    .mg-bar select,.mg-bar input[type=search]{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+    .mg-bar input[type=search]{flex:1 1 220px}
+    .mg-chk{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+    .mg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 16px}
+    .mg-stat{padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+    .mg-stat b{display:block;font-size:1.6rem;line-height:1.2}.mg-stat span{opacity:.8;font-size:.9rem}
+    .mg-stat.warn b{color:#B7791F}
+    .mg-node{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+    .mg-node.lv1{margin-inline-start:18px}.mg-node.lv2{margin-inline-start:36px}
+    .mg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px}
+    .mg-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .mg-title b{font-size:1.02rem}
+    .mg-tag{padding:2px 10px;border-radius:99px;font-size:.78rem;background:var(--gold-soft);color:#8A5A00}
+    .mg-tag.bad{background:#FDECEA;color:var(--bad)}
+    .mg-people{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px}
+    .mg-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 12px;border-radius:99px;border:1px solid var(--line);font-size:.9rem}
+    .mg-chip.rep{background:var(--gold-soft);border-color:#E6CB8A}
+    .mg-chip small{opacity:.7;direction:ltr}
+    .mg-chip button{width:28px;height:28px;border-radius:50%;border:0;background:transparent;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1}
+    .mg-chip button:hover{background:rgba(180,35,24,.15)}
+    .mg-btn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer}
+    .mg-btn.pri{background:var(--gold);border-color:var(--gold);color:#2A1D00;font-weight:600}
+    .mg-btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+    .mg-btn:disabled{opacity:.6;cursor:default}
+    .mg-note{opacity:.75;padding:0 14px 12px;margin:0;font-size:.9rem}
+    .mg-empty{padding:26px;text-align:center;opacity:.75}
+    .mg-skel{height:64px;border-radius:14px;margin-bottom:10px;background:linear-gradient(90deg,rgba(128,128,128,.08),rgba(128,128,128,.18),rgba(128,128,128,.08));background-size:200% 100%;animation:mgsk 1.2s linear infinite}
+    @keyframes mgsk{to{background-position:-200% 0}}
+    .mg-toast{position:fixed;inset-inline:16px;bottom:18px;z-index:50;max-width:440px;margin-inline:auto;padding:12px 16px;border-radius:12px;color:#fff;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.4);display:none}
+    .mg-toast.on{display:block}.mg-toast.ok{background:#14794B}.mg-toast.err{background:#B42318}
+    .mg-dlg{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:20px;max-width:420px;width:calc(100% - 32px)}
+    .mg-dlg::backdrop{background:rgba(0,0,0,.55)}
+    .mg-dlg h2{margin:0 0 4px;font-size:1.1rem}.mg-dlg p{margin:0 0 12px;opacity:.8}
+    .mg-dlg label{display:block;margin:10px 0 4px;font-size:.9rem}
+    .mg-dlg input,.mg-dlg select{width:100%;min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+    .mg-dlg .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+    .mg-dlg .acts .mg-btn{min-height:44px;padding:0 18px}
+    .mg-legend{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 14px;margin:0 0 14px}
+    .mg-legend summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-weight:600}
+    .mg-legend ul{margin:6px 0;padding-inline-start:20px;line-height:1.9}
+    .mg-hint{font-size:.85rem;opacity:.8;margin:6px 0 0;line-height:1.6}
+    @media (prefers-reduced-motion:reduce){.mg-skel{animation:none}}
+    @media (max-width:560px){.mg-node.lv1{margin-inline-start:8px}.mg-node.lv2{margin-inline-start:16px}}
+  </style>
+</head>
+<body>
+  <header class="iq-top">
+    <a class="iq-brand" href="platform.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">حسابي</a></nav>
+  </header>
+  <main class="mg">
+    <h1>إدارة التعيينات</h1>
+    <p class="sub">كل جامعة وكلية وقسم له مسؤوله وفريقه. المسؤول يعيّن ويدير ضمن نطاقه فقط.</p>
+    <p id="gate" class="mg-empty">جارٍ التحقق من حسابك…</p>
+
+    <div id="app" class="mg-hide">
+      <div class="mg-bar">
+        <select id="uni" aria-label="الجامعة"></select>
+        <input id="q" type="search" placeholder="ابحث باسم القسم أو الكلية أو بريد المسؤول" aria-label="بحث">
+        <label class="mg-chk"><input id="noRep" type="checkbox"> الأقسام بلا مسؤول فقط</label>
+      </div>
+      <details class="mg-legend"><summary>ما صلاحيات كل دور؟</summary>
+        <ul>
+          <li><b>مشرف المنصة:</b> كل الجامعات، ويعيّن مسؤولي الجامعات.</li>
+          <li><b>مسؤول الجامعة:</b> جامعته فقط. يعيّن مسؤولي الكليات والأقسام والرافعين.</li>
+          <li><b>مسؤول الكلية:</b> كليته فقط. يعيّن مسؤولي أقسامها والرافعين.</li>
+          <li><b>مسؤول القسم:</b> قسمه فقط. يراجع ملفات القسم ويعيّن الرافعين من طلابه.</li>
+          <li><b>رافع ملفات:</b> يرفع في قسمه، وتظهر ملفاته بعد موافقة المسؤول.</li>
+        </ul>
+        <p class="mg-hint">المسؤول لا يعيّن ولا يزيل مسؤولاً بنفس مستواه أو أعلى منه.</p>
+      </details>
+      <div class="mg-stats" id="stats"></div>
+      <div id="tree" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <div class="mg-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog class="mg-dlg" id="dlgAdd" aria-labelledby="addT">
+    <h2 id="addT">تعيين</h2><p id="addSub"></p>
+    <label for="addEmail">بريد الشخص (Gmail الذي يسجّل به الدخول)</label>
+    <input id="addEmail" type="email" dir="ltr" placeholder="name@gmail.com" autocomplete="off">
+    <label for="addLevel">الصلاحية</label>
+    <select id="addLevel"></select>
+    <p class="mg-hint" id="addHint"></p>
+    <div class="acts"><button class="mg-btn" id="addNo" type="button">إلغاء</button><button class="mg-btn pri" id="addYes" type="button">تعيين</button></div>
+  </dialog>
+
+  <dialog class="mg-dlg" id="dlgCfm" aria-labelledby="cfmT">
+    <p id="cfmT"></p>
+    <div class="acts"><button class="mg-btn" id="cfmNo" type="button">إلغاء</button><button class="mg-btn danger" id="cfmYes" type="button">إزالة</button></div>
+  </dialog>
+
+  <script>
+  (function () {
+    "use strict";
+    var $ = function (i) { return document.getElementById(i); };
+    var TYPE = { university: "جامعة", college: "كلية", department: "قسم" };
+    var REP = { university: "مسؤول الجامعة", college: "مسؤول الكلية", department: "مسؤول القسم" };
+    var UPL = "رافع ملفات";
+    var ERR = { user_not_found: "هذا البريد لم يسجّل دخوله إلى المنصة بعد.", forbidden: "لا تملك صلاحية لهذا التعيين: المسؤول يعيّن مسؤولاً من مستوى أدنى فقط.", bad_request: "تحقق من البريد المكتوب.", not_found: "العنصر غير موجود." };
+
+    var ME = null, ROWS = [], UNIS = [], TREE = null, openNodes = {};
+
+    function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+    function api(method, path, body) {
+      var o = { method: method, headers: {} };
+      if (body !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(body); }
+      return fetch("/api/" + path, o).then(function (r) { return r.json().catch(function () { return { ok: false, error: "http_" + r.status }; }); });
+    }
+    function cat(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }).catch(function () { return []; }); }
+    var tt;
+    function toast(t, ok) { var n = $("toast"); n.textContent = t; n.className = "mg-toast on " + (ok ? "ok" : "err"); clearTimeout(tt); tt = setTimeout(function () { n.classList.remove("on"); }, 3500); }
+    function skel(box, n) { box.textContent = ""; for (var i = 0; i < n; i++) box.appendChild(el("div", null, "mg-skel")); }
+    function key(type, id) { return type + ":" + id; }
+
+    /* ===== تحميل البيانات ===== */
+    function loadRows() { return api("GET", "auth/scopes").then(function (d) { if (d.ok) ROWS = d.items || []; return d.ok; }); }
+
+    function loadTree(uid) {
+      skel($("tree"), 5);
+      return cat("colleges?university_id=" + uid).then(function (cols) {
+        return Promise.all(cols.map(function (c) { return cat("departments?college_id=" + c.id).then(function (ds) { c.departments = ds; return c; }); }));
+      }).then(function (cols) { TREE = cols; render(); });
+    }
+
+    /* هل أستطيع إدارة هذه العقدة؟ (الخادم هو الحَكَم النهائي) */
+    function canManage(type, id, collegeId) {
+      if (ME.admin) return true;
+      return (ME.scopes || []).some(function (s) {
+        if (s.level !== "rep") return false;
+        if (s.type === "university") return true; /* الجامعة المختارة مقيّدة أصلاً بنطاقي */
+        if (s.type === "college") return (type === "college" && s.node_id === id) || (type === "department" && s.node_id === collegeId);
+        return type === "department" && s.node_id === id;
+      });
+    }
+    /* تعيين/إزالة مسؤول: فقط في نطاق أدنى من نطاقي (المشرف العام يتجاوز). الرافع: في نطاقي أو ما تحته. */
+    function canAppointRep(type, id, collegeId) {
+      if (ME.admin) return true;
+      return (ME.scopes || []).some(function (s) {
+        if (s.level !== "rep") return false;
+        if (s.type === "university") return type !== "university";
+        if (s.type === "college") return type === "department" && s.node_id === collegeId;
+        return false;
+      });
+    }
+    function peopleOf(type, id) { return ROWS.filter(function (r) { return r.type === type && r.node_id === id; }); }
+
+    /* ===== العرض ===== */
+    function nodeCard(type, n, lvl, collegeId) {
+      var people = peopleOf(type, n.id);
+      var reps = people.filter(function (p) { return p.level === "rep"; });
+      var upl = people.filter(function (p) { return p.level === "uploader"; });
+      var mine = canManage(type, n.id, collegeId);
+      var card = el("section", null, "mg-node lv" + lvl);
+      var head = el("div", null, "mg-head");
+      var t = el("div", null, "mg-title");
+      t.appendChild(el("b", n.name_ar)); t.appendChild(el("span", TYPE[type], "mg-tag"));
+      if (!reps.length && type === "department") t.appendChild(el("span", "بلا مسؤول", "mg-tag bad"));
+      head.appendChild(t);
+      if (mine) {
+        var b = el("button", "+ تعيين", "mg-btn pri"); b.type = "button";
+        b.onclick = function () { openAdd(type, n, b, collegeId); };
+        head.appendChild(b);
+      }
+      card.appendChild(head);
+
+      var box = el("div", null, "mg-people");
+      people.forEach(function (p) { box.appendChild(chip(p, type, n, collegeId)); });
+      if (!people.length) box.appendChild(el("span", "لا يوجد أحد معيَّن هنا بعد.", "mg-note"));
+      card.appendChild(box);
+      if (upl.length > 5) card.appendChild(el("p", "الرافعون: " + upl.length, "mg-note"));
+      return card;
+    }
+    function chip(p, type, n, collegeId) {
+      var c = el("span", null, "mg-chip " + (p.level === "rep" ? "rep" : ""));
+      c.appendChild(el("span", (p.level === "rep" ? REP[type] : UPL) + " — " + (p.name || p.email)));
+      c.appendChild(el("small", p.email));
+      if (p.can_edit && (p.level !== "rep" || canAppointRep(type, n.id, collegeId))) {
+        var x = el("button", "×"); x.type = "button"; x.setAttribute("aria-label", "إزالة " + (p.name || p.email));
+        x.onclick = function () { confirmRemove(p, type, n, x); };
+        c.appendChild(x);
+      }
+      return c;
+    }
+
+    function render() {
+      var q = $("q").value.trim().toLowerCase(), onlyNo = $("noRep").checked, uid = Number($("uni").value);
+      var uni = UNIS.filter(function (u) { return u.id === uid; })[0];
+      var deps = [], withRep = 0, repCount = 0, uplCount = 0;
+      TREE.forEach(function (c) { c.departments.forEach(function (d) { deps.push(d); if (peopleOf("department", d.id).some(function (p) { return p.level === "rep"; })) withRep++; }); });
+      ROWS.forEach(function (r) { if (r.university_id === uid) { if (r.level === "rep") repCount++; else uplCount++; } });
+      var st = $("stats"); st.textContent = "";
+      [["الكليات", TREE.length], ["الأقسام", deps.length], ["أقسام بلا مسؤول", deps.length - withRep, 1], ["المسؤولون", repCount], ["الرافعون", uplCount]].forEach(function (s) {
+        var d = el("div", null, "mg-stat" + (s[2] && s[1] > 0 ? " warn" : "")); d.appendChild(el("b", String(s[1]))); d.appendChild(el("span", s[0])); st.appendChild(d);
+      });
+
+      function match(type, n) {
+        if (!q) return true;
+        if ((n.name_ar || "").toLowerCase().indexOf(q) > -1) return true;
+        return peopleOf(type, n.id).some(function (p) { return ((p.email || "") + " " + (p.name || "")).toLowerCase().indexOf(q) > -1; });
+      }
+      var box = $("tree"); box.textContent = "";
+      var shown = 0;
+      if (uni && !onlyNo && match("university", uni) && canManage("university", uni.id)) { box.appendChild(nodeCard("university", uni, 0)); shown++; }
+      TREE.forEach(function (c) {
+        var ds = c.departments.filter(function (d) {
+          if (onlyNo && peopleOf("department", d.id).some(function (p) { return p.level === "rep"; })) return false;
+          return match("department", d) || match("college", c);
+        });
+        var cm = !onlyNo && (match("college", c) || ds.length);
+        var visibleCollege = canManage("college", c.id);
+        var anyDept = ds.some(function (d) { return canManage("department", d.id, c.id); });
+        if (!visibleCollege && !anyDept) return;
+        if (cm && visibleCollege) { box.appendChild(nodeCard("college", c, 1)); shown++; }
+        ds.forEach(function (d) { if (canManage("department", d.id, c.id)) { box.appendChild(nodeCard("department", d, 2, c.id)); shown++; } });
+      });
+      if (!shown) box.appendChild(el("p", onlyNo ? "كل الأقسام لها مسؤول." : "لا توجد نتائج مطابقة.", "mg-empty"));
+    }
+
+    /* ===== تعيين ===== */
+    var ADD = null;
+    function openAdd(type, n, opener, collegeId) {
+      ADD = { type: type, node: n, opener: opener };
+      $("addT").textContent = "تعيين في: " + n.name_ar;
+      $("addSub").textContent = TYPE[type] + " — الشخص يحصل على صلاحيات هذا النطاق فقط.";
+      var sel = $("addLevel"); sel.textContent = "";
+      sel.appendChild(new Option(UPL + " (ملفاته تظهر بعد موافقة المسؤول)", "uploader"));
+      var okRep = canAppointRep(type, n.id, collegeId);
+      if (okRep) sel.appendChild(new Option(REP[type] + " (إدارة كاملة لهذا النطاق وتعيين من تحته)", "rep"));
+      $("addHint").textContent = "الشخص لازم يكون سجّل دخوله إلى المنصة مرة واحدة على الأقل." + (okRep ? "" : " تعيين المسؤول يكون من المستوى الأعلى فقط.");
+      $("addEmail").value = "";
+      var d = $("dlgAdd"); if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+      $("addEmail").focus();
+    }
+    function closeAdd() { var d = $("dlgAdd"); if (d.open) d.close(); if (ADD && ADD.opener && ADD.opener.focus) ADD.opener.focus(); }
+    $("addNo").onclick = closeAdd;
+    $("addYes").onclick = function () {
+      var email = $("addEmail").value.trim();
+      if (!email || email.indexOf("@") < 1) { toast("اكتب بريداً صحيحاً.", false); $("addEmail").focus(); return; }
+      var b = $("addYes"); b.disabled = true;
+      api("POST", "auth/scope", { email: email, type: ADD.type, id: ADD.node.id, level: $("addLevel").value, action: "add" }).then(function (d) {
+        b.disabled = false;
+        if (!d.ok) { toast(ERR[d.error] || "تعذّر التعيين.", false); return; }
+        toast("تم التعيين.", true); closeAdd();
+        return loadRows().then(render);
+      });
+    };
+
+    /* ===== إزالة ===== */
+    function confirmRemove(p, type, n, opener) {
+      $("cfmT").textContent = "إزالة " + (p.name || p.email) + " من «" + n.name_ar + "»؟ تُسحب منه كل صلاحيات هذا النطاق.";
+      var d = $("dlgCfm");
+      function done() { $("cfmYes").onclick = $("cfmNo").onclick = null; if (d.open) d.close(); if (opener && opener.focus) opener.focus(); }
+      $("cfmNo").onclick = done;
+      $("cfmYes").onclick = function () {
+        $("cfmYes").disabled = true;
+        api("POST", "auth/scope", { email: p.email, type: p.type, id: p.node_id, level: p.level, action: "remove" }).then(function (r) {
+          $("cfmYes").disabled = false; done();
+          toast(r.ok ? "تمت الإزالة." : (ERR[r.error] || "تعذّرت الإزالة."), r.ok);
+          if (r.ok) return loadRows().then(render);
+        });
+      };
+      if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+      $("cfmNo").focus();
+    }
+
+    /* ===== البوابة ===== */
+    var qt;
+    $("q").oninput = function () { clearTimeout(qt); qt = setTimeout(function () { if (TREE) render(); }, 200); };
+    $("noRep").onchange = function () { if (TREE) render(); };
+    $("uni").onchange = function () { loadTree(Number($("uni").value)); };
+
+    api("GET", "auth/me").then(function (d) {
+      ME = d && d.user;
+      if (!ME) { $("gate").textContent = ""; var a = el("a", "تسجيل الدخول"); a.href = "login.html?next=manage.html"; $("gate").appendChild(document.createTextNode("سجّل الدخول أولاً: ")); $("gate").appendChild(a); return; }
+      var isRep = ME.admin || (ME.scopes || []).some(function (x) { return x.level === "rep"; });
+      if (!isRep) { $("gate").textContent = "هذه الصفحة لمشرفي المنصة والمسؤولين المعيَّنين فقط."; return; }
+      return Promise.all([loadRows(), cat("universities")]).then(function (r) {
+        var all = r[1];
+        UNIS = ME.admin ? all : all.filter(function (u) { return ROWS.some(function (x) { return x.university_id === u.id; }); });
+        if (!UNIS.length) { $("gate").textContent = "لا توجد جامعات ضمن صلاحياتك بعد."; return; }
+        $("gate").classList.add("mg-hide"); $("app").classList.remove("mg-hide");
+        var s = $("uni"); s.textContent = ""; UNIS.forEach(function (u) { s.appendChild(new Option(u.name_ar, u.id)); });
+        if (UNIS.length === 1) s.classList.add("mg-hide");
+        return loadTree(UNIS[0].id);
+      });
+    }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
+  })();
+  </script>
+  <script src="js/upload-link.js"></script>
+</body>
+</html>
