@@ -89,7 +89,7 @@ async function change(req, env, user) {
 
 export async function handleOnboarding(req, env) {
   const url = new URL(req.url);
-  if (!["/api/admin/universities", "/api/admin/universities/audit", "/api/admin/universities/managers", "/api/admin/universities/overview"].includes(url.pathname)) return null;
+  if (!["/api/admin/universities", "/api/admin/universities/audit", "/api/admin/universities/managers", "/api/admin/universities/overview", "/api/admin/universities/analytics"].includes(url.pathname)) return null;
   if (!env.DB) return fail("not_configured", 503);
   const user = await currentUser(req, env);
   if (!user) return fail("unauthorized", 401);
@@ -105,6 +105,7 @@ export async function handleOnboarding(req, env) {
     return json({ ok: true, items: results || [] });
   }
   if (req.method === "GET" && url.pathname.endsWith("/overview")) return overview(env);
+  if (req.method === "GET" && url.pathname.endsWith("/analytics")) return analytics(env);
   if (req.method === "GET" && url.pathname.endsWith("/audit")) {
     const { results } = await env.DB.prepare(
       `SELECT a.id, a.university_id, u.name_ar AS university, p.name AS actor, a.previous_state,
@@ -146,4 +147,44 @@ async function overview(env) {
      ORDER BY m.created_at DESC, m.id DESC LIMIT 30`
   ).all().catch(() => ({ results: [] }));
   return json({ ok: true, totals: { students, users, active, files, pending, reports, reps }, recent: results || [] });
+}
+
+// تحليل النمو: الدخول من الجلسات (مدة الجلسة 30 يوماً)، والتسجيل في الأقسام من signup_events
+const SESSION_DAYS = 30, DAY = 86400000;
+async function analytics(env) {
+  const now = Date.now();
+  const all = (sql, ...args) => env.DB.prepare(sql).bind(...args).all().then((r) => r.results || []).catch(() => []);
+  const num = (sql, ...args) => env.DB.prepare(sql).bind(...args).first().then((r) => (r ? r.n : 0)).catch(() => 0);
+  // بداية الجلسة = انتهاؤها - 30 يوماً
+  const loggedIn = (days) => num(
+    "SELECT COUNT(DISTINCT user_id) AS n FROM sessions WHERE expires_at >= ? AND expires_at - ? >= ?",
+    now, SESSION_DAYS * DAY, now - days * DAY);
+  const [students, active7, active30, signups7, signups30, accounts7] = await Promise.all([
+    num("SELECT COUNT(*) AS n FROM user_profile WHERE stage_id IS NOT NULL"),
+    loggedIn(7), loggedIn(30),
+    num("SELECT COUNT(*) AS n FROM signup_events WHERE created_at >= ?", now - 7 * DAY),
+    num("SELECT COUNT(*) AS n FROM signup_events WHERE created_at >= ?", now - 30 * DAY),
+    num("SELECT COUNT(*) AS n FROM users WHERE created_at >= ?", now - 7 * DAY)
+  ]);
+  const [daily, top, sources] = await Promise.all([
+    all(`SELECT date(created_at/1000,'unixepoch') AS day, COUNT(*) AS n FROM signup_events
+         WHERE created_at >= ? GROUP BY day ORDER BY day`, now - 14 * DAY),
+    all(`SELECT u.id, u.name_ar,
+           (SELECT COUNT(*) FROM user_profile p JOIN colleges c ON c.id=p.college_id WHERE c.university_id=u.id AND p.stage_id IS NOT NULL) AS students,
+           (SELECT COUNT(*) FROM signup_events e JOIN stages st ON st.id=e.stage_id JOIN departments d ON d.id=st.department_id
+              JOIN colleges c ON c.id=d.college_id WHERE c.university_id=u.id AND e.created_at >= ?) AS new7,
+           (SELECT COUNT(*) FROM files f JOIN subjects sb ON sb.id=f.subject_id JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+              JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id WHERE c.university_id=u.id AND f.status='approved') AS files
+         FROM universities u ORDER BY students DESC, files DESC, u.name_ar LIMIT 8`, now - 7 * DAY),
+    all(`SELECT COALESCE(i.code,'direct') AS code, i.type, d.name_ar AS department, st2.number AS stage, COUNT(*) AS n
+         FROM signup_events e LEFT JOIN invitations i ON i.code=e.invite_code
+         LEFT JOIN stages st2 ON i.type='stage' AND st2.id=i.node_id
+         LEFT JOIN departments d ON d.id=CASE i.type WHEN 'department' THEN i.node_id ELSE st2.department_id END
+         GROUP BY COALESCE(i.code,'direct') ORDER BY n DESC LIMIT 8`)
+  ]);
+  return json({
+    ok: true,
+    totals: { students, active7, active30, signups7, signups30, accounts7 },
+    daily, top: top.filter((r) => r.students > 0 || r.files > 0), sources
+  });
 }

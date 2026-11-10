@@ -297,9 +297,16 @@ function renderUniversities() {
   const history = element("div");
   auditItems(listing.audit || [], history);
   log.card.append(history);
+  const growth = panel("تحليل النمو", "الطلاب النشطون والجامعات الأكثر استخداماً ومصادر التسجيل");
+  growth.card.id = "growth";
+  const growthBody = element("div");
+  growth.card.append(growthBody);
   const content = $("content");
-  content.replaceChildren(choices, totals, layout, log.card);
+  content.replaceChildren(choices, totals, growth.card, layout, log.card);
   content.hidden = false;
+  if (listing.analytics) growthBody.replaceChildren(growthPanel(listing.analytics));
+  else growthBody.append(empty("جارٍ تحميل التحليل…"));
+  listing.growthBody = growthBody;
 }
 
 async function loadUniversities() {
@@ -311,10 +318,15 @@ async function loadUniversities() {
     if (request !== listVersion) return;
     const overviewData = await api(adminRoot + "/overview").catch(() => null);
     if (request !== listVersion) return;
-    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview };
+    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview, analytics: listing?.analytics };
     renderUniversities();
     showNotice();
     const log = $("audit").lastElementChild;
+    api(adminRoot + "/analytics").then(analytics => {
+      if (request !== listVersion) return;
+      listing.analytics = analytics;
+      listing.growthBody?.replaceChildren(growthPanel(analytics));
+    }).catch(() => { if (request === listVersion) listing.growthBody?.replaceChildren(empty("تعذّر تحميل التحليل.")); });
     try {
       const audit = await api(adminRoot + "/audit");
       if (request !== listVersion) return;
@@ -380,7 +392,7 @@ function showGlobal() {
   $("scope-label").textContent = "جميع الجامعات";
   $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
-  const nav = [["الرئيسية", "admin.html"], ["الجامعات", "#universities"], ["طلبات التفعيل", "#joins"],
+  const nav = [["الرئيسية", "admin.html"], ["تحليل النمو", "#growth"], ["الجامعات", "#universities"], ["طلبات التفعيل", "#joins"],
     ["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["الملفات والبلاغات", "admin-tools.html#files"],
     ["الإعلانات", "admin-tools.html#ann"]];
   navigation(nav);
@@ -441,6 +453,89 @@ function appendNoticeRows(items, target) {
     list.append(row);
   }
   target.replaceChildren(list);
+}
+
+// رابط دعوة لقسم أو مرحلة: ينشره الممثل في مجموعات تيليغرام، ويُحصى من سجّل عبره
+function invitePanel(type, id, title) {
+  const box = panel(title, "انشر الرابط في مجموعة الطلاب. يفتح للطالب صفحة تسجيل جاهزة لهذا " + (type === "stage" ? "الصف" : "القسم") + ".");
+  box.card.id = type + "-invites";
+  const body = element("div");
+  box.card.append(body);
+  const root = "/api/admin/invites";
+  const linkOf = code => location.origin + "/join.html?inv=" + code;
+  async function load() {
+    body.replaceChildren(empty("جارٍ التحميل…"));
+    try {
+      const { items } = await api(root + "?type=" + type + "&id=" + id);
+      const live = items.filter(row => !row.revoked_at);
+      if (!live.length) { body.replaceChildren(empty("لا يوجد رابط بعد. اضغط «إنشاء رابط».")); return; }
+      const list = element("ul", undefined, "list");
+      for (const row of live) {
+        const url = linkOf(row.code);
+        const item = element("li");
+        const text = element("input"); text.readOnly = true; text.value = url; text.dir = "ltr";
+        text.setAttribute("aria-label", "رابط الدعوة");
+        const actions = element("div", undefined, "actions");
+        actions.append(
+          button("نسخ", async () => {
+            try { await navigator.clipboard.writeText(url); showNotice("نُسخ الرابط."); } catch { text.select(); showNotice("حدّد الرابط وانسخه.", true); }
+          }, "primary"),
+          link("نشر في تيليغرام", "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent("سجّل في المنصة العراقية واحصل على ملازم قسمك"), "button"),
+          button("إيقاف الرابط", () => confirmAction("إيقاف الرابط", "لن يعمل الرابط بعد الآن، ويبقى من سجّلوا عبره.", [], async () => {
+            await api(root, { action: "revoke", code: row.code });
+            await load();
+          })));
+        item.append(text, element("small", "سجّل عبره " + number(row.uses) + " · أنشأه " + (row.creator || "") + " · " + date(row.created_at)), actions);
+        list.append(item);
+      }
+      body.replaceChildren(list);
+    } catch (error) { body.replaceChildren(empty(error.message), button("إعادة المحاولة", load)); }
+  }
+  box.head.append(button("إنشاء رابط", async () => {
+    try { await api(root, { action: "create", type, id }); await load(); }
+    catch (error) { showNotice(error.message, true); }
+  }, "primary"));
+  load();
+  return box.card;
+}
+
+function barList(rows, label, value, suffix = "") {
+  const max = Math.max(1, ...rows.map(value));
+  const list = element("ul", undefined, "list bars");
+  for (const row of rows) {
+    const item = element("li");
+    const bar = element("span", undefined, "bar");
+    bar.style.setProperty("--w", Math.round(value(row) / max * 100) + "%");
+    item.append(element("strong", label(row)), element("small", number(value(row)) + suffix), bar);
+    list.append(item);
+  }
+  return list;
+}
+
+function growthPanel(data) {
+  const wrap = element("div");
+  const t = data.totals;
+  wrap.append(stats([
+    ["الطلاب المسجّلون", t.students], ["دخلوا آخر ٧ أيام", t.active7], ["دخلوا آخر ٣٠ يوماً", t.active30],
+    ["تسجيلات آخر ٧ أيام", t.signups7], ["حسابات جديدة آخر ٧ أيام", t.accounts7]
+  ]));
+  const grid = element("div", undefined, "panel-grid");
+  const top = panel("الجامعات الأكثر استخداماً", "حسب عدد الطلاب المسجّلين");
+  top.card.append(data.top.length
+    ? barList(data.top, r => r.name_ar, r => r.students, " طالب")
+    : empty("لا يوجد طلاب مسجّلون بعد."));
+  const src = panel("مصادر التسجيل", "من أين جاء الطلاب: رابط دعوة أو تسجيل مباشر");
+  src.card.append(data.sources.length
+    ? barList(data.sources, r => r.code === "direct" ? "تسجيل مباشر" :
+        (r.department || "رابط دعوة") + (r.stage ? " — " + stageLabel(r.stage) : "") + " (" + r.code.slice(0, 4) + "…)", r => r.n)
+    : empty("لا توجد تسجيلات بعد."));
+  const days = panel("التسجيلات اليومية", "آخر ١٤ يوماً");
+  days.card.append(data.daily.length
+    ? barList(data.daily, r => r.day, r => r.n)
+    : empty("لا توجد تسجيلات في آخر ١٤ يوماً."));
+  grid.append(top.card, src.card, days.card);
+  wrap.append(grid);
+  return wrap;
 }
 
 function stagePanels(data) {
@@ -577,7 +672,7 @@ function stagePanels(data) {
     }
   }
 
-  $("content").append(files.card, news.card, reports.card, students.card);
+  $("content").append(files.card, news.card, reports.card, students.card, invitePanel("stage", scope.id, "رابط دعوة المرحلة"));
   students.head.append(button("تأكيد كل الطلبة", () => confirmAction("تأكيد كل طلبة المرحلة", stageLabel(scope.stage), [], async () => {
     await api("/api/admin/stage-students?stage_id=" + scope.id, { action: "verify_all" });
     await loadStudents();
@@ -659,6 +754,7 @@ function renderScope(data, reload) {
   const grid = element("div", undefined, "panel-grid");
   grid.append(stages.card, hierarchy.card);
   $("content").replaceChildren(banner, summary, grid);
+  if (type === "department") $("content").append(invitePanel("department", id, "رابط دعوة القسم"));
   if (stageOnly) stagePanels(data);
   $("content").hidden = false;
 }

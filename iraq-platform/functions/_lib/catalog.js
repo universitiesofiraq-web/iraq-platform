@@ -8,6 +8,7 @@
 import { currentUser } from "./auth.js";
 import { policy, isGlobalAdmin } from "./scope.js";
 import { ACTIVE_UNIVERSITY } from "./onboarding.js";
+import { resolveInvite } from "./invites.js";
 
 const NOT_SUSPENDED =
   "NOT EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='suspended')";
@@ -275,9 +276,16 @@ async function join(req, env, url) {
   await env.DB.prepare("INSERT OR IGNORE INTO stages (department_id,number) VALUES (?,?)").bind(did, stage).run();
   const st = await env.DB.prepare("SELECT id FROM stages WHERE department_id=? AND number=?").bind(did, stage).first();
   const owner = await env.DB.prepare("SELECT id FROM users WHERE role='admin' AND active=1 ORDER BY id LIMIT 1").first();
+  // مصدر التسجيل: رابط دعوة صالح لنفس القسم (ولنفس المرحلة إن كان رابط مرحلة)، وإلا تسجيل مباشر
+  let inviteCode = null;
+  if (typeof b.invite === "string") {
+    const inv = await resolveInvite(env, b.invite.toUpperCase());
+    if (inv && inv.department_id === did && (inv.type === "department" || inv.stage === stage)) inviteCode = b.invite.toUpperCase();
+  }
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO user_profile (user_id,college_id,stage_id) VALUES (?,?,?)
       ON CONFLICT(user_id) DO UPDATE SET college_id=excluded.college_id, stage_id=excluded.stage_id`).bind(me.id, dep.college_id, st.id),
+    env.DB.prepare("INSERT OR IGNORE INTO signup_events (user_id,stage_id,invite_code,created_at) VALUES (?,?,?,?)").bind(me.id, st.id, inviteCode, now),
     env.DB.prepare(`INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by)
       VALUES (?,'active',?,?,?,?) ON CONFLICT(university_id) DO UPDATE SET state='active', verified_at=COALESCE(verified_at, excluded.verified_at),
       updated_at=excluded.updated_at, updated_by=excluded.updated_by WHERE university_onboarding.state='registered'`)

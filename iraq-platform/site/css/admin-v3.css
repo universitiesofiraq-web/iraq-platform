@@ -158,3 +158,9 @@ dialog input, dialog select, .form input, .form textarea, .form select {
   td[data-label]::before { content: attr(data-label) " "; font-size: .8rem; color: var(--muted); }
 }
 @media print { .sidebar, .topbar, .actions, .filters { display: none; } .layout { display: block; } }
+
+/* قوائم الأشرطة في تحليل النمو */
+.bars li { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 0 .8rem; }
+.bars .bar { grid-column: 1 / -1; display: block; height: .45rem; margin-top: .35rem; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bars .bar::after { content: ""; display: block; height: 100%; width: var(--w, 0); background: var(--accent, #13294B); border-radius: inherit; }
+.list li input[readonly] { width: 100%; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: .5rem; background: transparent; color: inherit; font: inherit; margin-block-end: .3rem; }

@@ -8,6 +8,7 @@ import { handleAi } from "../_lib/ai.js";
 import { handleOnboarding } from "../_lib/onboarding.js";
 import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
 import { handleCatalog } from "../_lib/catalog.js";
+import { handleInvites } from "../_lib/invites.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
@@ -16,6 +17,8 @@ export async function onRequest({ request, env }) {
   if (onboardingRes) return onboardingRes;
   const workspaceRes = await handleAdminWorkspace(request, env);
   if (workspaceRes) return workspaceRes;
+  const inviteRes = await handleInvites(request, env);
+  if (inviteRes) return inviteRes;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
   const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط

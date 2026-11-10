@@ -42,6 +42,9 @@
     var $ = function (i) { return document.getElementById(i); };
     var TITLES = ["اختر جامعتك", "اختر كليتك", "اختر قسمك", "اختر مرحلتك"];
     var stack = []; // [{id,name}] جامعة، كلية، قسم
+    var INV = (new URLSearchParams(location.search).get("inv") || "").toUpperCase();
+    var INFO = null; // معلومات رابط الدعوة إن وُجد
+    function loginUrl() { return "login.html?next=" + encodeURIComponent("join.html" + location.search); }
     var STAGE_NAMES = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
     function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
     function get(p) { return fetch("/api/catalog/" + p, { credentials: "same-origin" }).then(function (r) { return r.json(); }); }
@@ -82,7 +85,7 @@
       var path = ["universities?view=join", "colleges?view=join&university_id=", "departments?view=join&college_id="][lv] + (lv ? stack[lv - 1].id : "");
       list.innerHTML = '<div class="cg-empty">جارٍ التحميل…</div>';
       get(path).then(function (d) {
-        if (d && d.error === "unauthorized") { location.href = "login.html?next=join.html"; return; }
+        if (d && d.error === "unauthorized") { location.href = loginUrl(); return; }
         list.innerHTML = "";
         var items = (d && d.items) || [];
         if (!items.length) list.innerHTML = '<div class="cg-empty">لا توجد عناصر. تواصل معنا لإضافتها.</div>';
@@ -102,7 +105,7 @@
       $("msg").textContent = "جارٍ التسجيل…";
       fetch("/api/catalog/join", {
         method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ department_id: dep.id, stage: stage })
+        body: JSON.stringify({ department_id: dep.id, stage: stage, invite: INFO ? INV : undefined })
       }).then(function (r) { return r.json(); }).then(function (r) {
         if (!r.ok) {
           $("msg").textContent = r.error === "suspended" ? "هذه الجامعة موقوفة مؤقتاً. تواصل مع إدارة المنصة." :
@@ -116,10 +119,31 @@
       }).catch(function () { $("msg").textContent = "تعذّر الاتصال بالخادم."; });
     }
 
+    // رابط دعوة: يملأ الجامعة والكلية والقسم (والمرحلة إن كان رابط مرحلة) من الرابط
+    function fromInvite(i) {
+      INFO = i;
+      stack = [{ id: i.university_id, name: i.university }, { id: i.college_id, name: i.college }, { id: i.department_id, name: i.department }];
+      $("lead").textContent = "دعوة للانضمام إلى " + i.department + " — " + i.university + ".";
+      if (i.stage) {
+        $("title").textContent = "تأكيد التسجيل"; $("qf").hidden = true; renderSteps();
+        $("list").innerHTML = "";
+        var b = document.createElement("button"); b.type = "button"; b.className = "btn btn-primary";
+        b.textContent = "انضم إلى المرحلة " + STAGE_NAMES[i.stage - 1] + " في " + i.department;
+        b.onclick = function () { submit(i.stage); };
+        $("list").appendChild(b);
+      } else load();
+    }
+
     // الطالب المسجّل مسبقاً يذهب إلى قسمه، إلا إن طلب تغيير قسمه
     var change = /[?&]change=1/.test(location.search);
     get("me").then(function (d) {
-      if (d && d.error === "unauthorized") { location.href = "login.html?next=join.html"; return; }
+      if (d && d.error === "unauthorized") { location.href = loginUrl(); return; }
+      if (INV) {
+        return fetch("/api/invite?code=" + encodeURIComponent(INV), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (i) {
+          if (i && i.ok) fromInvite(i);
+          else { $("msg").textContent = "رابط الدعوة غير صالح أو أُوقف. اختر جامعتك يدوياً."; INV = ""; load(); }
+        });
+      }
       if (d && d.profile && !change) {
         $("lead").textContent = "أنت مسجّل في " + d.profile.department + " — " + d.profile.university + ". يمكنك تغيير قسمك من هنا.";
       }
