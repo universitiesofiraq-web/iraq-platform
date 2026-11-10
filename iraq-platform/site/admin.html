@@ -191,16 +191,18 @@
       var box = $("stats"); skel(box, 6);
       Promise.all([
         api("GET", "auth/users"), api("GET", "auth/rep-requests"),
-        api("POST", "admin", {}), api("POST", "reports", {})
+        api("POST", "admin", {}), api("POST", "reports", {}),
+        api("GET", "auth/scopes")
       ]).then(function (r) {
         var us = r[0].ok ? r[0].users : null, rq = r[1].ok ? r[1].items : null;
         var fl = r[2].ok ? r[2].items.filter(function (e) { return e.status === "pending"; }) : null;
         var rp = r[3].ok ? (r[3].items || []).filter(function (x) { return x.open; }) : null;
+        var reps = r[4].ok ? new Set((r[4].items || []).filter(function (s) { return s.level === "rep"; }).map(function (s) { return String(s.email || "").toLowerCase(); })).size : null;
         function n(v) { return v == null ? "—" : v.length; }
         var cards = [
           ["الحسابات", us && us.length, "users"],
           ["الحسابات الفعّالة", us && us.filter(function (u) { return u.active; }).length, "users"],
-          ["الممثلون", us && us.filter(function (u) { return u.role === "rep"; }).length, "users"],
+          ["الممثلون بنطاقات", reps, "teams"],
           ["طلبات تمثيل بانتظار القرار", rq && rq.length, "reqs", 1],
           ["ملفات بانتظار المراجعة", fl && fl.length, "files", 1],
           ["بلاغات مفتوحة", rp && rp.length, "reports", 1]
@@ -349,7 +351,7 @@
           var l = el("div"); l.appendChild(el("b", q.name || q.email)); l.appendChild(el("small", q.email + " — يطلب تمثيل: " + (q.node || "") + " — " + (q.created_at || "")));
           r.appendChild(l);
           var acts = el("div", null, "ad-acts");
-          var ok = el("button", "قبول"); ok.onclick = function () { api("POST", "auth/rep-request/decide", { id: q.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم تعيينه ممثلاً." : "تعذّر.", x.ok); loadReqs(); }); };
+          var ok = el("button", "قبول"); ok.onclick = function () { confirmBox("الموافقة على طلب تمثيل " + (q.name || q.email) + "؟", "قبول", false).then(function (yes) { if (!yes) return; busy(ok, true); api("POST", "auth/rep-request/decide", { id: q.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم تعيينه ممثلاً." : "تعذّر.", x.ok); loadReqs(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(ok, false); }); }); };
           var no = el("button", "رفض"); no.onclick = function () { confirmBox("رفض طلب " + (q.name || q.email) + "؟", "رفض").then(function (c) { if (!c) return; api("POST", "auth/rep-request/decide", { id: q.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadReqs(); }); }); };
           acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
         });
@@ -369,7 +371,7 @@
           var l = el("div"); l.appendChild(el("b", e.title || e.label || e.filename || e.id)); l.appendChild(el("small", (e.by ? e.by + " — " : "") + (e.at || "")));
           r.appendChild(l);
           var acts = el("div", null, "ad-acts");
-          var ok = el("button", "قبول"); ok.onclick = function () { api("POST", "review", { id: e.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم القبول." : "تعذّر.", x.ok); loadFiles(); }); };
+          var ok = el("button", "قبول"); ok.onclick = function () { confirmBox("الموافقة على نشر الملف «" + (e.title || e.label || e.filename || e.id) + "»؟", "قبول", false).then(function (yes) { if (!yes) return; busy(ok, true); api("POST", "review", { id: e.id, action: "approve" }).then(function (x) { msg(x.ok ? "تم القبول." : "تعذّر.", x.ok); loadFiles(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(ok, false); }); }); };
           var no = el("button", "رفض"); no.onclick = function () { confirmBox("رفض هذا الملف؟", "رفض").then(function (c) { if (!c) return; api("POST", "review", { id: e.id, action: "reject" }).then(function (x) { msg(x.ok ? "تم الرفض." : "تعذّر.", x.ok); loadFiles(); }); }); };
           acts.appendChild(ok); acts.appendChild(no); r.appendChild(acts); box.appendChild(r);
         });
@@ -390,7 +392,7 @@
           r.appendChild(l);
           var acts = el("div", null, "ad-acts");
           var done = el("button", "تمّت المعالجة");
-          done.onclick = function () { api("POST", "reportdone", { rid: rp.rid }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadReports(); }); };
+          done.onclick = function () { confirmBox("تأكيد معالجة هذا البلاغ؟", "تمّت المعالجة", false).then(function (yes) { if (!yes) return; busy(done, true); api("POST", "reportdone", { rid: rp.rid }).then(function (x) { msg(x.ok ? "تم." : "تعذّر.", x.ok); loadReports(); }).catch(function () { msg("تعذّر الاتصال بالخادم."); busy(done, false); }); }); };
           acts.appendChild(done); r.appendChild(acts); box.appendChild(r);
         });
       });

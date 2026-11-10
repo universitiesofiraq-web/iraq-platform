@@ -100,7 +100,9 @@ async function authenticate(req, deps) {
     return { res: fail("bad_code", 401) };
   }
   if (rec) await deps.store.delete(key);
-  return { name: found.name, role: "admin" };
+  // Legacy upload codes are upload-only, not site-wide administrative credentials.
+  // They still allow uploads to enter the review queue; migrate to scoped accounts.
+  return { name: found.name, role: "uploader" };
 }
 
 async function readManifest(deps) {

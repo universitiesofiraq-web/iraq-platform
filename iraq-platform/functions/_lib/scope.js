@@ -35,7 +35,8 @@ export async function audit(env, actorId, targetUserId, action, type, nodeId) {
 export function isAdminUser(u, env) {
   if (!u) return false;
   const list = String(env.ADMIN_EMAILS || "").toLowerCase().split(",").map((x) => x.trim()).filter(Boolean);
-  return u.role === "admin" || list.includes(String(u.email || "").toLowerCase());
+  // ADMIN_EMAILS is authoritative for every request, including existing sessions.
+  return list.includes(String(u.email || "").toLowerCase());
 }
 
 /* سلسلة العقدة: { university, college, department } */
@@ -78,7 +79,6 @@ export async function policy(env, user) {
   };
   return {
     admin, scopes,
-    legacyUploader: !!user && (user.role === "uploader" || user.role === "rep"),
     async manage(type, id, skip) {
       if (admin) return true;
       if (!scopes.length) return false;
@@ -90,7 +90,7 @@ export async function policy(env, user) {
       return covers(scopes, await subjChain(courseId), true);
     },
     async upload(courseId) {
-      if (admin || this.legacyUploader) return true;
+      if (admin) return true; // Older global roles must not bypass academic scopes.
       if (!scopes.length) return false;
       return covers(scopes, await subjChain(courseId), false);
     }
