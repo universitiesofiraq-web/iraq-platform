@@ -1,0 +1,37 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { handleAuth } from "../functions/_lib/auth.js";
+import { policy } from "../functions/_lib/scope.js";
+import { handleOnboarding } from "../functions/_lib/onboarding.js";
+import { database, seedAcademic, signedRequest } from "./helpers/d1.mjs";
+
+test("only owners can delegate global operation, and a revocation applies to a live session", async () => {
+  const { DB, sql } = database();
+  seedAcademic(sql);
+  const env = { DB, ADMIN_EMAILS: "owner@example.test" };
+  const route = "/api/auth/global-admins";
+  const api = (path, who, body, origin) => handleAuth(signedRequest(sql, path, who, body, origin), env);
+  const grant = user_id => ({ user_id, action: "grant" });
+  assert.equal((await api(route, 2, grant(3))).status, 403);
+  assert.equal((await api(route, 3, grant(2))).status, 403);
+  assert.equal((await api(route, 1, grant(2), "https://outside.test")).status, 403);
+  assert.equal((await api(route, 1, grant(1))).status, 409);
+  assert.equal((await api(route, 1, grant(4))).status, 409);
+  assert.equal((await api(route, 1, grant(2))).status, 200);
+  assert.equal((await api(route, 1, grant(2))).status, 200);
+  const me = (await (await api("/api/auth/me", 2)).json()).user;
+  assert.equal(me.admin, true);
+  assert.equal(me.owner, false);
+  assert.equal((await policy(env, me)).admin, true);
+  assert.equal((await api("/api/auth/users", 2)).status, 200);
+  assert.equal((await handleOnboarding(signedRequest(sql, "/api/admin/universities", 2), env)).status, 200);
+  assert.equal((await api(route, 2, grant(3))).status, 403);
+  assert.equal((await api("/api/auth/user", 2, { id: 1, active: false })).status, 409);
+  assert.equal((await api("/api/auth/user", 2, { id: 2, role: "student" })).status, 409);
+  assert.equal((await api(route, 1, { user_id: 2, action: "revoke" })).status, 200);
+  assert.equal((await api("/api/auth/users", 2)).status, 403);
+  assert.equal((await api("/api/auth/users", 1)).status, 200);
+  const audit = (await (await api(route, 1)).json()).audit;
+  assert.deepEqual(audit.map(entry => entry.action), ["revoke", "grant"]);
+  assert.ok(audit.every(entry => entry.actor === "المالك"));
+});

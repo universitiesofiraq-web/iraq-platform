@@ -45,7 +45,9 @@
   (function () {
     var $ = function (i) { return document.getElementById(i); };
     var CH = 2 * 1024 * 1024, MAX = 20 * 1024 * 1024;
-    var pre = Number(new URLSearchParams(location.search).get("subject")) || 0;
+    var params = new URLSearchParams(location.search);
+    var pre = Number(params.get("subject")) || 0;
+    var stage = Number(params.get("stage_id"));
     var role = "";
 
     function get(p) { return fetch("/api/catalog/" + p).then(function (r) { return r.json(); }).then(function (d) { return d.items || []; }); }
@@ -102,7 +104,7 @@
           return post("finish", { id: id, chunks: total, courseId: cid, number: num, type: type, title: num ? title : "", label: label, filename: file.name }).then(done);
         }
         file.slice(i * CH, (i + 1) * CH).arrayBuffer().then(function (buf) {
-          return post("chunk?id=" + id + "&index=" + i, null, buf);
+          return post("chunk?id=" + id + "&index=" + i + "&courseId=" + encodeURIComponent(cid), null, buf);
         }).then(function (d) {
           if (!d.ok) return done(d);
           i++; $("fill").style.width = Math.round(i / total * 100) + "%"; next();
@@ -116,6 +118,26 @@
       var sc = (usr.scopes || []), isRep = usr.admin || sc.some(function (x) { return x.level === "rep"; });
       if (!isRep && ["uploader", "rep", "admin"].indexOf(role) < 0 && !sc.length) { $("gate").textContent = "حسابك طالب. اطلب من ممثل قسمك تفعيل صلاحية الرفع لك."; return; }
       role = isRep ? "rep" : "uploader";
+      var stageScope = sc.find(function (x) { return x.type === "stage" && x.level === "rep"; });
+      var onlyStage = !usr.admin && stageScope && !sc.some(function (x) { return x.type !== "stage"; });
+      if (!stage && onlyStage) stage = stageScope.node_id;
+      if (Number.isSafeInteger(stage) && stage > 0) {
+        $("gate").textContent = "جارٍ تحميل مواد المرحلة…";
+        return fetch("/api/admin/workspace?type=stage&id=" + stage, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (data) {
+          if (!data.ok) { $("gate").textContent = "تعذّر فتح نطاق المرحلة أو لا تملك صلاحية الرفع إليها."; return; }
+          var s = data.scope;
+          [[U, s.university_id, s.university], [C, s.college_id, s.college], [D, s.department_id, s.department]].forEach(function (entry) {
+            entry[0].replaceChildren(new Option(entry[2], entry[1]));
+            entry[0].disabled = true;
+          });
+          var subjects = data.subjects.map(function (item) { return { id: item.id, name_ar: "ك" + item.term + " — " + item.name_ar }; });
+          fill(S, subjects, subjects.length ? "اختر المادة" : "لا توجد مواد في المرحلة");
+          if (subjects.some(function (item) { return item.id === pre; })) S.value = String(pre);
+          $("go").disabled = !subjects.length;
+          $("note").textContent = "الرفع مقيد بمواد المرحلة " + s.stage + " من " + s.department + ".";
+          $("gate").hidden = true; $("form").hidden = false;
+        }).catch(function () { $("gate").textContent = "تعذّر تحميل مواد المرحلة. أعد المحاولة."; });
+      }
       $("gate").hidden = true; $("form").hidden = false;
       $("note").textContent = role === "uploader" ? "ملفاتك تظهر بعد موافقة المشرف أو ممثل الكلية." : "ملفاتك تُنشر مباشرة.";
       get("universities").then(function (items) {

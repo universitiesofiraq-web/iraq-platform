@@ -1,6 +1,8 @@
 // functions/api/platform.js — GET /api/platform?dept=ID
 // يبني بيانات منصة القسم بنفس شكل data/courses.js القديم (SITE, SEMESTERS, CATEGORIES, COURSES).
 // الأقسام المسمّاة "المرحلة ..." (كليات الطب) تُجمع مراحل الكلية كلها في منصة واحدة.
+import { ACTIVE_UNIVERSITY } from "../_lib/onboarding.js";
+
 const ORD = { "الأولى": 1, "الثانية": 2, "الثالثة": 3, "الرابعة": 4, "الخامسة": 5, "السادسة": 6 };
 const AR_NUM = ["", "الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
 const json = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -11,7 +13,7 @@ export async function onRequestGet({ request, env }) {
   const id = Number(new URL(request.url).searchParams.get("dept"));
   if (!Number.isInteger(id) || id <= 0) return json({ ok: false, error: "bad_request" }, 400);
   const d = await env.DB.prepare(
-    "SELECT d.id, d.name_ar, d.college_id, c.name_ar AS college, c.university_id, u.name_ar AS university FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE d.id=?"
+    `SELECT d.id, d.name_ar, d.college_id, c.name_ar AS college, c.university_id, u.name_ar AS university FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE d.id=? AND ${ACTIVE_UNIVERSITY}`
   ).bind(id).first();
   if (!d) return json({ ok: false, error: "not_found" }, 404);
 

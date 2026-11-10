@@ -15,6 +15,7 @@ function makeDb() {
   };
   const q = (sql, a) => {
     if (/^CREATE TABLE/.test(sql)) return { changes: 0 };
+    if (sql.startsWith("SELECT 1 FROM global_admins")) return null;
     if (/FROM departments d JOIN colleges c/.test(sql)) { const d = T.departments.find((x) => x.id === a[0]); return d ? { department: d.id, college: d.college_id, university: 1 } : null; }
     if (/SELECT name_ar FROM departments WHERE id=\?/.test(sql)) { const d = T.departments.find((x) => x.id === a[0]); return d ? { name_ar: d.name_ar } : null; }
     if (/SELECT id FROM users WHERE lower\(email\)=\?/.test(sql)) { const u = T.users.find((x) => x.email === a[0]); return u ? { id: u.id } : null; }

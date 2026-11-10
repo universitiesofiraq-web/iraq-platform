@@ -6,7 +6,8 @@
 //   subject {department_id,stage,term,name_ar,name_en?,professor?}
 // حذف (للمشرف): POST /api/catalog/delete { type, id }  (university|college|department|subject)
 import { currentUser } from "./auth.js";
-import { policy, isAdminUser } from "./scope.js";
+import { policy, isGlobalAdmin } from "./scope.js";
+import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -34,33 +35,34 @@ export async function handleCatalog(req, env) {
 
   try {
     if (req.method === "GET") {
+      const directory = q.get("view") === "directory";
+      if (directory && !(await isGlobalAdmin(await currentUser(req, env), env))) return fail("forbidden", 403);
+      const visible = directory ? "1=1" : ACTIVE_UNIVERSITY;
       if (part === "index") {
         const [u, c, d] = await Promise.all([
-          all(env, "SELECT id, name_ar, name_en, city, kind FROM universities ORDER BY name_ar").catch(() => all(env, "SELECT id, name_ar, name_en, city, NULL AS kind FROM universities ORDER BY name_ar")),
-          all(env, "SELECT id, university_id, name_ar, name_en FROM colleges ORDER BY name_ar"),
-          all(env, "SELECT id, college_id, name_ar FROM departments ORDER BY name_ar")
+          all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, u.kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`)
+            .catch(() => all(env, `SELECT u.id, u.name_ar, u.name_en, u.city, NULL AS kind FROM universities u WHERE ${visible} ORDER BY u.name_ar`)),
+          all(env, `SELECT c.id, c.university_id, c.name_ar, c.name_en FROM colleges c JOIN universities u ON u.id=c.university_id WHERE ${visible} ORDER BY c.name_ar`),
+          all(env, `SELECT d.id, d.college_id, d.name_ar FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE ${visible} ORDER BY d.name_ar`)
         ]);
-        return new Response(
-          JSON.stringify({
-            ok: true,
-            u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city, r.kind || ""]),
-            c: c.map((r) => [r.id, r.university_id, r.name_ar, r.name_en]),
-            d: d.map((r) => [r.id, r.college_id, r.name_ar])
-          }),
-          { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=120" } }
-        );
+        return json({
+          ok: true,
+          u: u.map((r) => [r.id, r.name_ar, r.name_en, r.city, r.kind || ""]),
+          c: c.map((r) => [r.id, r.university_id, r.name_ar, r.name_en]),
+          d: d.map((r) => [r.id, r.college_id, r.name_ar])
+        });
       }
       if (part === "universities")
-        return json({ ok: true, items: await all(env, "SELECT id, slug, name_ar, name_en, city FROM universities ORDER BY name_ar") });
+        return json({ ok: true, items: await all(env, `SELECT u.id, u.slug, u.name_ar, u.name_en, u.city FROM universities u WHERE ${visible} ORDER BY u.name_ar`) });
       if (part === "colleges") {
         const id = num(q.get("university_id"));
         if (!id) return fail("bad_request", 400);
-        return json({ ok: true, items: await all(env, "SELECT id, name_ar, name_en FROM colleges WHERE university_id=? ORDER BY name_ar", id) });
+        return json({ ok: true, items: await all(env, `SELECT c.id, c.name_ar, c.name_en FROM colleges c JOIN universities u ON u.id=c.university_id WHERE c.university_id=? AND ${visible} ORDER BY c.name_ar`, id) });
       }
       if (part === "departments") {
         const id = num(q.get("college_id"));
         if (!id) return fail("bad_request", 400);
-        return json({ ok: true, items: await all(env, "SELECT id, name_ar, name_en FROM departments WHERE college_id=? ORDER BY CASE WHEN name_ar LIKE 'المرحلة %' THEN id ELSE 0 END, name_ar", id) });
+        return json({ ok: true, items: await all(env, `SELECT d.id, d.name_ar, d.name_en FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE d.college_id=? AND ${visible} ORDER BY CASE WHEN d.name_ar LIKE 'المرحلة %' THEN d.id ELSE 0 END, d.name_ar`, id) });
       }
       if (part === "subjects") {
         const id = num(q.get("department_id"));
@@ -69,7 +71,9 @@ export async function handleCatalog(req, env) {
           env,
           `SELECT sb.id, sb.name_ar, sb.name_en, sb.professor, st.number AS stage, t.number AS term
            FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
-           WHERE st.department_id=? ORDER BY st.number, t.number, sb.name_ar`, id);
+           JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
+           JOIN universities u ON u.id=c.university_id
+           WHERE st.department_id=? AND ${visible} ORDER BY st.number, t.number, sb.name_ar`, id);
         return json({ ok: true, items });
       }
       if (part === "department") {
@@ -77,7 +81,7 @@ export async function handleCatalog(req, env) {
         if (!id) return fail("bad_request", 400);
         const row = await env.DB.prepare(
           `SELECT d.id, d.name_ar, c.id AS college_id, c.name_ar AS college, u.id AS university_id, u.name_ar AS university
-           FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE d.id=?`).bind(id).first();
+           FROM departments d JOIN colleges c ON c.id=d.college_id JOIN universities u ON u.id=c.university_id WHERE d.id=? AND ${visible}`).bind(id).first();
         if (!row) return fail("not_found", 404);
         const me = await currentUser(req, env);
         const pol = me ? await policy(env, me) : null;
@@ -92,7 +96,7 @@ export async function handleCatalog(req, env) {
                   u.id AS university_id, u.name_ar AS university
            FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
            JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
-           JOIN universities u ON u.id=c.university_id WHERE sb.id=?`).bind(id).first();
+           JOIN universities u ON u.id=c.university_id WHERE sb.id=? AND ${visible}`).bind(id).first();
         if (!row) return fail("not_found", 404);
         const me = await currentUser(req, env);
         const pol = me ? await policy(env, me) : null;
@@ -102,9 +106,12 @@ export async function handleCatalog(req, env) {
     }
 
     if (req.method !== "POST" || !["add", "delete", "import"].includes(part)) return fail("not_found", 404);
+    const origin = req.headers.get("origin");
+    if (origin && origin !== url.origin) return fail("forbidden", 403);
+    if (!req.headers.get("content-type")?.includes("application/json")) return fail("bad_request", 400);
     const me = await currentUser(req, env);
     if (!me) return fail("forbidden", 403);
-    const admin = isAdminUser(me, env);
+    const admin = await isGlobalAdmin(me, env);
     let b;
     try { b = await req.json(); } catch { return fail("bad_request", 400); }
     const type = String(b.type || "");
