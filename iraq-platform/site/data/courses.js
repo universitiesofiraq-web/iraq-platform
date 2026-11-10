@@ -13,6 +13,7 @@ var CATEGORIES = [{ id: "general", name: "المواد", nameEn: "Subjects", lay
 var COURSES = [];
 var IQ_DEPT = null;
 var IQ_STAGE = 0;
+var IQ_LOAD_ERROR = null;
 (function () {
   var id = Number(new URLSearchParams(location.search).get("dept")) || 0;
   try { if (!id) id = Number((JSON.parse(localStorage.getItem("iq.dept")) || {}).id) || 0; } catch (e) {}
@@ -21,8 +22,11 @@ var IQ_STAGE = 0;
     var x = new XMLHttpRequest();
     x.open("GET", "/api/platform?dept=" + id, false);
     x.send();
-    var d = JSON.parse(x.responseText);
-    if (!d.ok) { try { localStorage.removeItem("iq.dept"); } catch (e) {} location.replace("catalog.html"); return; }
+    var d;
+    try { d = JSON.parse(x.responseText); } catch (error) { throw new Error("server"); }
+    if (x.status < 200 || x.status >= 300 || !d.ok) {
+      throw new Error(typeof d.error === "string" ? d.error : "server");
+    }
     IQ_DEPT = d.dept;
     SEMESTERS = d.semesters; COURSES = d.courses;
 
@@ -51,5 +55,5 @@ var IQ_STAGE = 0;
     SITE.title = d.site.department + " — " + d.site.university;
     SITE.subtitle = d.site.university + " · " + d.site.college;
     try { localStorage.setItem("iq.dept", JSON.stringify({ id: id, name: d.dept.name })); } catch (e) {}
-  } catch (e) { /* يبقى الهيكل الفارغ */ }
+  } catch (e) { IQ_LOAD_ERROR = e; SEMESTERS = []; }
 })();
