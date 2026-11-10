@@ -244,7 +244,7 @@ function renderUniversities() {
   });
   const choices = element("div", undefined, "filters");
   choices.setAttribute("aria-label", "نطاق عرض الجامعات");
-  for (const key of ["active", "suspended", "directory"]) {
+  for (const key of ["active", "suspended", "not_onboarded", "directory"]) {
     const choice = button(labels[key], () => {
       if (filter !== key) { filter = key; loadUniversities(); }
     });

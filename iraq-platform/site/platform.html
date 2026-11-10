@@ -753,10 +753,12 @@
       /* ---------- التبليغات: من الخادم؛ بلا قاعدة بيانات أو بلا تبليغات يبقى القسم مخفياً ---------- */
       (function renderAnnouncements() {
         if (!window.fetch) return;
+        var pendingStage = false; // اختار مرحلته ولم يؤكّد ممثلها عضويته بعد
         function announcements(path, stage) {
           return fetch(path, { cache: "no-store" }).then(function (r) {
             return r.ok ? r.json() : null;
           }).then(function (data) {
+            if (stage && data && data.membership === "pending") pendingStage = true;
             return (data && data.items || []).map(function (item) {
               return Object.assign({}, item, { stageNotice: stage });
             });
@@ -764,8 +766,13 @@
         }
         Promise.all([announcements("api/announcements", false), announcements("api/stage-announcements", true)]).then(function (groups) {
           var notices = groups[0].concat(groups[1]).sort(function (a, b) { return Number(b.at) - Number(a.at); });
-          if (!notices.length) return;
           var box = $("annList");
+          if (pendingStage) {
+            var wait = el("article", "card ann-item");
+            wait.appendChild(el("p", "ann-body", "إعلانات مرحلتك تظهر بعد أن يؤكّد ممثل المرحلة عضويتك."));
+            box.appendChild(wait);
+          }
+          if (!notices.length && !pendingStage) return;
           notices.slice(0, 5).forEach(function (a) {
             var card = el("article", "card ann-item");
             card.appendChild(el("h3", "ann-title", a.title));

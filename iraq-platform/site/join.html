@@ -112,6 +112,11 @@
             r.error === "unauthorized" ? "سجّل دخولك أولاً." : "تعذّر التسجيل، حاول مرة أخرى.";
           return;
         }
+        if (r.university_state !== "active") { // الجامعة في الدليل لكنها غير مفعّلة بعد: نحفظ التسجيل ونوضّح الحالة
+          $("list").innerHTML = '<div class="jn-done"><b>تم حفظ تسجيلك</b>جامعتك لم تُفعَّل في المنصة بعد. ستفتح صفحة قسمك تلقائياً عند تفعيلها من إدارة المنصة.</div>';
+          $("msg").textContent = "";
+          return;
+        }
         try { localStorage.setItem("iq.dept", JSON.stringify({ id: dep.id, name: dep.name + " — " + stack[1].name })); } catch (e) { /* لا شيء */ }
         $("list").innerHTML = '<div class="jn-done"><b>تم تسجيلك بنجاح</b>جارٍ فتح صفحة قسمك…</div>';
         $("msg").textContent = "";

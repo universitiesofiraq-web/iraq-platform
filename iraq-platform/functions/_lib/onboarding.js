@@ -9,6 +9,7 @@ const filters = {
   active: "o.state='active'",
   registered: "o.state='registered'",
   suspended: "o.state='suspended'",
+  not_onboarded: "o.state IS NULL", // في الدليل ولم تُسجَّل ولم تُفعَّل بعد
   directory: "1=1"
 };
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -17,13 +18,37 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 });
 const fail = (error, status) => json({ ok: false, error }, status);
 
+// الملفات والبلاغات تُخزَّن فعلياً في KV (manifest.json وreports.json عبر netlify/lib/core.mjs) لا في جدولي files وreports.
+// نعدّها من مصدرها الحقيقي؛ بلا ربط KV نعيد null فيبقى رقم SQL كما هو (لا تقدير).
+export async function storedCounts(env) {
+  if (!env.LECTURES) return null;
+  try {
+    const [manifest, reports, subjects] = await Promise.all([
+      env.LECTURES.get("manifest.json", "json"), env.LECTURES.get("reports.json", "json"),
+      env.DB.prepare(`SELECT sb.id, c.university_id AS u FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+        JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id`).all()
+    ]);
+    const uni = new Map((subjects.results || []).map((r) => ["s" + r.id, r.u]));
+    const out = { files: 0, pending: 0, reports: 0, byUniversity: new Map() };
+    for (const e of Array.isArray(manifest) ? manifest : []) {
+      if (!e || e.status === "rejected") continue;
+      if (e.status === "pending") { out.pending++; continue; }
+      out.files++;
+      const u = uni.get(e.courseId);
+      if (u) out.byUniversity.set(u, (out.byUniversity.get(u) || 0) + 1);
+    }
+    for (const r of Array.isArray(reports) ? reports : []) if (r && r.open) out.reports++;
+    return out;
+  } catch { return null; }
+}
+
 async function list(env, filter) {
   const rows = await env.DB.prepare(
     `SELECT u.id, u.name_ar, u.name_en, u.city, COALESCE(o.state, 'not_onboarded') AS state,
             o.manager_id, m.name AS manager_name, o.verified_at, o.updated_at,
             (SELECT COUNT(*) FROM colleges c WHERE c.university_id=u.id) AS colleges,
             (SELECT COUNT(*) FROM departments d JOIN colleges c ON c.id=d.college_id WHERE c.university_id=u.id) AS departments,
-            (SELECT COUNT(*) FROM user_profile p JOIN colleges c ON c.id=p.college_id WHERE c.university_id=u.id) AS students,
+            (SELECT COUNT(*) FROM user_profile p JOIN colleges c ON c.id=p.college_id WHERE c.university_id=u.id AND p.stage_id IS NOT NULL) AS students,
             (SELECT COUNT(*) FROM files f JOIN subjects sb ON sb.id=f.subject_id JOIN terms t ON t.id=sb.term_id
                JOIN stages st ON st.id=t.stage_id JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
                WHERE c.university_id=u.id AND f.status='approved') AS files
@@ -34,10 +59,16 @@ async function list(env, filter) {
     `SELECT COUNT(*) AS directory,
             COUNT(CASE WHEN o.state='active' THEN 1 END) AS active,
             COUNT(CASE WHEN o.state='registered' THEN 1 END) AS registered,
-            COUNT(CASE WHEN o.state='suspended' THEN 1 END) AS suspended
+            COUNT(CASE WHEN o.state='suspended' THEN 1 END) AS suspended,
+            COUNT(CASE WHEN o.state IS NULL THEN 1 END) AS not_onboarded,
+            COUNT(CASE WHEN (o.state IS NULL OR o.state='registered') AND EXISTS (SELECT 1 FROM user_profile p JOIN colleges c ON c.id=p.college_id
+              WHERE c.university_id=u.id AND p.stage_id IS NOT NULL) THEN 1 END) AS waiting
      FROM universities u LEFT JOIN university_onboarding o ON o.university_id=u.id`
   ).first();
-  return json({ ok: true, filter, totals, items: rows.results || [] });
+  const stored = await storedCounts(env);
+  const items = rows.results || [];
+  if (stored) for (const r of items) r.files = stored.byUniversity.get(r.id) || 0;
+  return json({ ok: true, filter, totals, items });
 }
 
 const managerExists = `EXISTS (SELECT 1 FROM users m JOIN scopes s ON s.user_id=m.id
@@ -137,8 +168,9 @@ async function overview(env) {
     one("SELECT COUNT(*) AS n FROM files WHERE status='approved'"),
     one("SELECT COUNT(*) AS n FROM files WHERE status='pending'"),
     one("SELECT COUNT(*) AS n FROM reports WHERE status='open'"),
-    one("SELECT COUNT(DISTINCT user_id) AS n FROM scopes WHERE level='rep'")
+    one("SELECT COUNT(DISTINCT s.user_id) AS n FROM scopes s JOIN users u ON u.id=s.user_id WHERE s.level='rep' AND u.active=1")
   ]);
+  const stored = await storedCounts(env);
   const { results } = await env.DB.prepare(
     `SELECT m.id, m.name, m.email, m.created_at, st.number AS stage, d.id AS department_id, d.name_ar AS department,
             c.name_ar AS college, un.name_ar AS university
@@ -146,7 +178,9 @@ async function overview(env) {
      JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id JOIN universities un ON un.id=c.university_id
      ORDER BY m.created_at DESC, m.id DESC LIMIT 30`
   ).all().catch(() => ({ results: [] }));
-  return json({ ok: true, totals: { students, users, active, files, pending, reports, reps }, recent: results || [] });
+  const totals = { students, users, active, files, pending, reports, reps };
+  if (stored) Object.assign(totals, { files: stored.files, pending: stored.pending, reports: stored.reports });
+  return json({ ok: true, totals, recent: results || [] });
 }
 
 // تحليل النمو: الدخول من الجلسات (مدة الجلسة 30 يوماً)، والتسجيل في الأقسام من signup_events
@@ -182,6 +216,8 @@ async function analytics(env) {
          LEFT JOIN departments d ON d.id=CASE i.type WHEN 'department' THEN i.node_id ELSE st2.department_id END
          GROUP BY COALESCE(i.code,'direct') ORDER BY n DESC LIMIT 8`)
   ]);
+  const stored = await storedCounts(env);
+  if (stored) for (const r of top) r.files = stored.byUniversity.get(r.id) || 0;
   return json({
     ok: true,
     totals: { students, active7, active30, signups7, signups30, accounts7 },
