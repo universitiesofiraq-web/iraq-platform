@@ -237,6 +237,22 @@ function systemPrompt(task, targetLang) {
   return lines.join("\n");
 }
 
+/* يستخرج نص الجواب من أشكال ردود Workers AI المختلفة (response | choices | output) */
+function aiText(out) {
+  if (!out) return "";
+  if (typeof out === "string") return out.trim();
+  if (typeof out.response === "string" && out.response.trim()) return out.response.trim();
+  const c = out.choices && out.choices[0];
+  if (c) { const t = (c.message && c.message.content) || c.text; if (typeof t === "string" && t.trim()) return t.trim(); }
+  if (typeof out.output_text === "string" && out.output_text.trim()) return out.output_text.trim();
+  if (Array.isArray(out.output)) {
+    const parts = [];
+    for (const it of out.output) if (it && it.type === "message" && Array.isArray(it.content)) for (const x of it.content) if (x && typeof x.text === "string") parts.push(x.text);
+    if (parts.join("").trim()) return parts.join("").trim();
+  }
+  return "";
+}
+
 export async function callAiProvider(env, { task, question, chunks, departmentKnowledge, studentProfile, studentData, history, targetLang }) {
   const mode = String(env.AI_PROVIDER_MODE || "cloudflare").toLowerCase();
   const sys = systemPrompt(task, targetLang) + "\n<<<CONTEXT_JSON>>>\n" + JSON.stringify({ task, targetLang, studentProfile, studentData, departmentKnowledge, approvedChunks: chunks });
@@ -255,14 +271,14 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
     return { mode: "gemini", text: String((((d.candidates || [])[0] || {}).content || { parts: [{}] }).parts[0].text || "").trim() };
   }
   if (env.AI) {
-    /* الأقوى أولاً (llama-3.3-70b)، وإن تعذّر لأي سبب (نفاد الحصة أو ضغط) نرجع تلقائياً للنموذج الأخف بدل الفشل */
-    const models = [env.CF_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fp8"].filter((m, i, a) => a.indexOf(m) === i);
+    /* سلسلة نماذج: الأقوى أولاً (gpt-oss-120b)، ثم llama-3.3-70b، ثم الأخف. إن تعذّر نموذج (نفاد الحصة، ضغط، إيقاف) ننتقل للتالي بدل أن يرى الطالب خطأ */
+    const models = [env.CF_AI_MODEL || "@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fp8"].filter((m, i, a) => a.indexOf(m) === i);
     const messages = [{ role: "system", content: sys }, ...(history || []), { role: "user", content: question }];
     let lastErr;
     for (const model of models) {
       try {
-        const out = await env.AI.run(model, { messages, max_tokens: 1500 });
-        const text = String((out && (out.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content))) || "").trim();
+        const out = await env.AI.run(model, { messages, max_tokens: 2500 });
+        const text = aiText(out);
         if (text) return { mode: "cloudflare", text, model };
         lastErr = new Error("empty_response");
       } catch (e) { lastErr = e; }
@@ -349,8 +365,10 @@ async function run(env, principal, body, now, limit) {
     if (principal.departmentKey) {
       kb = (await env.DB.prepare("SELECT category, title, content FROM ai_department_knowledge WHERE department_key = ? ORDER BY updated_at DESC LIMIT 20").bind(principal.departmentKey).all()).results || [];
     }
-    const studentData = await buildStudentData(env, principal, now);
-    const departmentKnowledge = [...kb, ...(await discoverExistingPlatformData(env, principal))].filter((x) => x.category !== "lecture" && x.category !== "announcement" || kb.includes(x));
+    const fullData = await buildStudentData(env, principal, now);
+    const needsData = task === "advisor" || /محاضر|تبليغ|اعلان|إعلان|درج|معدل|ماد[ةه]|مواد|قسم|كلي[ةه]|جامع|ملف|ملازم|امتحان|سعي|مفضل|مراجع|مرحل|كم |آخر|اخر|أحدث|احدث|اسمي|معلومات|تقدم|قرأت|فتحت|جدول|دوام|عطل/.test(question + " " + selected);
+    const studentData = needsData ? fullData : { today: fullData.today, weekday: fullData.weekday, profile: fullData.profile };
+    const departmentKnowledge = !needsData ? [] : [...kb, ...(await discoverExistingPlatformData(env, principal))].filter((x) => x.category !== "lecture" && x.category !== "announcement" || kb.includes(x));
     const out = await callAiProvider(env, {
       task,
       question: selected ? (question ? question + "\n\nالنص المحدد:\n" : "النص المحدد:\n") + selected : question,

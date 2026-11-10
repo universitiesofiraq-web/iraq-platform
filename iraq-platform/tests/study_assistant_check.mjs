@@ -9,8 +9,8 @@ const ok = (c, m) => { n++; if (!c) { fails++; console.log("FAIL", m); } };
 
 const aiCalls = [];
 const ctxOf = (c) => JSON.parse(c.input.messages[0].content.split("<<<CONTEXT_JSON>>>\n")[1]);
-let failBig = false;
-const AI = { async run(model, input) { aiCalls.push({ model, input }); if (failBig && /70b/.test(model)) throw new Error("capacity"); const u = ctxOf({ input });
+let failBig = false, failMid = false;
+const AI = { async run(model, input) { aiCalls.push({ model, input }); if (failBig && /gpt-oss/.test(model)) throw new Error("capacity"); if (failMid && /70b/.test(model)) throw new Error("capacity"); const u = ctxOf({ input });
   if (u.task === "quiz") return { response: 'هنا {"title":"t","questions":[{"question":"q","options":["a","b","c","d"],"correctIndex":1,"explanation":"e","pageNumber":2}]}' };
   return { response: "جواب (ص 2)" }; } };
 const manifest = [{ id: "x", course: "s1", number: 1, title: "Kidney", label: "PDF", type: "lecture" }, { id: "y", course: "s99", number: 1, title: "Other", label: "PDF" }];
@@ -61,7 +61,7 @@ ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x", is
 ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x", documentId: "u" + "999_" + DOC }, a)).body.error.code === "FORBIDDEN_DOCUMENT", "other user's document refused");
 
 // السؤال مع الاستشهاد
-const r = await call("POST", "/api/study-assistant/assistant/run", { question: "what regulates glomerular filtration?" }, a);
+const r = await call("POST", "/api/study-assistant/assistant/run", { question: "what regulates glomerular filtration? وما آخر محاضرة وآخر تبليغ؟" }, a);
 ok(r.status === 200 && r.body.citations[0].pageNumber === 2, "citation page number");
 const sent = ctxOf(aiCalls.at(-1));
 const sd = JSON.stringify(sent.studentData);
@@ -87,6 +87,9 @@ ok(ctxOf(aiCalls.at(-1)).approvedChunks.some((c) => c.pageNumber === 1), "curren
 // b لا يرى مقاطع a
 await call("POST", "/api/study-assistant/assistant/run", { question: "glomerular filtration" }, b);
 ok(ctxOf(aiCalls.at(-1)).approvedChunks.length === 0, "chunks isolated per user");
+await call("POST", "/api/study-assistant/assistant/run", { question: "شلونك" }, b);
+const small = ctxOf(aiCalls.at(-1));
+ok(!small.studentData.platform && !small.studentData.personal && small.departmentKnowledge.length === 0 && small.studentData.profile && small.studentData.today, "small talk: no platform data sent, only profile + date");
 
 // إجراءات «اكتب وظلّل»
 const q = await call("POST", "/api/study-assistant/notebook/actions", { actionType: "quiz_from_pages", documentId: DOC, pageNumbers: [2], selectedText: "GFR" }, a);
@@ -96,12 +99,16 @@ const ex = await call("POST", "/api/study-assistant/notebook/actions", { actionT
 ok(ex.status === 200 && aiCalls.at(-1).input.messages.at(-1).content.includes("ص 2"), "explain page without selection");
 
 // النموذج الأقوى أولاً، ثم رجوع تلقائي للأخف عند تعذّره
-ok(aiCalls.at(-1).model.includes("70b"), "strong model is the default");
+ok(aiCalls.at(-1).model.includes("gpt-oss"), "strongest model is the default");
 failBig = true;
 const nb = aiCalls.length;
 const fb = await call("POST", "/api/study-assistant/assistant/run", { question: "fallback?" }, b);
-ok(fb.status === 200 && aiCalls.length - nb === 2 && aiCalls.at(-1).model.includes("8b"), "falls back to the lighter model when the strong one fails");
-failBig = false;
+ok(fb.status === 200 && aiCalls.length - nb === 2 && aiCalls.at(-1).model.includes("70b"), "falls back to llama-70b when the strongest fails");
+failMid = true;
+const nb2 = aiCalls.length;
+const fb2 = await call("POST", "/api/study-assistant/assistant/run", { question: "fallback2?" }, b);
+ok(fb2.status === 200 && aiCalls.length - nb2 === 3 && aiCalls.at(-1).model.includes("8b"), "falls back to the light model last");
+failBig = false; failMid = false;
 
 // الحصة: 3 في اليوم، استُعملت كلها لـ a
 ok((await call("POST", "/api/study-assistant/assistant/run", { question: "x" }, a)).body.error?.code === "QUOTA_EXHAUSTED", "quota exhausted");
