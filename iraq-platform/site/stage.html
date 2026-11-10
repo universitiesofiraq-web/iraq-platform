@@ -32,6 +32,7 @@
     <div class="sg-grid" id="grid"></div>
     <p class="sg-note" id="msg">جارٍ التحميل…</p>
   </main>
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
@@ -43,7 +44,7 @@
       location.href = "platform.html?dept=" + dept + "&stage=" + stage;
     }
 
-    fetch("/api/platform?dept=" + dept).then(function (r) { return r.json(); }).then(function (d) {
+    IQApi.request("/api/platform?dept=" + dept).then(function (d) {
       if (!d.ok) { $("msg").textContent = "تعذّر تحميل القسم."; return; }
       $("crumb").textContent = d.site.university + " / " + d.site.college;
       document.title = "اختر مرحلتك — " + d.site.department + " | المنصة العراقية";
@@ -71,7 +72,7 @@
         g.appendChild(b);
       });
       $("msg").textContent = "";
-    }).catch(function () { $("msg").textContent = "تعذّر التحميل."; });
+    }).catch(function (error) { IQApi.showError($("msg"), error); });
   })();
   </script>
   <script src="js/upload-link.js"></script>
