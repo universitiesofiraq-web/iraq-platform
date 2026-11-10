@@ -91,6 +91,12 @@
     var out = row("خروج", ICON.out);
     out.addEventListener("click", function () { MSAuth.logout().then(function () { location.href = "login.html"; }); });
     box.appendChild(out);
+    var del = row("حذف حسابي وبياناتي", ICON.out);
+    del.addEventListener("click", function () {
+      if (!confirm("سيُحذف حسابك وكل بياناتك (المفضلة، التقدم، ملاحظات PDF، محادثات المرشد) نهائياً ولا يمكن التراجع. متابعة؟")) return;
+      MSAuth.deleteAccount().then(function () { location.href = "login.html"; }, function () { alert("تعذّر حذف الحساب. حاول مرة أخرى."); });
+    });
+    box.appendChild(del);
   }
 
   /* ---------- Google ---------- */

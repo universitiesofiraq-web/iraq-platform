@@ -1,3 +1,4 @@
+import { readUploads } from "./d1manifest.js";
 // functions/_lib/study_assistant.js — مساعد الدراسة الذكي والمرشد الأكاديمي للقسم (/api/study-assistant/*).
 // مبني على حزمة الدمج (iraq-platform-cloudflare-integration-pack) ومربوط ببيانات المنصة الحقيقية:
 //   - الهوية من جلسة المنصة (currentUser) فقط؛ أي userId أو isAdmin في جسم الطلب يُرفض.
@@ -85,7 +86,7 @@ export async function discoverExistingPlatformData(env, principal) {
       out.push({ category: "course", title: "المواد الدراسية في قسم الطالب (المرحلة والكورس والأستاذ)", content: JSON.stringify(subj.map((s) => ({ name: s.name_ar, en: s.name_en, professor: s.professor, credits: s.credits, stage: s.stage, term: s.term }))) });
       if (env.LECTURES) {
         try {
-          const m = await env.LECTURES.get("manifest.json", { type: "json" });
+          const m = await readUploads(env);
           const names = new Map(subj.map((s) => ["s" + s.id, s.name_ar]));
           const items = (Array.isArray(m) ? m : (m && m.items) || [])
             .filter((e) => e && names.has(e.course) && e.status !== "pending" && e.status !== "rejected" && !e.draft)
@@ -157,7 +158,7 @@ export async function buildStudentData(env, principal, now) {
     const perSubject = new Map(); let items = [];
     if (env.LECTURES) {
       try {
-        const m = await env.LECTURES.get("manifest.json", { type: "json" });
+        const m = await readUploads(env);
         items = (Array.isArray(m) ? m : (m && m.items) || []).filter((e) => e && names.has(e.course) && e.status !== "pending" && e.status !== "rejected" && !e.draft);
       } catch { items = []; }
     }
