@@ -2,16 +2,25 @@
 // بدونه يبقى الموقع مفتوحاً كما هو. يحمي الصفحات وملفات PDF لأن Cloudflare يشغّل هذا قبل الملفات الثابتة.
 import { currentUser } from "./_lib/auth.js";
 import { ensureSchema } from "./_lib/migrate.js";
+import { serviceErrorResponse } from "./_lib/service-errors.js";
 
 const OPEN = [/^\/(login|privacy|terms)\.html$/, /^\/css\//, /^\/js\//, /^\/assets\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/api\/auth\//];
 
 export async function onRequest({ request, env, next }) {
+  try {
+    return await route({ request, env, next });
+  } catch (error) {
+    return serviceErrorResponse(error);
+  }
+}
+
+async function route({ request, env, next }) {
   // ترحيل قاعدة البيانات تلقائياً عند أول طلب API بعد النشر (لا يعطّل الموقع إن فشل)
   if (env.DB && new URL(request.url).pathname.startsWith("/api/")) await ensureSchema(env).catch(() => {});
-  if (env.REQUIRE_LOGIN !== "1" || !env.DB) return next();
+  if (env.REQUIRE_LOGIN !== "1" || !env.DB) return await next();
   const url = new URL(request.url);
-  if (OPEN.some((re) => re.test(url.pathname))) return next();
-  if (await currentUser(request, env)) return next();
+  if (OPEN.some((re) => re.test(url.pathname))) return await next();
+  if (await currentUser(request, env)) return await next();
   const wantsPage = request.method === "GET" && (request.headers.get("accept") || "").includes("text/html");
   if (wantsPage) {
     const back = encodeURIComponent(url.pathname + url.search);
