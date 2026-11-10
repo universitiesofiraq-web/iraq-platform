@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+  <meta name="theme-color" content="#0b1831">
+  <meta name="description" content="دردشة خاصة وآمنة بمجموعتك الدراسية في منصة الجامعات العراقية">
+  <title>دردشة مجموعتي | منصة الجامعات العراقية</title>
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/group-chat.css?v=2">
+</head>
+<body>
+  <div class="chat-app">
+    <header class="chat-top">
+      <a class="brand" href="platform.html" aria-label="العودة إلى المنصة"><span class="brand-icon">✦</span><span>منصة الجامعات العراقية</span></a>
+      <div class="top-meta"><span class="top-badge">المجموعات الدراسية</span><a class="top-back" href="platform.html">العودة للمنصة ←</a></div>
+    </header>
+    <main class="chat-layout" id="chatLayout">
+      <aside class="rooms-pane" aria-label="المجموعات">
+        <div class="pane-title"><div><small>المساحة الجامعية</small><h1>دردشة مجموعتي</h1></div><span id="roomCount" class="count">0</span></div>
+        <div id="authBanner" class="notice" hidden></div>
+        <div id="roomList" class="rooms-list" role="group" aria-label="غرف الدردشة"><p class="muted">جارٍ تحميل مجموعاتك...</p></div>
+        <details class="group-panel" id="joinPanel">
+          <summary>+ اطلب الانضمام برمز الدعوة</summary>
+          <form id="joinForm" class="form-stack">
+            <label for="joinCode">رمز المجموعة</label>
+            <input id="joinCode" name="invite_code" dir="ltr" autocomplete="off" spellcheck="false" minlength="36" maxlength="36" placeholder="أدخل الرمز المرسل من ممثل المجموعة" required>
+            <button class="primary" type="submit">إرسال الطلب</button>
+          </form>
+        </details>
+        <p id="joinStatus" class="muted" role="status"></p>
+        <ul id="requestList" class="request-list" aria-label="حالة طلبات الانضمام" hidden></ul>
+        <div class="room-footer">محادثات المجموعات خاصة بأعضائها فقط. لا تشارك رمز الدعوة علناً.</div>
+      </aside>
+      <section class="thread-pane" aria-label="المحادثة">
+        <div class="thread-head"><button id="backToRooms" type="button" class="ghost back-to-rooms">المجموعات</button><div class="avatar">✦</div><div class="thread-head-text"><h2 id="activeTitle" tabindex="-1">اختر مجموعتك</h2><p id="activeSubtitle">ستظهر هنا رسائل مجموعتك الدراسية</p></div>
+          <button id="muteBtn" class="ghost" type="button" hidden aria-label="كتم إشعارات المجموعة">إشعارات</button>
+          <a id="manageLink" class="ghost" href="admin.html" hidden>إدارة</a>
+        </div>
+        <div id="pinnedBar" class="pinned" hidden></div>
+        <div id="conversation" class="conversation" role="log" aria-label="الرسائل" aria-live="polite" aria-relevant="additions text">
+          <div class="empty-thread"><div class="empty-icon">✦</div><h3>مجموعتك، مساحتك</h3><p>اطلب الانضمام برمز الدعوة من ممثل المجموعة.</p></div>
+        </div>
+        <div class="older-wrap"><button id="olderBtn" type="button" hidden>تحميل رسائل سابقة</button></div>
+        <div id="replyBar" class="reply-bar" hidden><span id="replyText"></span><button id="cancelReply" type="button" aria-label="إلغاء الرد">×</button></div>
+        <form id="sendForm" class="composer" hidden>
+          <label class="sr-only" for="messageInput">نص الرسالة</label>
+          <textarea id="messageInput" placeholder="اكتب رسالة لمجموعتك..." maxlength="2000" rows="1" required></textarea>
+          <button class="send" id="sendBtn" type="submit" aria-label="إرسال الرسالة">إرسال <span aria-hidden="true">➤</span></button>
+        </form>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+  </div>
+  <script src="js/group-chat.js?v=2" defer></script>
+</body>
+</html>
