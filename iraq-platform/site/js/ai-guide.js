@@ -12,7 +12,10 @@
     { id: "advisor", label: "دليل القسم", ph: "اسأل عن قسمك: المواد، الامتحانات، السعي…", chips: ["ما المواد المرفوعة لقسمي؟", "ما مواعيد الامتحانات؟", "كيف يُحتسب السعي؟"] },
     { id: "grades", label: "درجاتي", grades: true }
   ];
-  var st = { mode: "ask", busy: false, me: null, docs: [], hist: [], built: false, last: null };
+  var st = { mode: "ask", busy: false, me: null, docs: [], hist: [], built: false, last: null, ctxFn: null, timer: null };
+  var ctxBar;
+  function ctx() { try { return st.ctxFn ? st.ctxFn() : null; } catch (e) { return null; } }
+  function hkey() { var c = ctx(); return c && c.documentId ? HKEY + "." + c.documentId : HKEY; }
   var root, thread, input, sendBtn, docSel, chipsBox, quotaEl, whoEl, foot, gradesBox, modeBtns = [], opener = null;
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -23,8 +26,8 @@
   function errText(d) { return d && d.error && d.error.message ? d.error.message + (d.error.detail ? " [" + d.error.detail + "]" : "") : "تعذّر الاتصال بالمرشد. تحقق من الإنترنت وحاول مرة أخرى."; }
 
   /* ---------- حفظ المحادثة في هذه الجلسة فقط ---------- */
-  function loadHist() { try { var h = JSON.parse(sessionStorage.getItem(HKEY)); if (Array.isArray(h)) st.hist = h.slice(-30); } catch (e) { st.hist = []; } }
-  function saveHist() { try { sessionStorage.setItem(HKEY, JSON.stringify(st.hist.slice(-30))); } catch (e) { /* لا شيء */ } }
+  function loadHist() { try { var h = JSON.parse(sessionStorage.getItem(hkey())); if (Array.isArray(h)) st.hist = h.slice(-30); } catch (e) { st.hist = []; } }
+  function saveHist() { try { sessionStorage.setItem(hkey(), JSON.stringify(st.hist.slice(-30))); } catch (e) { /* لا شيء */ } }
 
   /* ---------- عرض نص منسّق بسيط وآمن: **غامق**، قوائم، عناوين ---------- */
   function inline(parent, text) {
@@ -55,9 +58,10 @@
     var box = el("div", "ag-cites");
     (list || []).forEach(function (c) {
       var d = null; st.docs.forEach(function (x) { if (x.id === c.documentId) d = x; });
-      var a = el(d && d.file ? "a" : "span", "ag-cite", "ص " + c.pageNumber);
+      var cx = ctx(), a = el(cx && cx.onCite ? "button" : (d && d.file ? "a" : "span"), "ag-cite", "ص " + c.pageNumber);
       if (c.excerpt) a.title = c.excerpt;
-      if (d && d.file) { a.href = "pdf-notes.html?file=" + encodeURIComponent(d.file) + "#page=" + c.pageNumber; a.target = "_blank"; a.rel = "noopener"; }
+      if (cx && cx.onCite) { a.type = "button"; a.addEventListener("click", function () { cx.onCite(c); }); }
+      else if (d && d.file) { a.href = "pdf-notes.html?file=" + encodeURIComponent(d.file) + "#page=" + c.pageNumber; a.target = "_blank"; a.rel = "noopener"; }
       box.appendChild(a);
     });
     return box;
@@ -102,7 +106,7 @@
   }
   function addBot(d, fromHist) {
     var b = el("div", "ag-msg ag-bot"), bub = el("div", "ag-bubble");
-    if (!d.ok) { bub.classList.add("err"); bub.appendChild(el("p", null, d.text || errText(d))); if (!fromHist && st.last) { var r = el("button", "ag-retry", "إعادة المحاولة"); r.type = "button"; r.addEventListener("click", function () { b.remove(); send(st.last.q, st.last.mode, true); }); bub.appendChild(r); } }
+    if (!d.ok) { bub.classList.add("err"); bub.appendChild(el("p", null, d.text || errText(d))); if (!fromHist && st.last) { var r = el("button", "ag-retry", "إعادة المحاولة"); r.type = "button"; r.addEventListener("click", function () { b.remove(); send(st.last.q, st.last.mode, true, st.last.extra); }); bub.appendChild(r); } }
     else if (d.task === "quiz" && d.data && d.data.questions && d.data.questions.length) bub.appendChild(quizView(d.data));
     else if (d.task === "mindmap" && d.data && d.data.root) bub.appendChild(mapView(d.data));
     else bub.appendChild(rich(d.answer || d.text || "لم يصلني ردّ مفهوم، أعد صياغة السؤال."));
@@ -120,24 +124,39 @@
     thread.textContent = "";
     var w = el("div", "ag-welcome");
     w.appendChild(el("strong", null, "أهلاً بك 👋"));
-    w.appendChild(el("p", null, "أنا المرشد الذكي. أجيب من محاضراتك التي فتحتها في «اكتب وظلّل» ومن بيانات قسمك، وأختبرك وألخّص لك."));
+    var cw = ctx();
+    w.appendChild(el("p", null, cw && cw.documentId ? "أرى الملف المفتوح وصفحتك الحالية والنص الذي تحدّده. اسألني عن أي شيء: اشرح، لخّص، ترجم، اختبرني، أو اسأل سؤالاً عاماً لا علاقة له بالملف." : "أنا المرشد الذكي. اسألني عن محاضراتك وقسمك ودرجاتك وأي موضوع، وأختبرك وألخّص لك."));
     thread.appendChild(w);
     st.hist.forEach(function (m) { if (m.u) addUser(m.u); if (m.d) addBot(m.d, true); });
   }
 
   /* ---------- الإرسال ---------- */
   function setBusy(v) { st.busy = v; sendBtn.disabled = v; input.disabled = v; }
-  function send(text, mode, isRetry) {
+  function histPayload() {
+    var out = [];
+    st.hist.slice(-6).forEach(function (m) {
+      if (m.u && m.d && m.d.ok && (m.d.task === "ask" || m.d.task === "advisor" || m.d.task === "summarize" || m.d.task === "explain" || m.d.task === "translate") && m.d.answer) { out.push({ role: "user", content: m.u }); out.push({ role: "assistant", content: String(m.d.answer).slice(0, 1500) }); }
+    });
+    return out;
+  }
+  function send(text, mode, isRetry, extra) {
     mode = mode || st.mode; text = String(text == null ? input.value : text).trim();
     if (st.busy) return;
     if (!text && mode !== "quiz" && mode !== "mindmap") return;
     var q = text || (mode === "quiz" ? "اختبرني من هذه المحاضرة" : "خريطة ذهنية لهذه المحاضرة");
-    st.last = { q: q, mode: mode };
+    st.last = { q: q, mode: mode, extra: extra };
     if (!isRetry) { addUser(q); input.value = ""; autosize(); }
     var typing = el("div", "ag-msg ag-bot"); var tb = el("div", "ag-bubble ag-typing"); tb.appendChild(el("span")); tb.appendChild(el("span")); tb.appendChild(el("span")); typing.appendChild(tb); thread.appendChild(typing); scroll();
     setBusy(true);
-    var body = { task: mode, question: q };
-    if (docSel.value && mode !== "advisor") body.documentId = docSel.value;
+    var body = { task: mode, question: q }, cx = ctx();
+    if (cx && cx.documentId && mode !== "advisor") {
+      body.documentId = cx.documentId;
+      var pg = cx.page ? cx.page() : 0; if (pg) body.contextPage = pg;
+      var sel = cx.selection ? cx.selection() : ""; if (sel) body.selectedText = sel;
+      if (extra && extra.page && pg) body.pageNumbers = [pg];
+    } else if (docSel.value && mode !== "advisor") body.documentId = docSel.value;
+    var hp = histPayload(); if (hp.length) body.history = hp;
+    if (body.selectedText && cx && cx.clearSelection) setTimeout(function () { cx.clearSelection(); refreshCtx(); }, 0);
     req("assistant/run", "POST", body).then(function (d) {
       typing.remove();
       if (d.ok) { st.hist.push({ u: isRetry ? null : q, d: { ok: true, task: d.task, answer: d.answer, data: d.data, citations: d.citations } }); }
@@ -160,9 +179,11 @@
     thread.hidden = g; chipsBox.hidden = g; foot.hidden = g; gradesBox.hidden = !g;
     if (g) { loadGrades(); return; }
     input.placeholder = m.ph;
-    docSel.hidden = id === "advisor" || st.docs.length === 0;
+    docSel.hidden = id === "advisor" || st.docs.length === 0 || !!(ctx() && ctx().documentId);
     chipsBox.textContent = "";
-    m.chips.forEach(function (c) { var b = el("button", "ag-chip", c); b.type = "button"; b.addEventListener("click", function () { send(c, id); }); chipsBox.appendChild(b); });
+    var cx = ctx(), list = m.chips.map(function (c) { return { t: c }; });
+    if (cx && cx.documentId && id === "ask") list = (cx.chips || []).concat(list.slice(0, 2));
+    list.forEach(function (c) { var b = el("button", "ag-chip", c.t); b.type = "button"; b.addEventListener("click", function () { send(c.q || c.t, c.mode || id, false, { page: !!c.page }); }); chipsBox.appendChild(b); });
   }
 
   /* ---------- درجاتي: يسجّلها الطالب بنفسه ويراها المرشد ---------- */
@@ -219,6 +240,7 @@
     var tabs = el("div", "ag-tabs"); tabs.setAttribute("role", "tablist");
     MODES.forEach(function (m) { var b = el("button", "ag-tab", m.label); b.type = "button"; b.setAttribute("role", "tab"); b.dataset.mode = m.id; b.addEventListener("click", function () { setMode(m.id); input.focus(); }); tabs.appendChild(b); modeBtns.push(b); });
     dlg.appendChild(tabs);
+    ctxBar = el("div", "ag-ctx"); ctxBar.hidden = true; dlg.appendChild(ctxBar);
     thread = el("div", "ag-thread"); thread.setAttribute("aria-live", "polite"); dlg.appendChild(thread);
     gradesBox = buildGrades(); dlg.appendChild(gradesBox);
     chipsBox = el("div", "ag-chips"); dlg.appendChild(chipsBox);
@@ -246,10 +268,25 @@
     thread.appendChild(w); chipsBox.textContent = ""; input.disabled = true; sendBtn.disabled = true; docSel.hidden = true;
   }
 
+  function refreshCtx() {
+    var c = ctx(); if (!ctxBar) return;
+    if (!c || !c.documentId) { ctxBar.hidden = true; return; }
+    ctxBar.hidden = false; ctxBar.textContent = "";
+    ctxBar.appendChild(el("span", "ag-ctxdoc", "📄 " + (c.title ? c.title : "الملف المفتوح") + (c.page ? " · ص " + c.page() : "")));
+    var sel = c.selection ? c.selection() : "";
+    if (sel) {
+      var chip = el("span", "ag-ctxsel"); chip.appendChild(el("span", null, "✂️ «" + sel.slice(0, 40) + (sel.length > 40 ? "…" : "") + "»"));
+      var x = el("button", "ag-ctxx", "×"); x.type = "button"; x.setAttribute("aria-label", "إلغاء التحديد");
+      x.addEventListener("click", function () { if (c.clearSelection) c.clearSelection(); refreshCtx(); });
+      chip.appendChild(x); ctxBar.appendChild(chip);
+    }
+  }
   function open(ev) {
     if (ev && ev.preventDefault) ev.preventDefault();
     build(); opener = document.activeElement;
-    root.hidden = false; document.documentElement.classList.add("ag-lock");
+    var oc = ctx(); root.classList.toggle("ag-dock", !!(oc && oc.dock));
+    root.hidden = false; if (!(oc && oc.dock)) document.documentElement.classList.add("ag-lock");
+    refreshCtx(); clearInterval(st.timer); if (oc && oc.documentId) st.timer = setInterval(refreshCtx, 700);
     setTimeout(function () { try { input.focus(); } catch (e) { /* لا شيء */ } }, 50);
     req("me").then(function (d) {
       if (d.status === 401) { gate(); whoEl.textContent = ""; return; }
@@ -262,12 +299,12 @@
         while (docSel.options.length > 1) docSel.remove(1);
         st.docs.forEach(function (x) { var o = el("option", null, x.title + " (" + x.page_count + " صفحة)"); o.value = x.id; docSel.appendChild(o); });
         setMode(st.mode);
-        if (!st.docs.length && !st.hist.length) { var tip = el("p", "ag-tip", "نصيحة: افتح أي ملف PDF من صفحة المادة في «اكتب وظلّل» ليُضاف إلى محاضراتك، فأجيبك منه مع رقم الصفحة. وبدون ملفات يمكنك سؤالي عن قسمك من «دليل القسم»."); thread.appendChild(tip); }
+        if (!st.docs.length && !st.hist.length && !(ctx() && ctx().documentId)) { var tip = el("p", "ag-tip", "نصيحة: افتح أي ملف PDF من صفحة المادة في «اكتب وظلّل» ليُضاف إلى محاضراتك، فأجيبك منه مع رقم الصفحة. وبدون ملفات يمكنك سؤالي عن قسمك من «دليل القسم»."); thread.appendChild(tip); }
       });
     }).catch(function () { addBot({ ok: false }); });
   }
   function close() {
-    if (!root) return; root.hidden = true; document.documentElement.classList.remove("ag-lock");
+    if (!root) return; root.hidden = true; document.documentElement.classList.remove("ag-lock"); clearInterval(st.timer);
     try { if (opener && opener.focus) opener.focus(); } catch (e) { /* لا شيء */ }
   }
 
@@ -275,6 +312,6 @@
     var t = e.target.closest ? e.target.closest("[data-open-guide]") : null;
     if (t) open(e);
   });
-  window.IQGuide = { open: open, close: close };
+  window.IQGuide = { open: open, close: close, setContext: function (fn) { st.ctxFn = fn; if (st.built) { loadHist(); welcome(); setMode(st.mode); } } };
   if (/[?&]guide=1\b/.test(location.search)) document.addEventListener("DOMContentLoaded", function () { open(); });
 })();

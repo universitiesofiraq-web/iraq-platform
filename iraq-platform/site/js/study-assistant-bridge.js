@@ -1,6 +1,6 @@
 /* ربط «اكتب وظلّل» بمساعد الدراسة (عقد PdfStudioBridgeAdapter من حزمة الدمج):
    1) يفهرس نص صفحات الملف المفتوح في حساب الطالب (POST /api/study-assistant/documents/index) مرة كل يوم لكل ملف.
-   2) زر «المساعد» بأربعة إجراءات: explain_page · summarize_selection · quiz_from_pages · translate_paragraph → POST /api/study-assistant/notebook/actions
+   2) زر «المرشد الذكي»: دردشة حرّة (لوحة جانبية) تعرف الملف والصفحة الحالية والنص المحدد، مع اختصارات للشرح والتلخيص والاختبار والترجمة
    3) شرائح الصفحات في الجواب تطلق الحدث iu:pdf-studio:open-cited-page فيفتح العارض تلك الصفحة. ويُفتح أيضاً من #page=N في الرابط.
    لا يغيّر عارض PDF نفسه: يقرأ الصفحات من #pages .page فقط. */
 (function () {
@@ -57,65 +57,41 @@
     })(0);
   }
 
-  // الواجهة
-  var fab = document.createElement("button"); fab.type = "button"; fab.className = "sab-fab"; fab.textContent = "🤖 المساعد";
-  var panel = document.createElement("div"); panel.className = "sab-panel"; panel.hidden = true; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "مساعد الدراسة");
-  panel.innerHTML = '<strong>مساعد الدراسة</strong><p class="sab-note" data-r="note">حدّد نصاً في الصفحة أو اختر إجراءً للصفحة الحالية.</p>' +
-    '<div class="sab-acts">' +
-    '<button type="button" data-a="explain_page">💡 اشرح الصفحة/الفقرة</button>' +
-    '<button type="button" data-a="summarize_selection">📋 لخّص التحديد</button>' +
-    '<button type="button" data-a="quiz_from_pages">🧪 اختبرني من الصفحة</button>' +
-    '<button type="button" data-a="translate_paragraph">🌐 ترجم الفقرة</button></div>' +
-    '<div class="sab-out" data-r="out" aria-live="polite"></div>' +
-    '<p class="sab-note"><a href="study-assistant.html">فتح صفحة المساعد كاملة</a></p>';
-  document.body.appendChild(panel); document.body.appendChild(fab);
-  var note = panel.querySelector('[data-r="note"]'), out = panel.querySelector('[data-r="out"]'), lastSel = "";
-  document.addEventListener("selectionchange", function () { var s = String(getSelection() || "").trim(); if (s) lastSel = s.slice(0, 6000); });
-  fab.addEventListener("click", function () { panel.hidden = !panel.hidden; });
-
-  function render(d, action) {
-    out.textContent = "";
-    if (!d.ok) { out.textContent = ((d.error && d.error.message) ? d.error.message + (d.error.detail ? " [" + d.error.detail + "]" : "") : "تعذّر الاتصال بالمساعد."); return; }
-    if (action === "quiz_from_pages" && d.data && d.data.questions) {
-      d.data.questions.forEach(function (q, i) {
-        var p = document.createElement("p"); p.textContent = (i + 1) + ". " + q.question; out.appendChild(p);
-        (q.options || []).forEach(function (o, k) {
-          var b = document.createElement("button"); b.type = "button"; b.className = "sa-cite"; b.textContent = o;
-          b.addEventListener("click", function () { b.textContent = (k === q.correctIndex ? "✓ " : "✗ ") + o + (q.explanation && k === q.correctIndex ? " — " + q.explanation : ""); });
-          out.appendChild(b);
-        });
-      });
-    } else out.appendChild(document.createTextNode(d.answer || ""));
-    var c = document.createElement("div"); c.className = "sa-cites";
-    (d.citations || []).forEach(function (ci) {
-      var b = document.createElement("button"); b.type = "button"; b.className = "sa-cite"; b.textContent = "ص " + ci.pageNumber; b.title = ci.excerpt || "";
-      b.addEventListener("click", function () {
-        document.dispatchEvent(new CustomEvent(EVT.OPEN_CITED_PAGE, { detail: { eventType: EVT.OPEN_CITED_PAGE, documentId: ci.documentId, pageNumber: ci.pageNumber, chunkId: ci.chunkId, highlightExcerpt: (ci.excerpt || "").slice(0, 200) } }));
-      });
-      c.appendChild(b);
-    });
-    out.appendChild(c);
-  }
-
-  panel.querySelectorAll("[data-a]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (!signedIn) { out.textContent = "سجّل الدخول لاستعمال المساعد."; return; }
-      var action = b.dataset.a, page = currentPage();
-      var payload = { documentId: doc, pageNumbers: [page], selectedText: lastSel, actionType: action, targetLang: "ar" };
-      document.dispatchEvent(new CustomEvent(EVT.SELECTION_ACTION, { detail: payload }));
-      panel.querySelectorAll("[data-a]").forEach(function (x) { x.disabled = true; });
-      out.textContent = "جارٍ التفكير… (ص " + page + ")";
-      api("notebook/actions", payload).then(function (d) { render(d, action); }).catch(function () { render({ ok: false }); })
-        .then(function () { panel.querySelectorAll("[data-a]").forEach(function (x) { x.disabled = false; }); lastSel = ""; });
-    });
+  // الواجهة: زر يفتح «المرشد الذكي» كلوحة دردشة جانبية فوق العارض (js/ai-guide.js)، وهو يرى الملف والصفحة الحالية والنص المحدد
+  var lastSel = "";
+  document.addEventListener("selectionchange", function () {
+    var sel = getSelection(), s = String(sel || "").trim();
+    if (!s || (sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest && sel.anchorNode.parentElement.closest(".ag-root"))) return;
+    lastSel = s.slice(0, 6000);
   });
+  function cite(c) { document.dispatchEvent(new CustomEvent(EVT.OPEN_CITED_PAGE, { detail: { eventType: EVT.OPEN_CITED_PAGE, documentId: c.documentId, pageNumber: c.pageNumber, chunkId: c.chunkId, highlightExcerpt: (c.excerpt || "").slice(0, 200) } })); }
+  function setup() {
+    if (!window.IQGuide) return false;
+    IQGuide.setContext(function () {
+      return {
+        documentId: doc, dock: true, page: currentPage, onCite: cite,
+        title: decodeURIComponent(fileUrl.split("/").pop() || "").replace(/\.pdf$/i, "").slice(0, 40),
+        selection: function () { return lastSel; }, clearSelection: function () { lastSel = ""; },
+        chips: [
+          { t: "💡 اشرح هذه الصفحة", q: "اشرح لي النص المحدد إن وُجد، وإلا اشرح الصفحة الحالية ببساطة وبالتفصيل", page: true },
+          { t: "📋 لخّص", q: "لخّص النص المحدد إن وُجد، وإلا لخّص الصفحة الحالية في نقاط", page: true },
+          { t: "🧪 اختبرني من الصفحة", q: "اختبرني من هذه الصفحة", mode: "quiz", page: true },
+          { t: "🌐 ترجم إلى العربية", q: "ترجم النص المحدد إن وُجد، وإلا ترجم الصفحة الحالية إلى العربية مع إبقاء المصطلحات الإنجليزية", page: true }
+        ]
+      };
+    });
+    var fab = document.createElement("button"); fab.type = "button"; fab.className = "sab-fab"; fab.textContent = "🤖 المرشد الذكي";
+    fab.addEventListener("click", function () { IQGuide.open(); });
+    document.body.appendChild(fab);
+    return true;
+  }
+  (function waitGuide(t) { if (!setup() && t < 40) setTimeout(function () { waitGuide(t + 1); }, 250); })(0);
 
   crypto.subtle.digest("SHA-256", new TextEncoder().encode(fileUrl)).then(function (h) {
     doc = hex(h).slice(0, 24);
     return api("me");
   }).then(function (d) {
     signedIn = !!d.ok;
-    if (!signedIn) { note.textContent = d.status === 401 ? "سجّل الدخول لاستعمال المساعد على هذا الملف." : "المساعد غير متاح الآن."; return; }
-    indexOnce();
+    if (signedIn) indexOnce();
   }).catch(function () { /* بلا شبكة */ });
 })();

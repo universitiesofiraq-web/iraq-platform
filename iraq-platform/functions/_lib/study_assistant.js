@@ -235,7 +235,7 @@ function systemPrompt(task, targetLang) {
   return lines.join("\n");
 }
 
-export async function callAiProvider(env, { task, question, chunks, departmentKnowledge, studentProfile, studentData, targetLang }) {
+export async function callAiProvider(env, { task, question, chunks, departmentKnowledge, studentProfile, studentData, history, targetLang }) {
   const mode = String(env.AI_PROVIDER_MODE || "cloudflare").toLowerCase();
   const sys = systemPrompt(task, targetLang);
   const user = JSON.stringify({ task, targetLang, studentProfile, studentData, studentQuestion: question, departmentKnowledge, approvedChunks: chunks });
@@ -246,7 +246,7 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
       {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: "user", parts: [{ text: user }] }] })
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [...(history || []).map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] })), { role: "user", parts: [{ text: user }] }] })
       }
     );
     if (!res.ok) throw new Error("gemini_http_" + res.status);
@@ -255,7 +255,7 @@ export async function callAiProvider(env, { task, question, chunks, departmentKn
   }
   if (env.AI) {
     const model = env.CF_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct-fp8";
-    const out = await env.AI.run(model, { messages: [{ role: "system", content: sys }, { role: "user", content: user }], max_tokens: 1500 });
+    const out = await env.AI.run(model, { messages: [{ role: "system", content: sys }, ...(history || []), { role: "user", content: user }], max_tokens: 1500 });
     return { mode: "cloudflare", text: String((out && (out.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content))) || "").trim() };
   }
   return null;
@@ -324,7 +324,16 @@ async function run(env, principal, body, now, limit) {
     .bind(reservation, principal.userId, task, quota.dayKey, iso(now), iso(now)).run();
   const settle = (status) => env.DB.prepare("UPDATE ai_quota_ledger SET status = ?, updated_at = ? WHERE reservation_id = ?").bind(status, iso(now), reservation).run();
   try {
-    const chunks = task === "advisor" ? [] : await retrieveChunks(env, principal.userId, { documentId, pageNumbers: body.pageNumbers, question: question || selected });
+    let chunks = task === "advisor" ? [] : await retrieveChunks(env, principal.userId, { documentId, pageNumbers: body.pageNumbers, question: question || selected });
+    const ctxPage = Number(body.contextPage);
+    if (documentId && Number.isInteger(ctxPage) && ctxPage > 0 && !(Array.isArray(body.pageNumbers) && body.pageNumbers.length) && task !== "advisor") {
+      const here = (await env.DB.prepare("SELECT chunk_id AS chunkId, document_id AS documentId, page_number AS pageNumber, content FROM ai_document_chunks WHERE user_id = ? AND document_id = ? AND page_number = ? ORDER BY chunk_index LIMIT 3").bind(principal.userId, documentId, ctxPage).all()).results || [];
+      const seen = new Set(here.map((c) => c.chunkId));
+      chunks = [...here, ...chunks.filter((c) => !seen.has(c.chunkId))].slice(0, 8);
+    }
+    const history = (Array.isArray(body.history) ? body.history : []).slice(-8)
+      .filter((h) => h && (h.role === "user" || h.role === "assistant") && typeof h.content === "string" && h.content.trim())
+      .map((h) => ({ role: h.role, content: clip(h.content, 1500) }));
     let kb = [];
     if (principal.departmentKey) {
       kb = (await env.DB.prepare("SELECT category, title, content FROM ai_department_knowledge WHERE department_key = ? ORDER BY updated_at DESC LIMIT 20").bind(principal.departmentKey).all()).results || [];
@@ -337,6 +346,7 @@ async function run(env, principal, body, now, limit) {
       chunks,
       departmentKnowledge,
       studentData,
+      history,
       studentProfile: { university: principal.university, college: principal.college, department: principal.department },
       targetLang: body.targetLang === "en" ? "en" : "ar"
     });
