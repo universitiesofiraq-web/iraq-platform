@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="المنصة العراقية">
   <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <link rel="stylesheet" href="css/ai-guide.css?v=1">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -76,6 +77,7 @@
     <div class="quick">
       <a class="quick-item card hue-1" href="#semesters"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
       <a class="quick-item card hue-2" href="#latest"><span class="tile" data-ico="file"></span><span class="quick-text"><strong>أحدث المحاضرات</strong><small>آخر الملفات المرفوعة</small></span></a>
+      <button class="quick-item card hue-2 quick-ai" type="button" data-open-guide aria-haspopup="dialog"><span class="tile" data-ico="sparkles"></span><span class="quick-text"><strong>المرشد الذكي</strong><small>اسأل، لخّص، واختبر نفسك</small></span><span class="badge badge-new">جديد</span></button>
       <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
       <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
       <button class="quick-item card hue-5" type="button" data-go="fav"><span class="tile" data-ico="star"></span><span class="quick-text"><strong>المفضلة</strong><small>موادك المحفوظة</small></span><span class="badge" id="favCount">0</span></button>
@@ -294,6 +296,7 @@
   <script src="js/app.js?v=p3-23"></script>
   <script src="js/auth.js?v=p3-23"></script>
   <script src="js/nav.js?v=p3-23"></script>
+  <script src="js/ai-guide.js?v=1"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
