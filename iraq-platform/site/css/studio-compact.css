@@ -1,0 +1,171 @@
+/* Light, document-first shell. Engine canvases, coordinates and storage are unchanged.
+   Notewise look (طلب محمد 4، 2026-10-21): three floating white pills 44px tall with 36px round buttons, the active tool on
+   a light-blue circle, short separators, no borders. The page reserve is constant per screen size: switching tools or
+   showing / hiding the quick bar never moves the page (طلب محمد 9). */
+body.st-compact{--reader-surface:#fff;--reader-text:#292d33;--reader-line:#dcdfe3;--reader-hover:#f1f3f5;--reader-accent:#def3f0;--reader-top:max(12px,env(safe-area-inset-top));--reader-tools-top:var(--reader-top);--reader-reserve:68px;
+  --nw-pill:#fff;--nw-ink:#1c1c1c;--nw-dim:#a7a7a7;--nw-hover:#f2f2f2;--nw-on:#c5e0fe;--nw-on-ink:#0b2545;--nw-sep:#ebebeb;--nw-chip:#efefef;--nw-chip-ink:#686869;--nw-shadow:0 1px 3px #0000001f,0 0 0 .5px #00000012;
+  background:#e9e8e4;color:var(--reader-text)}
+body.st-compact.medixa-dark{--reader-surface:#202a33;--reader-text:#e7edf2;--reader-line:#3b4853;--reader-hover:#303d48;--reader-accent:#174c4c;
+  --nw-pill:#25282f;--nw-ink:#dde0e7;--nw-dim:#6e7179;--nw-hover:#33363e;--nw-on:#0f4a72;--nw-on-ink:#c9e7ff;--nw-sep:#464a53;--nw-chip:#464a53;--nw-chip-ink:#c4c7ce;--nw-shadow:0 1px 3px #00000066,0 0 0 .5px #ffffff14;
+  background:#171e25}
+html body.st-compact.mx-docked{padding-bottom:84px!important}
+/* ---- header: left pill (back · pages · add page · search · documents) and right pill (sync · save state · eye · more) ---- */
+body.st-compact>header{position:fixed;inset:var(--reader-top) 12px auto;height:44px;min-height:0;padding:0;background:transparent;box-shadow:none;border:0;pointer-events:none;z-index:16;display:flex;justify-content:space-between;direction:ltr;gap:0}
+body.st-compact #st-compact-nav,body.st-compact #studio-hdr-actions{pointer-events:auto;display:flex;direction:ltr;align-items:center;gap:0;height:44px;padding:4px;background:var(--nw-pill);border:0;border-radius:22px;box-shadow:var(--nw-shadow)}
+body.st-compact #st-compact-nav{flex:0 0 auto}
+body.st-compact>header:has(.st-pop:not([hidden])){z-index:18}   /* an open list (add page, «المزيد») stays above the bar and its quick bar */
+body.st-compact header .st-lab{display:none}
+body.st-compact header button,body.st-compact header a.st-hdr-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;min-width:36px;height:36px;padding:0;min-height:36px;border:0;border-radius:50%;background:transparent;color:var(--nw-ink);text-decoration:none}
+body.st-compact #st-compact-nav svg,body.st-compact #studio-hdr-actions>button svg{width:22px;height:22px;stroke-width:1.6}
+body.st-compact #st-find-btn svg{stroke-width:2}
+@media(hover:hover){body.st-compact header button:hover,body.st-compact header a:hover{background:var(--nw-hover)}}
+body.st-compact #st-compact-nav [aria-expanded=true],body.st-compact #st-docmenu-btn[aria-expanded=true]{background:var(--nw-hover)}
+body.st-compact #status{font-size:11px;max-width:135px;padding:0 8px;background:transparent;color:var(--reader-text);direction:rtl}
+body.st-compact.medixa-dark #acct-sync{background:transparent!important}
+body.st-compact #st-docmenu{position:fixed;top:calc(var(--reader-top) + 52px);right:12px;left:auto;width:min(350px,calc(100vw - 24px));max-height:calc(100dvh - 100px);overflow:auto;direction:rtl;background:var(--reader-surface);color:var(--reader-text);border-color:var(--reader-line)}
+body.st-compact #st-docmenu button{width:100%;min-height:44px;border-radius:10px;justify-content:flex-start;padding:0 12px;color:var(--reader-text);height:auto}
+body.st-compact #st-docmenu svg{width:20px;height:20px}
+body.st-compact #st-docmenu .st-lab{display:inline}
+body.st-compact #st-docmenu #st-notes-toggle[aria-expanded=true]{background:var(--reader-hover)}
+body.st-compact #st-compact-documents{padding:8px;border-bottom:1px solid var(--reader-line);margin-bottom:6px}
+body.st-compact #st-compact-documents .st-brand{color:var(--reader-text);margin:0 4px 12px}
+body.st-compact #st-compact-documents .st-brand small{color:#168c8c}
+body.st-compact #st-tabs{display:flex;max-width:100%;width:100%;min-width:0;flex-wrap:wrap;direction:rtl}
+body.st-compact .st-tablist{flex-direction:column;max-height:220px;overflow:auto;width:100%}
+body.st-compact .st-tab{flex:0 0 auto;min-width:0;background:var(--reader-hover);border-color:var(--reader-line);color:var(--reader-text)}
+body.st-compact #st-docmenu .st-tab-x,body.st-compact #st-docmenu #st-tab-plus{width:44px;flex:0 0 44px}
+/* «إضافة صفحة بعد الحالية»: a small list under its button */
+body.st-compact .st-addwrap{position:relative;display:inline-flex}
+body.st-compact #st-addpage-pop{top:calc(100% + 12px);left:-4px;right:auto;width:236px;min-width:0;padding:8px}
+body.st-compact #st-addpage-pop .st-pop-h{margin:2px 6px 6px}
+body.st-compact #st-addpage-pop button{display:flex;align-items:center;gap:10px;width:100%;height:44px;min-height:44px;padding:0 10px;border-radius:10px;justify-content:flex-start;color:var(--reader-text);font:500 14px system-ui}
+body.st-compact #st-addpage-pop button svg{flex:0 0 auto;width:22px;height:22px;color:var(--nw-chip-ink)}
+body.st-compact #st-addpage-pop button[aria-pressed=true]{background:var(--nw-on);color:var(--nw-on-ink)}
+body.st-compact #st-addpage-pop button[aria-pressed=true] svg{color:var(--nw-on-ink)}
+
+/* ---- the drawing bar (centre pill) ---- */
+body.st-compact #studio-toolbar{inset:var(--reader-tools-top) 0 auto;margin-inline:auto;width:max-content;max-width:calc(100vw - 24px);height:44px;min-height:44px;padding:4px;gap:0;flex-wrap:nowrap;border:0;border-radius:22px;background:var(--nw-pill);color:var(--nw-ink);box-shadow:var(--nw-shadow);direction:ltr;z-index:17}
+body.st-compact #studio-toolbar>.st-hist,body.st-compact #studio-toolbar>.st-tools,body.st-compact #studio-toolbar>.st-style,body.st-compact #studio-toolbar>.st-settings,body.st-compact #studio-toolbar>.st-collapse{display:flex;align-items:center;gap:0;margin:0;padding:0;border:0}
+body.st-compact #studio-toolbar>.st-style:empty{display:none}
+body.st-compact.st-has-quick #studio-toolbar>.st-style{display:contents}
+body.st-compact #studio-toolbar>.st-tools::before,body.st-compact #studio-toolbar>.st-collapse::before{content:"";flex:0 0 auto;width:1.5px;height:22px;margin:0 4px;border-radius:1px;background:var(--nw-sep)}
+body.st-compact #studio-toolbar .st-tools .st-lab,body.st-compact .st-insert>span{display:none}
+body.st-compact #studio-toolbar>div>.st-btn,body.st-compact #studio-toolbar .st-stylewrap>.st-btn{flex:0 0 auto;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;background:transparent;color:var(--nw-ink);font-weight:500;box-shadow:none;transition:background-color .15s,color .15s}
+body.st-compact #studio-toolbar>div>.st-btn svg{width:22px;height:22px;stroke-width:1.6}
+body.st-compact #studio-toolbar #undo svg,body.st-compact #studio-toolbar #redo svg{width:18px;height:18px}
+@media(hover:hover){body.st-compact #studio-toolbar>div>.st-btn:hover{background:var(--nw-hover);color:var(--nw-ink)}}
+body.st-compact #studio-toolbar>div>.st-btn[aria-haspopup][aria-expanded=true]:not(.active){background:var(--nw-hover)}
+body.st-compact #studio-toolbar>div>.st-btn.active,body.st-compact #studio-toolbar>div>.st-btn[aria-pressed=true]{background:var(--nw-on);color:var(--nw-on-ink);box-shadow:none}
+body.st-compact #studio-toolbar>div>.st-btn:disabled{background:transparent;color:var(--nw-dim);opacity:1}
+@media(min-width:721px){body.st-compact #studio-toolbar .st-tools .st-btn.st-has-set.active::after{content:none}}
+body.st-compact .st-pop{direction:rtl;background:var(--reader-surface);color:var(--reader-text);border-color:var(--reader-line);max-height:calc(100dvh - 160px);overflow:auto}
+body.st-compact .st-pop .st-grid .st-btn{width:auto;height:auto;min-height:64px}
+body.st-compact #studio-toolbar .st-pop .st-grid .st-btn.active{background:var(--nw-on);color:var(--nw-on-ink);border-color:transparent}
+body.st-compact #studio-toolbar .st-pop .st-lab{display:inline}
+body.st-compact .st-dot{box-shadow:0 0 0 1px #0002}
+/* ⌄ / ⌃ hides or shows the tool options bar (request 9: «القائمة لا تختفي»); hiding it never moves the page */
+body.st-compact #st-quick-toggle svg{transition:transform .2s ease}
+body.st-compact #st-quick-toggle[aria-expanded=true] svg{transform:rotate(180deg)}
+body.st-compact #st-quick-toggle[aria-disabled=true]{opacity:.35}
+/* the settings sheet sits under the bar, or under the quick bar while it shows */
+body.st-compact #studio-toolbar .st-toolset{width:340px;border-radius:20px;box-shadow:0 12px 34px #18273a26}
+body.st-compact.st-has-quick #studio-toolbar>.st-toolset{top:calc(100% + 60px)}
+
+/* ---- the quick bar under the drawing bar: tool type | 3 thicknesses | 5 colours (+) | all settings ---- */
+body.st-compact .st-quick{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;height:44px;padding:4px;background:var(--nw-pill);border:0;border-radius:22px;box-shadow:var(--nw-shadow);color:var(--nw-ink);direction:ltr;white-space:nowrap;animation:st-q-in .18s ease-out}
+body.st-compact .st-quick .st-qbtn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--nw-ink)}
+body.st-compact .st-quick .st-qbtn svg{width:22px;height:22px;stroke-width:1.6}
+@media(hover:hover){body.st-compact .st-quick .st-qbtn:hover,body.st-compact .st-quick .st-size:hover,body.st-compact .st-quick .st-swatch:hover{background:var(--nw-hover)}}
+body.st-compact .st-quick .st-qbtn[aria-expanded=true]{background:var(--nw-hover)}
+body.st-compact .st-quick .st-qsep{flex:0 0 auto;width:1.5px;height:22px;margin:0 4px;border-radius:1px;background:var(--nw-sep)}
+body.st-compact .st-quick .st-qsep[hidden]{display:none}
+body.st-compact .st-quick .st-sizes,body.st-compact .st-quick .st-colors{display:flex;gap:0;margin:0;padding:0;border:0}
+body.st-compact .st-quick .st-size,body.st-compact .st-quick .st-swatch{position:relative;width:36px;min-width:36px;height:36px;min-height:36px;border-radius:50%;background:transparent}
+body.st-compact .st-quick .st-size[aria-pressed=true]{background:transparent}
+body.st-compact .st-quick .st-size span{width:22px;height:max(2px,calc(var(--d) / 4));border-radius:3px;background:var(--nw-ink)}
+body.st-compact .st-quick .st-swatch::before,body.st-compact .st-quick .st-swatch[aria-pressed=true]::before{width:24px;height:24px;box-shadow:inset 0 0 0 1px #0000001f}
+body.st-compact .st-quick [aria-pressed=true]::after{content:"";position:absolute;bottom:-2px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#2f6fed}
+body.st-compact.medixa-dark .st-quick [aria-pressed=true]::after{background:#5e9eff}
+body.st-compact.medixa-dark .st-quick .st-swatch::before,body.st-compact.medixa-dark .st-quick .st-swatch[aria-pressed=true]::before{box-shadow:inset 0 0 0 1px #ffffff40}
+body.st-compact .st-quick .st-qpop{top:calc(100% + 8px);left:auto;right:0}
+@keyframes st-q-in{from{opacity:0;transform:translate(-50%,-6px)}}
+
+/* short notices (pen / finger switching) */
+#st-toast{position:fixed;left:50%;top:calc(var(--reader-tools-top,12px) + 108px);z-index:60;max-width:min(92vw,460px);padding:10px 16px;border-radius:999px;background:#1f2933eb;color:#fff;font:600 13px/1.4 system-ui;text-align:center;direction:rtl;pointer-events:none;opacity:0;transform:translate(-50%,-6px);transition:opacity .2s ease,transform .2s ease}
+#st-toast.on{opacity:1;transform:translate(-50%,0)}
+.st-fingermode{--ts-line:#dfe6ea;--ts-soft:#f3f6f8;--ts-bg:#fff;--ts-ink:#24313b;--ts-teal:#168c8c;--ts-teal-2:#0f6f6f;--ts-muted:#6b7a85;margin:6px 0 2px}
+.st-fingermode button{font-size:12px}
+body.st-compact.medixa-dark .st-fingermode{--ts-line:#3b4853;--ts-soft:#26323c;--ts-bg:#202a33;--ts-ink:#e7edf2;--ts-teal-2:#7ad0d0}
+
+/* ---- page, page pill, page arrows ---- */
+body.st-compact main#pages{padding-top:var(--reader-reserve);padding-bottom:12px}
+body.st-compact #pages>section{scroll-margin-top:var(--reader-reserve)}
+body.st-compact .page{box-shadow:0 1px 8px #00000012}
+html body.st-compact #mx-dock{top:auto;right:auto;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));width:max-content;max-width:calc(100vw - 24px);padding:4px 8px;gap:4px;border:0;border-radius:26px;box-shadow:var(--nw-shadow);background:var(--nw-pill);color:var(--reader-text);direction:ltr;flex-wrap:nowrap;justify-content:flex-start;z-index:14}
+html body.st-compact #mx-dock>#mx-reader-nav,html body.st-compact #mx-dock>#st-zoom{margin:0!important;display:flex!important;order:0;direction:rtl}
+html body.st-compact #mx-dock #mx-reader-nav label{font-size:0}
+html body.st-compact #mx-dock #mx-reader-nav input{width:44px;font-size:14px}
+html body.st-compact #mx-dock #mx-reader-nav button,html body.st-compact #mx-dock #mx-reader-nav input,body.st-compact #st-zoom,body.st-compact #st-zoom button{background:transparent;border:0;color:var(--reader-text)}
+html body.st-compact #mx-dock>#st-zoom{border-inline-start:1px solid var(--nw-sep);border-radius:0;padding-inline:4px;direction:ltr}
+html body.st-compact #mx-dock:not(.st-dock-open)>#mx-timer-float{display:none!important}
+html body.st-compact #mx-dock.st-dock-open{width:380px;max-height:55dvh;overflow:auto;flex-wrap:wrap;border-radius:18px;justify-content:flex-start}
+html body.st-compact #mx-dock.st-dock-open>#mx-occlusion{flex-wrap:wrap!important;max-width:100%!important}
+body.st-compact .st-panel{top:calc(var(--reader-tools-top) + 52px);bottom:80px;border:1px solid var(--reader-line);border-radius:18px;box-shadow:0 8px 28px #0002;z-index:18}
+body.st-compact #study-panel{bottom:0!important}
+body.st-compact.medixa-focus #studio-toolbar{top:var(--reader-tools-top)}
+body.st-compact.medixa-focus main#pages{padding-top:var(--reader-reserve)}
+body.st-compact button:focus-visible,body.st-compact a:focus-visible{outline:2px solid #2f6fed;outline-offset:2px}
+@media(max-width:1279px){body.st-compact #status{width:24px;max-width:24px;padding:0;font-size:0;text-align:center}body.st-compact #status::before{width:9px;height:9px;margin:0}}
+/* page pill: «1 / 6 · 100%» — touch screens pinch to zoom and use the edge arrows to turn pages */
+html body.st-compact #mx-dock #mx-reader-nav{direction:ltr;align-items:center;gap:0}
+html body.st-compact #mx-dock #mx-reader-nav [data-mx-prev] svg,html body.st-compact #mx-dock #mx-reader-nav [data-mx-next] svg{transform:scaleX(-1)}
+html body.st-compact #mx-dock #mx-reader-nav input{width:34px;min-width:0;padding:0;text-align:end;font-weight:600;-moz-appearance:textfield}
+html body.st-compact #mx-dock #mx-reader-nav input::-webkit-inner-spin-button,html body.st-compact #mx-dock #mx-reader-nav input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+html body.st-compact #mx-dock [data-mx-total]{font-size:13px;color:#6b7280}
+html body.st-compact #mx-dock [data-mx-total]{padding-inline:2px 6px}
+html body.st-compact #mx-dock #st-zoom-label{min-width:54px;font-size:13px;font-weight:600}
+body.st-compact #st-edge-nav{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(var(--reader-tools-top) + 52px);z-index:14;display:flex;flex-direction:column;padding:2px;background:var(--nw-pill);border:0;border-radius:20px;box-shadow:var(--nw-shadow)}
+body.st-compact #st-edge-nav button{width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--nw-ink);display:inline-flex;align-items:center;justify-content:center}
+@media(hover:hover){body.st-compact #st-edge-nav button:hover{background:var(--nw-hover)}}
+body.st-compact.st-has-quick #st-edge-nav{top:calc(var(--reader-tools-top) + 104px)}
+@media(hover:none) and (pointer:coarse) and (min-width:721px){
+ html body.st-compact #mx-dock #mx-reader-nav [data-mx-prev],html body.st-compact #mx-dock #mx-reader-nav [data-mx-next],html body.st-compact #mx-dock #st-zoom-out,html body.st-compact #mx-dock #st-zoom-in{display:none}
+}
+
+/* ---- layout by screen ---- */
+/* iPad landscape and computers: one row; the bar starts right after the left pill, as in Notewise (--st-nav-w is measured) */
+@media(min-width:1024px){
+ body.st-compact #studio-toolbar{left:calc(12px + var(--st-nav-w,188px) + 8px);right:auto;margin:0;max-width:calc(100vw - var(--st-nav-w,188px) - 40px)}
+ body.st-compact.medixa-focus #studio-toolbar{left:0;right:0;margin-inline:auto}
+}
+/* iPad portrait (and narrow windows): the pills on the first row, the bar centred on a second row */
+@media(max-width:1023px){
+ body.st-compact{--reader-tools-top:calc(var(--reader-top) + 52px);--reader-reserve:120px}
+}
+/* phones: the bar at the bottom with finger-size buttons; no quick bar, no finger toggle, no page arrows */
+@media(max-width:720px){
+ body.st-compact{--reader-reserve:76px}
+ body.st-compact>header{inset-inline:8px;height:52px}
+ body.st-compact #st-compact-nav,body.st-compact #studio-hdr-actions{height:52px;border-radius:26px}
+ body.st-compact header button,body.st-compact header a.st-hdr-btn{width:44px;min-width:44px;height:44px;min-height:44px}
+ body.st-compact #st-docmenu{top:calc(var(--reader-top) + 60px)}
+ body.st-compact #status,body.st-compact .st-addwrap,body.st-compact #st-edge-nav{display:none}
+ body.st-compact #studio-toolbar,body.st-compact.medixa-focus #studio-toolbar{top:auto;bottom:max(10px,env(safe-area-inset-bottom));height:auto;min-height:52px;max-width:calc(100vw - 16px);padding:4px;flex-wrap:wrap;border-radius:26px}
+ body.st-compact #studio-toolbar>div>.st-btn,body.st-compact #studio-toolbar .st-stylewrap>.st-btn{width:44px;min-width:44px;height:44px;min-height:44px}
+ html body.st-compact.mx-docked{padding-bottom:calc(var(--st-tb-h,60px) + 78px)!important}
+ html body.st-compact #mx-dock{top:auto;bottom:calc(var(--st-tb-h,60px) + 20px + env(safe-area-inset-bottom));left:8px;max-width:calc(100vw - 16px);padding:2px 4px;gap:0}
+ html body.st-compact #mx-dock #mx-reader-nav{gap:0}
+ body.st-compact .st-pop:not(#st-docmenu):not(#st-addpage-pop){position:fixed;inset:auto 8px calc(var(--st-tb-h,60px) + 20px + env(safe-area-inset-bottom));width:auto;max-width:none;max-height:calc(100dvh - var(--st-tb-h,60px) - 110px)}
+ body.st-compact .st-panel{top:76px;bottom:calc(var(--st-tb-h,60px) + 76px);inset-inline:8px;width:auto}
+ body.st-compact.medixa-focus #pages>section{scroll-margin-top:76px}
+ body.st-compact #studio-toolbar .st-toolset{width:auto}
+}
+@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}body.st-compact .st-quick{animation:none}#st-toast{transition:none}body.st-compact #st-quick-toggle svg{transition:none}}
+.reduced-motion body.st-compact .st-quick,body.st-compact.reduced-motion .st-quick{animation:none}
+/* Embedded split panes retain the original compact embed rules, without navigation islands. */
+html.st-embed body.st-compact>header,html.st-embed body.st-compact #mx-dock{display:none!important}
+
+html body.st-compact #mx-dock:not(.st-dock-open)>#st-compact-dock-close{display:none}
+html body.st-compact #mx-dock.st-dock-open>#st-compact-dock-close{order:-1;min-width:44px;background:var(--reader-hover);color:var(--reader-text);border:0;border-radius:12px}
+
+body.st-compact #studio-selbar{border-radius:20px;box-shadow:0 10px 30px #18273a24;border-color:var(--reader-line);background:var(--reader-surface);color:var(--reader-text);z-index:19}

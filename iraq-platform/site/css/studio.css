@@ -1,0 +1,432 @@
+/* MEDIXA Study Studio — styles for the reader's ink/workspace layer (pdf-notes.html only). */
+#studio-banner{position:fixed;z-index:30;inset-inline:12px;bottom:76px;max-width:520px;margin-inline:auto;background:#fff;color:#18334b;border:1px solid #9db6bf;border-radius:12px;box-shadow:0 6px 28px #0003;padding:12px 14px;display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+#studio-banner.open{display:flex}
+#studio-banner span{flex:1 1 220px}
+#studio-banner button{min-height:44px;padding:8px 14px}
+
+/* ---- tokens ---- */
+:root{--st-navy:#122c47;--st-navy-2:#0d223a;--st-teal:#168c8c;--st-teal-2:#0f6b6b;--st-teal-soft:#e3f3f1;--st-line:#dbe5ea;--st-ink:#18334b;--st-muted:#5b7382;--st-shadow:0 6px 24px #12304a1f}
+
+/* ---- header: brand · document tabs · save state · study tools · «المزيد» ---- */
+header{z-index:16;min-height:56px;padding:6px max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left));padding-top:max(6px,env(safe-area-inset-top));gap:12px;flex-wrap:nowrap;background:var(--st-navy)}
+.st-brand{display:flex;align-items:center;gap:8px;flex:0 0 auto;color:#fff}
+.st-brand img{display:block;width:32px;height:32px;border-radius:8px}
+.st-brand-t{display:flex;flex-direction:column;line-height:1.1}
+.st-brand-t b{font:800 15px/1.1 system-ui;letter-spacing:.08em}
+.st-brand-t small{font:600 10px/1.3 system-ui;color:#8fd8d8;letter-spacing:.03em}
+#status{display:inline-block;flex:0 1 auto;min-width:0;max-width:24ch;height:32px;line-height:32px;padding:0 12px;border-radius:999px;background:#ffffff14;color:#d9e8ed;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status::before{content:"";display:inline-block;width:8px;height:8px;margin-inline-end:6px;border-radius:50%;background:#7ad0a0;vertical-align:middle}
+html[data-save-state=pending] #status::before,html[data-save-state=editing] #status::before{background:#ffd166}
+html[data-save-state=failed] #status::before,html[data-save-state=conflict] #status::before,html[data-save-state=corrupt] #status::before{background:#ff7a7a}
+.st-hdr-actions{display:flex;gap:6px;align-items:center;position:relative;flex:0 0 auto}
+.st-hdr-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:1px solid #ffffff2e;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font:600 13px system-ui}
+.st-hdr-btn:hover{background:#ffffff14}
+header #study-launch{background:var(--st-teal);border-color:var(--st-teal);color:#fff;padding:0 14px}
+header #study-launch:hover{background:var(--st-teal-2)}
+.st-hdr-btn:focus-visible{outline:3px solid #7ad0d0;outline-offset:2px}
+.st-back{text-decoration:none}
+#medixa-reader-bar[hidden]{display:none!important}
+#error:empty{display:none}
+/* «المزيد»: the real reader buttons (download, bookmark, dark, split, focus, study workspace) listed in one menu */
+#st-docmenu.st-docmenu{inset-inline-start:auto;inset-inline-end:0;min-width:250px}
+#st-docmenu>button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--st-ink);font:500 14px system-ui;text-align:start;cursor:pointer}
+#st-docmenu>button:hover{background:#eef6f7}
+#st-docmenu svg{flex:0 0 auto;color:var(--st-teal)}
+#st-docmenu #medixa-bookmark::first-letter{color:var(--st-teal);font-size:18px}
+
+/* ---- the one drawing toolbar: floats over the page under the header (a bottom bar on phones) ---- */
+main#pages{margin-top:0;padding-top:calc(var(--st-tb-h,0px) + 8px)}
+/* jumping to a page (page bar, thumbnails, notes, bookmarks) stops below the header and the toolbar, not under them */
+#pages>section{scroll-margin-top:calc(var(--st-hdr-h,56px) + var(--st-tb-h,0px) + 12px)}
+body.medixa-focus #pages>section{scroll-margin-top:calc(var(--st-tb-h,0px) + 16px)}
+#studio-toolbar{position:fixed;z-index:13;top:calc(var(--st-hdr-h,56px) + 8px);inset-inline:var(--st-pad-s,0px) var(--st-pad-e,0px);margin:0 auto;width:max-content;max-width:calc(100vw - var(--st-pad-s,0px) - var(--st-pad-e,0px) - 16px);background:var(--st-navy);color:#fff;border-radius:14px;padding:4px 6px;box-shadow:0 8px 26px #12304a40;display:flex;flex-wrap:wrap;gap:2px;align-items:center;justify-content:center}
+#studio-toolbar[data-side=end]{flex-direction:row-reverse}
+.st-tools,.st-style,.st-hist,.st-colors,.st-sizes{display:flex;align-items:center;gap:2px}
+.st-style,.st-hist,.st-settings{padding-inline-start:6px;margin-inline-start:4px;border-inline-start:1px solid #ffffff26}
+.st-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:#dbe7ee;cursor:pointer;font:600 12px system-ui}
+.st-btn:hover{background:#ffffff14;color:#fff}
+.st-btn.active,.st-btn[aria-pressed=true]{background:var(--st-teal);color:#fff;box-shadow:inset 0 0 0 1px #2fd0d080}
+.st-btn:disabled{opacity:.35;cursor:default;background:transparent}
+.st-btn:focus-visible,.st-swatch:focus-visible,.st-size:focus-visible,.st-mini:focus-visible,.st-row-btn:focus-visible{outline:3px solid #7ad0d0;outline-offset:2px}
+.st-lab{white-space:nowrap}
+.st-tools .st-lab{display:none}
+@media(min-width:1280px){.st-tools .st-lab{display:inline}}
+.st-swatch,.st-size{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:10px;background:transparent;cursor:pointer}
+.st-swatch::before{content:"";width:22px;height:22px;border-radius:50%;background:var(--sw);box-shadow:0 0 0 1px #ffffff55}
+.st-swatch[aria-pressed=true]::before{box-shadow:0 0 0 2px var(--st-navy),0 0 0 4px #fff}
+.st-size span{display:block;width:var(--d);height:var(--d);border-radius:50%;background:#dbe7ee}
+.st-size:hover,.st-swatch:hover{background:#ffffff14}
+.st-size[aria-pressed=true]{background:#ffffff24}
+.st-size[aria-pressed=true] span{background:#fff}
+.st-dot{display:block;width:22px;height:22px;border-radius:50%;background:var(--st-cur,#168c8c);box-shadow:0 0 0 2px #fff}
+.st-dot-any{background:conic-gradient(#e43d56,#f2c230,#168c8c,#2f6fed,#e43d56)}
+/* popovers (the toolbar's and the header menu): white cards, light borders */
+.st-pop{position:absolute;top:calc(100% + 8px);inset-inline-start:0;z-index:15;display:flex;flex-direction:column;gap:4px;padding:10px;background:#fff;color:var(--st-ink);border:1px solid var(--st-line);border-radius:14px;box-shadow:0 14px 36px #12304a33;min-width:220px}
+.st-pop[hidden]{display:none}
+.st-settings,.st-stylewrap{position:relative}
+.st-morepop{inset-inline-start:auto;inset-inline-end:0;width:300px}
+.st-pop-h{margin:6px 4px 2px;font:700 12px system-ui;color:var(--st-muted)}
+.st-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.st-pop .st-btn{color:var(--st-ink)}
+.st-pop .st-btn:hover{background:#eef6f7;color:var(--st-ink)}
+.st-pop .st-btn.active{background:var(--st-teal);color:#fff}
+.st-grid .st-btn{flex-direction:column;gap:4px;min-height:64px;padding:6px 4px;border:1px solid var(--st-line);font-size:12px}
+.st-grid .st-lab{white-space:normal;text-align:center;line-height:1.25}
+.st-pop .st-swatch::before{box-shadow:0 0 0 1px #0002}
+.st-pop .st-swatch[aria-pressed=true]::before{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--st-teal)}
+.st-pop .st-size span{background:var(--st-ink)}
+.st-pop .st-size:hover,.st-pop .st-swatch:hover{background:#eef6f7}
+.st-pop .st-size[aria-pressed=true]{background:var(--st-teal-soft)}
+.st-stylepop .st-colors,.st-stylepop .st-sizes{justify-content:space-between}
+.st-custom{display:flex;flex-direction:column;gap:4px}
+.st-colorlab,.st-width{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;color:var(--st-ink)}
+.st-colorlab input{width:44px;height:34px;padding:2px;border:1px solid var(--st-line);border-radius:8px;background:#fff;cursor:pointer}
+.st-width input{flex:1 1 auto;min-width:120px;accent-color:var(--st-teal)}
+.st-check{font-size:13px;display:flex;gap:8px;align-items:center;min-height:44px}
+.st-check input{width:20px;height:20px;accent-color:var(--st-teal)}
+.st-row-btn{min-height:44px;padding:0 12px;border:1px solid var(--st-line);border-radius:10px;background:#f7fafb;color:var(--st-ink);font:600 13px system-ui;text-align:start;cursor:pointer}
+.st-row-btn:hover{background:#eef6f7}
+.st-mini{min-width:44px;min-height:44px;border:1px solid var(--st-line);border-radius:8px;background:#fff;cursor:pointer}
+/* dialogs use the same buttons on a white card */
+dialog .st-btn{border:1px solid var(--st-line);background:#f7fafb;color:var(--st-ink);padding:0 16px;font-size:14px}
+dialog .st-btn:hover{background:#eef6f7;color:var(--st-ink)}
+
+#studio-cust{border:1px solid #9db6bf;border-radius:14px;padding:16px;max-width:min(440px,94vw);direction:rtl;color:#18334b}
+#studio-cust::backdrop{background:#0006}
+.st-cust-list{list-style:none;margin:0 0 12px;padding:0}
+.st-cust-list li{display:flex;gap:8px;align-items:center;min-height:48px;border-bottom:1px solid #e2eaed}
+.st-cust-list label{flex:1}
+.st-cust-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+
+/* ---- lasso selection bar ---- */
+#studio-selbar{position:fixed;z-index:8;inset-inline:12px;top:calc(var(--st-hdr-h,56px) + var(--st-tb-h,0px) + 16px);margin-inline:auto;width:max-content;max-width:calc(100vw - 24px);display:none;gap:6px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid #9db6bf;border-radius:12px;box-shadow:0 6px 28px #0003;padding:8px 10px;color:#18334b}
+#studio-selbar.open{display:flex}
+#studio-selbar button{min-height:44px;padding:6px 12px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
+#studio-selbar:not(.has-sel) #sel-dup,#studio-selbar:not(.has-sel) #sel-del,#studio-selbar:not(.has-sel) #sel-clear{display:none}
+.st-types{display:flex;gap:10px;font-size:13px;margin-inline-start:auto}
+.st-types label{display:flex;gap:4px;align-items:center;min-height:44px}
+
+/* ---- text / sticky editor ---- */
+.st-editor{position:absolute;z-index:6;display:flex;flex-direction:column;gap:4px}
+.st-editor textarea{width:100%;min-height:64px;padding:8px;border:2px solid #168c8c;border-radius:8px;background:#fffdf2;color:#18334b;font-family:inherit;resize:vertical;line-height:1.35}
+.st-editor-row{display:flex;gap:4px;flex-wrap:wrap}
+.st-editor-row button{min-height:44px;padding:4px 12px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
+.st-editor-row .st-ok{background:#168c8c;border-color:#168c8c;color:#fff}
+.st-editor-row .st-del{color:#a32727}
+.st-editor-row .st-fill{width:44px;padding:0;border-radius:50%}
+
+/* ---- Zoom Writing strip ---- */
+#zw{position:fixed;z-index:22;inset-inline:8px;bottom:8px;max-width:960px;margin-inline:auto;background:#fff;border:2px solid #168c8c;border-radius:14px;box-shadow:0 8px 32px #0004;padding:8px;color:#18334b;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+#zw[hidden]{display:none}
+.zw-head{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
+.zw-head button{min-width:44px;min-height:44px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
+.zw-head select{min-height:44px;border-radius:8px}
+#zw-canvas{display:block;width:100%;height:clamp(110px,24vh,190px);border:1px solid #9db6bf;border-radius:8px;background:#fff;touch-action:none;cursor:crosshair}
+body.zw-open{padding-bottom:260px}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* ---- pages: sized by the reader, rendered lazily ---- */
+main#pages{max-width:none;overflow-x:auto;padding-inline:10px}
+.page{max-width:none;width:auto;background:#fff}
+.page canvas.pdf{position:absolute;left:0;top:0;width:100%;height:100%;max-width:none}
+.page.st-has-margin{background:repeating-linear-gradient(0deg,#f7fafb,#f7fafb 27px,#e3edf1 28px)}
+.page.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
+.page canvas.pdf-hd,.page canvas.ink-hd,.st-blank canvas.ink-hd{position:absolute;pointer-events:none;max-width:none}
+.page canvas.ink{position:absolute;inset:0;width:100%;height:100%}
+/* ink layers blend with the PDF under them (multiply on the page, not inside the canvas): the text stays dark and the
+   highlight sits under it, instead of tinting the letters. Dark mode keeps normal blending. */
+.page canvas.ink,.page canvas.ink-hd,.page canvas.over,.st-blank canvas.ink,.st-blank canvas.ink-hd{mix-blend-mode:multiply}
+body.medixa-dark .page canvas.ink,body.medixa-dark .page canvas.ink-hd,body.medixa-dark .page canvas.over,body.medixa-dark .st-blank canvas.ink,body.medixa-dark .st-blank canvas.ink-hd{mix-blend-mode:normal}
+/* live layer (stroke in progress, lasso, eraser cursor) above the committed ink; never takes input */
+.page canvas.over,.st-blank canvas.over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* touch belongs to the ink engine inside the document (draw / one-finger pan / two-finger pan + pinch). Text selection
+   is MEDIXA's own (studio-smart.js, 2026-10-21): the browser never selects inside the document, so iPad shows no tall
+   blue blocks, no edit menu and no Touch-to-Search; editors inside a page keep normal text editing */
+main#pages{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+main#pages textarea,main#pages input,main#pages [contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+html[data-studio-tool=select] main#pages canvas.ink{cursor:text}
+.page canvas,.st-blank canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html[data-studio-tool=hand] main#pages canvas.ink{cursor:grab}
+html[data-gesture=panning] main#pages canvas.ink,html[data-gesture=pinching] main#pages canvas.ink{cursor:grabbing}
+.page-label{direction:ltr;unicode-bidi:isolate}
+
+/* ---- side panels: pages (thumbnails + bookmarks) on the start side, «ملاحظاتي» on the end side ---- */
+#medixa-thumbs{display:none!important}
+.st-panel{position:fixed;z-index:12;top:calc(var(--st-hdr-h,56px) + var(--st-tb-h,0px) + 16px);bottom:calc(var(--mx-dock-h,64px) + 8px);width:232px;max-width:calc(100vw - 16px);background:#fff;color:var(--st-ink);border:1px solid var(--st-line);border-radius:16px;box-shadow:var(--st-shadow);padding:12px;display:none;flex-direction:column;gap:10px;overflow:hidden;direction:rtl}
+.st-panel.open{display:flex}
+#st-pages{inset-inline-start:8px}
+#st-notes{inset-inline-end:8px;width:288px}
+.st-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px}
+.st-x{min-width:44px;min-height:44px;border:0;border-radius:10px;background:#f1f5f7;color:var(--st-ink);cursor:pointer}
+.st-x:hover{background:#e6eef2}
+.st-thumbs{flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px}
+.st-th{position:relative;border:1px solid var(--st-line);border-radius:10px;background:#fff;padding:0;cursor:pointer;display:block;width:100%;min-height:44px;overflow:hidden}
+.st-th.current{border-color:var(--st-teal);box-shadow:0 0 0 2px #168c8c59}
+.st-th-c{display:block;width:100%;height:auto}
+.st-th-n{position:absolute;inset-block-end:6px;inset-inline-end:6px;min-width:26px;height:26px;border-radius:13px;background:var(--st-teal);color:#fff;font:700 12px/26px system-ui;text-align:center}
+.st-bm{flex:0 0 auto;max-height:28%;overflow:auto;font-size:13px;border-top:1px solid var(--st-line);padding-top:8px}
+.st-bm button{min-height:44px}
+.st-focus-btn{min-height:44px;border:1px solid var(--st-line);border-radius:12px;background:#f7fafb;color:var(--st-ink);cursor:pointer;font:600 14px system-ui}
+.st-focus-btn:hover{background:#eef6f7}
+.st-notes input[type=search]{min-height:44px;border-radius:10px;border:1px solid var(--st-line);background:#f7fafb;color:var(--st-ink);padding:0 12px;font:inherit}
+.st-chips{display:flex;gap:6px;flex-wrap:wrap}
+.st-chip{min-height:44px;padding:0 14px;border:1px solid var(--st-line);border-radius:999px;background:#fff;color:var(--st-ink);cursor:pointer;font:inherit;font-size:13px}
+.st-chip[aria-pressed=true]{background:var(--st-teal);border-color:var(--st-teal);color:#fff}
+.st-notes-list{flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.st-note{display:flex;flex-direction:column;gap:4px;text-align:start;border:1px solid var(--st-line);border-inline-start:4px solid var(--note-fill,#2fd0d0);border-radius:12px;background:#fff;color:var(--st-ink);padding:10px 12px;cursor:pointer;font:inherit;min-height:44px}
+.st-note:hover{background:#f7fafb}
+.st-note-t{font-size:14px}
+.st-note-b{font-size:13px;color:var(--st-muted);white-space:pre-wrap}
+.st-note-p{font-size:12px;color:var(--st-teal-2)}
+.st-empty{color:var(--st-muted);font-size:13px;margin:6px 0;line-height:1.6}
+.st-panel button:focus-visible,.st-panel input:focus-visible,.st-panel select:focus-visible{outline:3px solid #7ad0d0;outline-offset:2px}
+.page.st-pulse{outline:4px solid #2fd0d0;outline-offset:4px;transition:outline-color .4s}
+/* wide screens: panels dock flush to the edges and the page column shrinks between them (drawings scale with the page) */
+@media(min-width:1100px){
+  .st-panel{top:var(--st-hdr-h,56px);bottom:var(--mx-dock-h,64px);border-radius:0;box-shadow:none;border-width:0}
+  #st-pages{inset-inline-start:0;width:208px;border-inline-end-width:1px}
+  #st-notes{inset-inline-end:0;width:288px;border-inline-start-width:1px}
+  body.st-pages-open{--st-pad-s:208px}body.st-notes-open{--st-pad-e:288px}
+  body.st-pages-open main#pages{margin-inline-start:208px}body.st-notes-open main#pages{margin-inline-end:288px}
+}
+body.medixa-focus .st-panel{display:none!important}
+body.medixa-focus #studio-toolbar{top:8px}
+body.medixa-focus main#pages{padding-top:calc(var(--st-tb-h,0px) + 20px)}
+body.medixa-dark .page canvas.pdf{filter:none}
+
+#studio-margins,#studio-export-dlg{border:1px solid #9db6bf;border-radius:14px;padding:16px;max-width:min(420px,94vw);direction:rtl;color:#18334b}
+#studio-margins::backdrop,#studio-export-dlg::backdrop{background:#0006}
+.st-margin-row{display:flex;gap:8px;align-items:center;justify-content:space-between;min-height:48px}
+.st-margin-row select{min-height:44px;min-width:150px;border-radius:8px}
+.st-note-line{font-size:13px;color:#4a6573}
+
+
+.st-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.st-add select{min-height:44px;border-radius:10px;border:1px solid var(--st-line);background:#fff;color:var(--st-ink);padding:0 8px;font:inherit;flex:1 1 100%}
+.st-add-btn{min-height:44px;flex:1 1 100%;border:1px solid var(--st-teal);border-radius:10px;background:var(--st-teal-soft);color:var(--st-teal-2);cursor:pointer;font:600 13px system-ui}
+.st-row{display:flex;gap:4px;align-items:stretch}
+.st-row .st-th{flex:1 1 auto}
+.st-th-tools{display:flex;flex-direction:column;gap:4px}
+.st-th-tools .st-mini{min-width:44px;min-height:44px;background:#f1f5f7;color:var(--st-ink);border-color:var(--st-line)}
+.st-blank{position:relative;margin:14px auto;background:#fff;box-shadow:0 4px 18px #0002;touch-action:pan-y}
+.st-blank canvas.pdf,.st-blank canvas.ink{position:absolute;inset:0;width:100%;height:100%}
+.st-blank .page-label{position:absolute;bottom:4px;left:8px;background:#fffd;padding:3px 8px;font-size:12px}
+.st-blank.st-has-margin{background:repeating-linear-gradient(0deg,#f7fafb,#f7fafb 27px,#e3edf1 28px)}
+.st-blank.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
+
+/* ---- document tabs (in the header) ---- */
+.st-tabs{display:flex;gap:6px;align-items:center;flex:1 1 220px;min-width:0}
+.st-tablist{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:0 1 auto}
+.st-tablist::-webkit-scrollbar{display:none}
+.st-tab{display:flex;align-items:center;min-width:0;border:1px solid #ffffff26;border-radius:10px;background:#ffffff0d;color:#c9dbe4;flex:0 0 auto}
+.st-tab.current{background:#ffffff1f;border-color:#2fd0d0aa;color:#fff}
+.st-tab-b,.st-tab-x{min-height:44px;border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;font-size:13px}
+.st-tab-b{padding:0 12px;display:flex;gap:6px;align-items:center;min-width:0}
+.st-tab-t{max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-tab-x{min-width:44px;opacity:.75}
+.st-tab-x:hover{opacity:1}
+.st-dirty{color:#ffd166;font-size:14px}
+.st-tab-plus{position:relative;min-width:44px;min-height:44px;border:1px dashed #ffffff59;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font-size:18px}
+.st-dlg{border:1px solid #9db6bf;border-radius:14px;padding:16px;max-width:min(520px,94vw);width:min(520px,94vw);direction:rtl;color:#18334b}
+.st-dlg::backdrop{background:#0006}
+.st-dlg input[type=search],.st-dlg input:not([type]){width:100%;min-height:44px;border:1px solid #9db6bf;border-radius:8px;padding:0 10px;font:inherit;margin:6px 0}
+.st-menu-list{list-style:none;margin:0 0 10px;padding:0;max-height:34vh;overflow:auto}
+.st-menu-b{display:block;width:100%;min-height:44px;text-align:start;border:0;border-bottom:1px solid #e2eaed;background:transparent;padding:6px 8px;cursor:pointer;font:inherit;color:#18334b}
+.st-menu-b:hover{background:#eef6f7}
+.st-new-nb{font-weight:700;color:#0f6b6b}
+
+/* ---- split view ---- */
+.st-split{display:none;position:fixed;z-index:11;top:var(--st-hdr-h,56px);bottom:var(--mx-dock-h,64px);inset-inline-end:0;width:var(--st-split-w,40vw);background:#122c47;box-shadow:0 0 24px #0005;flex-direction:column}
+.st-split.open{display:flex}
+.st-pane2{flex:1 1 auto;width:100%;border:0;background:#edf3f5}
+.st-divider{position:absolute;top:0;bottom:0;inset-inline-start:-9px;width:18px;cursor:col-resize;z-index:2;touch-action:none;display:flex;align-items:center;justify-content:center}
+.st-divider::after{content:"";width:5px;height:56px;border-radius:3px;background:#2fd0d0;box-shadow:0 0 0 2px #122c47}
+.st-divider:focus-visible{outline:3px solid #7ad0d0}
+.st-split-x{min-height:44px;border:0;border-bottom:1px solid #ffffff30;background:#0d223a;color:#fff;cursor:pointer;font:600 13px system-ui}
+.st-split-switch{display:none;position:fixed;z-index:14;inset-inline:0;margin-inline:auto;width:max-content;bottom:calc(var(--mx-dock-h,64px) + 10px);background:#122c47;border-radius:999px;padding:4px;box-shadow:0 6px 20px #0005;gap:4px}
+body.st-dragging{user-select:none}
+body.st-dragging .st-pane2{pointer-events:none}
+body.st-split-on main#pages{margin-inline-end:var(--st-split-w,40vw)}
+body.st-split-on{--st-pad-e:var(--st-split-w,40vw)}
+body.st-split-narrow .st-split{inset-inline-start:0;width:auto}
+body.st-split-narrow .st-divider{display:none}
+body.st-split-narrow.st-split-on .st-split-switch{display:flex}
+body.st-split-narrow .st-sw-b{min-width:120px;min-height:44px;border:1px solid #ffffff40;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font:600 14px system-ui}
+body.st-split-narrow .st-sw-b[aria-selected=true]{background:#168c8c}
+body.st-split-narrow:not(.st-show-second) .st-split{display:none}
+body.st-split-narrow.st-show-second main#pages,body.st-split-narrow.st-show-second #studio-toolbar{display:none}
+body.st-split-narrow.st-split-on main#pages{margin-inline-end:0}
+body.st-split-narrow.st-split-on{--st-pad-e:0px}
+/* embedded reader (second pane) */
+html.st-embed header>*:not(#status){display:none!important}
+html.st-embed header{min-height:32px;padding:4px 10px;position:static}
+html.st-embed #mx-dock,html.st-embed #mx86-open,html.st-embed #st-zoom,html.st-embed .st-panel,html.st-embed #medixa-split{display:none!important}
+html.st-embed{--st-hdr-h:32px}
+html.st-embed body{padding-bottom:12px!important}
+/* focus mode: chrome goes away; tools, save status, page controls and an obvious exit stay */
+body.medixa-focus .st-tabs,body.medixa-focus .st-split{display:none!important}
+body.medixa-focus #mx-dock>*:not(#mx-reader-nav):not(#mx-save-state){display:none!important}
+#medixa-focus-exit{min-height:44px;padding:0 16px!important;background:#168c8c!important;color:#fff!important;border:2px solid #fff!important;border-radius:999px!important;font:700 14px system-ui;top:max(12px,env(safe-area-inset-top))!important;inset-inline-start:12px!important;left:auto!important}
+#st-focus-status{display:none;position:fixed;z-index:15;top:max(12px,env(safe-area-inset-top));inset-inline-start:190px;min-height:44px;align-items:center;padding:0 14px;border-radius:999px;background:#122c47;color:#fff;font-size:13px}
+body.medixa-focus #st-focus-status{display:flex}
+body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
+
+/* the "previous session" notice of the resume module sits above the dock instead of over the header buttons */
+#mx88-recovery{top:auto!important;bottom:calc(var(--mx-dock-h,64px) + 12px)!important;left:50%!important;transform:translateX(-50%);z-index:14!important}
+
+/* ---- the pdf.js text over the page: invisible, never takes input and never selectable (screen readers read it; our
+   own selection reads the same text from pdf.js) ---- */
+.st-text{position:absolute;overflow:hidden;line-height:1;text-align:initial;pointer-events:none;z-index:2;-webkit-text-size-adjust:none;direction:ltr;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* PDF content is laid out left-to-right in PDF space. A canvas 2D context inherits the CSS direction of its element
+   (ctx.direction = 'inherit'); in this RTL page pdf.js would right-align every glyph run at its x position, which
+   scatters the letters. Proven by rendering the same page with the same pdf.js into an rtl and an ltr canvas. */
+.page canvas,.st-blank canvas,.st-th-c,#zw-canvas{direction:ltr}
+.st-text span,.st-text br{color:transparent;position:absolute;white-space:pre;transform-origin:0 0;-webkit-user-select:none;user-select:none}
+/* our text selection (studio-smart.js): a light-blue band per line drawn over the text (Notewise), and two iOS-style
+   handles — a ring knob above the start, one below the end, joined to the line by a thin stem; the knob turns solid
+   while it is dragged. Placed in % of the page area, so zoom and scroll move it with the page. */
+.st-tsel{position:absolute;left:var(--pa-l,0%);top:var(--pa-t,0%);width:var(--pa-w,100%);height:var(--pa-h,100%);z-index:4;pointer-events:none}
+.st-tsel-r{position:absolute;background:rgba(10,132,255,.2)}
+.st-tsel-h{position:absolute;width:44px;margin-left:-22px;pointer-events:auto;touch-action:none;cursor:grab;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.st-tsel-h i{position:absolute;left:21.25px;width:1.5px;background:#0a95ff}
+.st-tsel-h b{position:absolute;left:17px;width:10px;height:10px;box-sizing:border-box;border:1.25px solid #0a95ff;border-radius:50%;background:#fff}
+.st-tsel-h.st-s i{top:22px;bottom:0}
+.st-tsel-h.st-s b{top:17px}
+.st-tsel-h.st-e i{top:0;bottom:22px}
+.st-tsel-h.st-e b{bottom:17px}
+.st-tsel-h.is-drag b{background:#0a95ff}
+html.st-tsel-dragging,html.st-tsel-dragging *{cursor:grabbing!important}
+@media print{.st-tsel{display:none}}
+.page.st-notext::after{content:"";display:none}
+
+/* study masks live in PAGE coordinates (the margins around a page are not part of the page) */
+.page .mx-mask-layer{inset:auto;left:var(--pa-l,0%);top:var(--pa-t,0%);width:var(--pa-w,100%);height:var(--pa-h,100%)}
+.st-src-flash{position:absolute;border:3px solid #ff7a1a;background:#ff7a1a33;border-radius:3px;z-index:5;pointer-events:none;animation:st-flash 2.4s ease-out forwards;left:calc(var(--pa-l,0%) + var(--x) * var(--pa-w,100%));top:calc(var(--pa-t,0%) + var(--y) * var(--pa-h,100%));width:calc(var(--w) * var(--pa-w,100%));height:calc(var(--h) * var(--pa-h,100%))}
+@keyframes st-flash{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.st-src-flash{animation:none;opacity:1}}
+
+/* ---- smart study layer ---- */
+.st-seltools[hidden]{display:none}   /* the bar itself: studio-textactions.css */
+.st-draft textarea,.st-draft input[type=text]{width:100%;border:1px solid #9db6bf;border-radius:8px;padding:8px;font:inherit;min-height:44px}
+.st-field{display:block;margin:8px 0;font-size:14px}
+.st-cite{background:#eef6f7;border-radius:8px;padding:8px 10px;font-size:13px;margin:4px 0 8px}
+.st-opts-set{border:1px solid #cfdde3;border-radius:10px;margin:8px 0;padding:6px 10px}
+.st-opt-row{display:flex;gap:8px;align-items:center;margin:6px 0}
+.st-opt-row input[type=radio]{width:24px;height:24px;flex:0 0 auto}
+.st-ai-note{font-size:12px;color:#7a5a00;background:#fff6dc;border-radius:8px;padding:6px 10px}
+.st-err{color:#a32727;min-height:1.4em;font-size:13px;margin:4px 0}
+.st-draft .st-ok{background:#168c8c;color:#fff;border-color:#168c8c}
+
+/* the study-tools drawer is modal-like: it sits above the floating toolbar and the header */
+#study-panel{z-index:30!important}
+#study-panel{bottom:var(--mx-dock-h,0px)!important}
+
+/* ---- bottom bar (the v9.1 dock, restyled): pages · page navigation · zoom · other study tools · notes ---- */
+html body #mx-dock{z-index:14;flex-wrap:wrap-reverse;justify-content:flex-start;gap:6px;overflow:visible;background:#fff;color:var(--st-ink);border-top:1px solid var(--st-line);box-shadow:0 -4px 18px #12304a12;padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom));-webkit-mask-image:none;mask-image:none}
+html body #mx-dock>#medixa-thumbs-toggle{order:1}
+html body #mx-dock>#mx-timer-float{order:2}
+html body #mx-dock>#mx-reader-nav{order:3;margin-inline-start:auto!important}
+html body #mx-dock>#st-zoom{order:4;margin-inline-end:auto!important}
+html body #mx-dock>#st-dock-more{order:5}
+html body #mx-dock>#st-notes-toggle{order:6}
+html body #mx-dock>#st-dock-break{order:7;flex:0 0 100%!important;height:0;display:none}
+html body #mx-dock>#mx-occlusion,html body #mx-dock>#mx86-open,html body #mx-dock>#mx87-backup,html body #mx-dock>#mx-ink-toggle,html body #mx-dock>#mx-save-state{order:8}
+html body #mx-dock:not(.st-dock-open)>#mx-occlusion,html body #mx-dock:not(.st-dock-open)>#mx86-open,html body #mx-dock:not(.st-dock-open)>#mx87-backup,html body #mx-dock:not(.st-dock-open)>#mx-ink-toggle,html body #mx-dock:not(.st-dock-open)>#mx-save-state{display:none!important}
+html body #mx-dock.st-dock-open>#st-dock-break{display:block}
+html body #mx-dock>.st-dock-btn,html body #mx-dock>#mx-timer-float,html body #mx-dock>#mx86-open,html body #mx-dock>#mx87-backup,html body #mx-dock>#mx-ink-toggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 12px;border:1px solid var(--st-line);border-radius:10px;background:#fff;color:var(--st-ink);font:600 13px system-ui;cursor:pointer}
+html body #mx-dock>.st-dock-btn:hover,html body #mx-dock>#mx-timer-float:hover,html body #mx-dock>#mx86-open:hover,html body #mx-dock>#mx87-backup:hover,html body #mx-dock>#mx-ink-toggle:hover{background:#eef6f7}
+html body #mx-dock>.st-dock-btn svg{color:var(--st-teal)}
+html body #mx-dock>.st-dock-btn[aria-expanded=true],html body #mx-dock>#mx-ink-toggle[aria-expanded=true]{background:var(--st-teal-soft);border-color:var(--st-teal);color:var(--st-teal-2);outline:0}
+html body #mx-dock>#mx-save-state{border:1px solid var(--st-line);color:var(--st-ink);padding:0 10px!important}
+html body #mx-dock>#mx-save-state>summary{display:flex;align-items:center;cursor:pointer}
+/* the v8.7 backup button carries inline styles */
+html body #mx-dock>#mx87-backup{padding:0 12px!important;border:1px solid var(--st-line)!important;border-radius:10px!important;background:#fff!important;color:var(--st-ink)!important;font:600 13px system-ui!important}
+html body #mx-dock>#mx-occlusion{gap:4px;padding:2px 8px!important;border:1px solid var(--st-line);border-radius:10px;background:#f7fafb;color:var(--st-ink)}
+html body #mx-dock #mx-occlusion strong{font-size:12px;color:var(--st-muted)}
+html body #mx-dock #mx-occlusion button{margin:0;padding:0 10px;border:1px solid var(--st-line);border-radius:8px;background:#fff;color:var(--st-ink);font:600 12px system-ui}
+html body #mx-dock>#mx-reader-nav{gap:6px;color:var(--st-ink);font-size:13px}
+html body #mx-dock #mx-reader-nav button{display:inline-flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--st-line);border-radius:10px;background:#fff;color:var(--st-ink)}
+html body #mx-dock #mx-reader-nav button:hover{background:#eef6f7}
+html body #mx-dock #mx-reader-nav label{display:inline-flex;align-items:center;gap:6px;color:var(--st-muted)}
+html body #mx-dock #mx-reader-nav input{width:56px;padding:0 4px;border:1px solid var(--st-line);border-radius:10px;text-align:center;font:600 14px system-ui;color:var(--st-ink);background:#fff}
+html body #mx-dock #mx-reader-nav [data-mx-total]{color:var(--st-muted)}
+html body #mx-dock #mx-reader-nav [data-mx-study]{display:none}
+#st-zoom{display:flex;align-items:center;gap:0;border:1px solid var(--st-line);border-radius:10px;background:#fff;padding:0}
+#st-zoom button{min-width:44px;min-height:44px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--st-ink);font:600 16px system-ui;cursor:pointer}
+#st-zoom button:hover{background:#eef6f7}
+#st-zoom #st-zoom-label{min-width:58px;font-size:13px}
+@media(max-width:1099px){html body #mx-dock>.st-dock-btn{padding:0}html body #mx-dock>.st-dock-btn .st-lab{display:none}}
+/* focus mode: no side panels, the page column takes the full width */
+body.medixa-focus{--st-pad-s:0px;--st-pad-e:0px}
+body.medixa-focus main#pages{margin-inline:0}
+
+/* ---- phones: slim header (file name + «المزيد»), page bar under it, one-row drawing bar at the bottom ---- */
+@media(max-width:720px){
+  header{min-height:52px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:4px;gap:6px}
+  .st-brand-t{display:none}
+  .st-brand img{width:28px;height:28px}
+  #st-back{padding:0;width:44px;font-size:20px}
+  #st-back .st-lab,#st-home{display:none}
+  .st-hdr-actions{gap:4px}
+  #status{flex:0 0 28px;width:28px;max-width:none;padding:0;font-size:0;text-align:center;background:transparent}
+  #status::before{width:10px;height:10px;margin:0}
+  header #study-launch{padding:0;width:44px}
+  header #study-launch .st-lab{display:none}
+  .st-tabs{flex:1 1 auto;gap:4px}
+  .st-tablist{flex:1 1 auto;overflow:hidden}
+  .st-tab:not(.current){display:none}
+  .st-tab.current{flex:1 1 auto}
+  .st-tab-b{flex:1 1 auto;padding:0 8px}
+  .st-tab-t{max-width:none}
+  .st-tab-plus[data-n]::after{content:attr(data-n);position:absolute;top:-6px;inset-inline-end:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#2fd0d0;color:#0d223a;font:700 11px/18px system-ui}
+  /* page bar under the header */
+  html body #mx-dock{top:var(--st-hdr-h,52px);bottom:auto;flex-wrap:wrap;justify-content:space-between;gap:4px;padding:4px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left));border-top:0;border-bottom:1px solid var(--st-line);box-shadow:0 4px 14px #12304a10}
+  html body #mx-dock>#mx-reader-nav{order:2;margin:0 auto!important;gap:4px}
+  html body #mx-dock>#st-notes-toggle{order:3}
+  html body #mx-dock>#st-dock-more{order:4}
+  html body #mx-dock>#mx-timer-float,html body #mx-dock>#st-zoom{order:8}
+  html body #mx-dock:not(.st-dock-open)>#mx-timer-float,html body #mx-dock:not(.st-dock-open)>#st-zoom{display:none!important}
+  html body #mx-dock.st-dock-open{justify-content:center}
+  html body #mx-dock>#mx-occlusion{flex-wrap:wrap!important;justify-content:center;max-width:100%!important}
+  html body #mx-dock #mx-reader-nav label{font-size:0}
+  html body #mx-dock #mx-reader-nav input{width:48px;font-size:15px}
+  :root{--st-pbar:53px}
+  #pages>section{scroll-margin-top:calc(var(--st-hdr-h,52px) + var(--st-pbar) + 8px)}
+  main#pages{padding-top:calc(var(--st-pbar) + 2px);padding-bottom:12px}
+  body{--mx-dock-h:var(--st-tb-h,64px)}            /* popups that sit "above the bottom bar" now sit above the drawing bar */
+  /* drawing bar */
+  #studio-toolbar{z-index:15;top:auto;bottom:0;inset-inline:0;width:auto;max-width:none;margin:0;border-radius:16px 16px 0 0;padding:6px max(6px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));flex-wrap:nowrap;justify-content:space-between;gap:0;box-shadow:0 -6px 24px #12304a33}
+  .st-tools{flex-wrap:nowrap;gap:0}
+  .st-style,.st-hist,.st-settings{padding:0;margin:0;border:0}
+  .st-stylewrap,.st-settings{position:static}
+  #studio-toolbar .st-pop{position:fixed;top:auto;bottom:calc(var(--st-tb-h,64px) + 8px);inset-inline:8px;width:auto;min-width:0;max-height:calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);max-height:calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);overflow:auto}
+  .st-grid{grid-template-columns:repeat(4,1fr)}
+  /* typing (note editor, notes search, page number): the keyboard needs the room */
+  body:has(.st-editor textarea:focus) #studio-toolbar,body:has(#st-notes-q:focus) #studio-toolbar,body:has(#mx-reader-nav input:focus) #studio-toolbar{display:none}
+  /* sheets between the page bar and the drawing bar */
+  .st-panel{top:calc(var(--st-hdr-h,52px) + var(--st-pbar) + 6px);bottom:calc(var(--st-tb-h,64px) + 6px);inset-inline:8px;width:auto;max-width:none}
+  #st-notes{width:auto}
+  #studio-selbar{top:calc(var(--st-hdr-h,52px) + var(--st-pbar) + 8px)}
+  #studio-banner{bottom:calc(var(--st-tb-h,64px) + 8px)}
+  #zw{bottom:calc(var(--st-tb-h,64px) + 6px)}
+  /* focus mode: the header is hidden; the page bar moves up under the exit button */
+  body.medixa-focus #mx-dock{top:calc(max(12px,env(safe-area-inset-top)) + 52px)}
+  body.medixa-focus main#pages{padding-top:calc(var(--st-pbar) + 72px)}
+  body.medixa-focus #studio-toolbar{top:auto}
+  body.medixa-focus #pages>section{scroll-margin-top:calc(var(--st-pbar) + 72px)}
+}
+@media(max-width:340px){.st-brand{display:none}html header{gap:2px}}
+@media(max-width:380px){
+  header{gap:4px;padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
+  .st-hdr-actions,.st-tabs{gap:2px}
+  html body #mx-dock{gap:2px;padding-inline:4px}
+  html body #mx-dock>#mx-reader-nav{gap:2px}
+  html body #mx-dock #mx-reader-nav input{width:44px}
+  #studio-toolbar:has(.st-extra) #redo{display:none}   /* a secondary tool takes a slot; undo stays */
+}
+
+/* ---- night mode for the reader chrome ---- */
+html body.medixa-dark #mx-dock,body.medixa-dark .st-panel{background:#1b2630;color:#e8eef2;border-color:#34444f}
+html body.medixa-dark #mx-dock button:not([aria-expanded=true]),html body.medixa-dark #mx-dock input,html body.medixa-dark #mx-dock>#mx-save-state,html body.medixa-dark #mx-dock>#mx-occlusion,body.medixa-dark #st-zoom,body.medixa-dark .st-panel .st-x,body.medixa-dark .st-focus-btn,body.medixa-dark .st-chip:not([aria-pressed=true]),body.medixa-dark .st-note,body.medixa-dark .st-notes input[type=search],body.medixa-dark .st-add select,body.medixa-dark .st-th{background:#22313c!important;color:#e8eef2!important;border-color:#3a4b57!important}
+body.medixa-dark .st-note-b,body.medixa-dark .st-empty,html body.medixa-dark #mx-dock #mx-reader-nav label,html body.medixa-dark #mx-dock [data-mx-total]{color:#a9bcc8}

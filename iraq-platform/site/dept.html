@@ -81,6 +81,7 @@
             var fa = el("a", (f.number ? "المحاضرة " + f.number + (f.title ? " — " + f.title : "") + " · " : TYPE[f.type] + " · ") + f.label);
             fa.href = f.kind === "link" ? f.url : "/api/file/" + f.id; fa.target = "_blank"; fa.rel = "noopener";
             ul.appendChild(fa);
+            if (f.kind !== "link") { var an = el("a", "✎ اكتب وظلّل على PDF", "dp-annot"); an.href = "pdf-notes.html?file=" + encodeURIComponent("/api/file/" + f.id); ul.appendChild(an); }
           });
           box.appendChild(ul);
         });

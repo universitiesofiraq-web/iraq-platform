@@ -1,0 +1,208 @@
+/* MEDIXA Study Studio — tool settings (studio-toolbar.js): the per-tool sheet #st-toolset, the «الكتابة باللمس والقلم»
+   section of «الإعدادات», switches, and night mode for the toolbar's popovers. Loaded after studio.css.
+   The pen / brush / highlighter sheets are Notewise sheets (طلب محمد 3 و6، 2026-10-21): light, compact one-line rows,
+   blue accent like the bar's active tool; night mode uses Notewise's dark values. --ts-teal* stay for the other sheets. */
+#studio-toolbar{--ts-bg:#fff;--ts-ink:#1f2328;--ts-muted:#6b7280;--ts-line:#eceef1;--ts-line2:#dfe3e8;--ts-pill:#f1f3f5;--ts-acc:#2f6fed;--ts-acc-soft:#e3edfd;--ts-acc-track:#c9dafa;--ts-dot:#cfd5dc;--ts-ring:#c9ced5;--ts-off-bg:#eceef1;--ts-off-b:#7a818b;--ts-soft:#f3f8f9;--ts-teal:#168c8c;--ts-teal-2:#0f6b6b;--ts-teal-soft:#e3f3f1;--ts-off:#c3d1d8}
+
+/* the active tool shows a small chevron: tap it again for its settings (old layout and phones; the Notewise bar has none) */
+#studio-toolbar .st-btn.st-has-set{position:relative}
+#studio-toolbar .st-btn.st-has-set.active::after{content:"";position:absolute;bottom:4px;left:50%;width:5px;height:5px;margin-left:-3.5px;border:solid currentColor;border-width:0 1.8px 1.8px 0;transform:rotate(45deg);opacity:.9;pointer-events:none}
+#studio-toolbar .st-grid .st-btn.st-has-set.active::after{bottom:auto;top:7px;left:9px;margin:0}
+#studio-toolbar .st-btn[data-tool]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}   /* long press = settings, not a text callout */
+#studio-toolbar .st-sizes[hidden],#studio-toolbar .st-width[hidden]{display:none}   /* text / notes: no stroke width to set */
+
+/* popovers in the toolbar: never taller than the room under it, scroll inside (the sheet's height is set by place()) */
+#studio-toolbar .st-pop>*{flex-shrink:0}
+@media(min-width:721px){
+  #studio-toolbar .st-morepop{width:320px}
+  #studio-toolbar .st-morepop{max-height:calc(100vh - var(--st-hdr-h,56px) - var(--st-tb-h,56px) - var(--mx-dock-h,64px) - 32px);max-height:calc(100dvh - var(--st-hdr-h,56px) - var(--st-tb-h,56px) - var(--mx-dock-h,64px) - 32px);overflow:auto;overscroll-behavior:contain}   /* clear of the bottom dock */
+  body.medixa-focus #studio-toolbar .st-morepop{max-height:calc(100dvh - var(--st-tb-h,56px) - var(--mx-dock-h,64px) - 32px)}
+}
+
+/* ---- the settings sheet ---- */
+#studio-toolbar .st-toolset{width:340px;gap:0;padding:6px 14px 12px;background:var(--ts-bg);color:var(--ts-ink);border:1px solid var(--reader-line,#dcdfe3);border-radius:20px;box-shadow:0 12px 34px #18273a26;text-align:start;overflow:auto;overscroll-behavior:contain;transform-origin:50% 0;animation:ts-in .16s ease-out}
+@keyframes ts-in{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+@keyframes ts-in-up{from{opacity:0;transform:translateY(12px)}}
+.ts-head{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;min-height:40px}
+.ts-title{grid-column:2;margin:0;font:600 16px system-ui;color:var(--ts-ink);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-x{grid-column:3;display:inline-grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ts-muted);cursor:pointer}
+.ts-x svg{box-sizing:content-box;width:16px;height:16px;padding:7px;border-radius:50%;background:var(--ts-pill)}
+@media(hover:hover){.ts-x:hover svg{color:var(--ts-ink)}}
+/* preview: Notewise's dot grid; at night a white panel, so ink colours show as on the page */
+.ts-preview{display:block;width:100%;height:72px;margin:2px 0 6px;border:0;border-radius:12px;background:radial-gradient(circle,var(--ts-dot) 0 1.2px,transparent 1.7px) 50% 50%/28px 24px}
+.ts-sec{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--ts-line)}
+.ts-tight{gap:0}
+.ts-h{margin:0 0 2px;font:700 12px system-ui;color:var(--ts-muted)}
+.ts-hint{margin:0;font:500 12px/1.5 system-ui;color:var(--ts-muted)}
+.ts-shared{margin-top:6px}
+/* pen types: each card's stroke is drawn by the real renderer */
+.ts-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 10px}
+.ts-preset{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:56px;min-width:0;padding:4px 2px;border:1.5px solid var(--ts-line2);border-radius:14px;background:var(--ts-bg);color:var(--ts-ink);font:500 12px system-ui;cursor:pointer;transition:border-color .12s,background-color .12s,color .12s}
+.ts-preset span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-preset[aria-pressed=true]{border-color:var(--ts-acc);background:var(--ts-acc-soft);box-shadow:inset 0 0 0 .5px var(--ts-acc);color:var(--ts-acc)}
+.ts-chip{display:block;width:34px;height:16px}
+/* colours (shape / text sheets) */
+.ts-colors{display:flex;flex-wrap:wrap;align-items:center;gap:0}
+.ts-sw{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer}
+.ts-sw::before{content:"";width:26px;height:26px;border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 1px #0000001f}
+.ts-colors .ts-sw:hover{background:var(--ts-soft)}
+.ts-sw[aria-pressed=true]::before{box-shadow:0 0 0 2px var(--ts-bg),0 0 0 4px var(--ts-teal)}
+.ts-custom{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;cursor:pointer}
+.ts-custom::before{content:"";position:absolute;inset:7px;border-radius:50%;background:conic-gradient(#e43d56,#f2c230,#7bd88f,#168c8c,#2f6fed,#c39bff,#e43d56)}
+.ts-custom input{position:relative;width:20px;height:20px;padding:0;border:2px solid var(--ts-bg);border-radius:50%;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none}
+.ts-custom input::-webkit-color-swatch-wrapper{padding:0}
+.ts-custom input::-webkit-color-swatch{border:0;border-radius:50%}
+.ts-custom input::-moz-color-swatch{border:0;border-radius:50%}
+/* sliders of the other sheets: label · track · value */
+.ts-row{display:grid;grid-template-columns:5.6em 1fr 3.4em;align-items:center;gap:10px;min-height:44px;font-size:13px}
+.ts-row label{color:var(--ts-ink)}
+.ts-row input[type=range]{width:100%;min-width:0;height:44px;margin:0;accent-color:var(--ts-teal);cursor:pointer}
+.ts-row output{font:600 12px system-ui;color:var(--ts-muted);text-align:end;font-variant-numeric:tabular-nums;direction:ltr}
+/* segmented choice (eraser type, arrow heads) */
+.ts-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:4px;padding:4px;border:1px solid var(--ts-line);border-radius:12px;background:var(--ts-soft)}
+.ts-seg button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:6px 8px;border:0;border-radius:9px;background:transparent;color:var(--ts-ink);font:600 13px system-ui;cursor:pointer}
+.ts-seg button small{font:500 11px/1.35 system-ui;color:var(--ts-muted);text-align:center}
+.ts-seg button[aria-pressed=true]{background:var(--ts-bg);color:var(--ts-teal-2);box-shadow:0 1px 4px #12304a29,inset 0 0 0 1px var(--ts-teal)}
+.ts-eprev{display:grid;place-items:center;height:132px;margin-top:4px;border:1px dashed var(--ts-line);border-radius:12px;background:#fff}
+.ts-eprev span{display:block;width:24px;height:24px;border:1.5px solid var(--ts-teal);border-radius:50%;background:#168c8c14}
+/* text: size · B · I on one line */
+.ts-line{display:flex;align-items:center;gap:8px;font-size:13px}
+.ts-line select{flex:1 1 auto;min-height:44px;padding:0 10px;border:1px solid var(--ts-line);border-radius:10px;background:var(--ts-bg);color:var(--ts-ink);font:600 14px system-ui}
+.ts-tog{width:44px;height:44px;border:1px solid var(--ts-line);border-radius:10px;background:var(--ts-bg);color:var(--ts-ink);font:16px Georgia,serif;cursor:pointer}
+.ts-tog[aria-pressed=true]{background:var(--ts-teal);border-color:var(--ts-teal);color:#fff}
+/* switches (the toolbar's on/off settings): still real checkboxes, drawn as a track and a knob */
+#studio-toolbar .st-pop .st-check{justify-content:space-between;flex-direction:row-reverse;gap:12px;padding-inline:2px;color:var(--ts-ink)}
+#studio-toolbar .st-pop .st-check input[type=checkbox]{flex:0 0 auto;width:40px;height:24px;margin:0;border-radius:12px;cursor:pointer;-webkit-appearance:none;appearance:none;background:radial-gradient(circle at calc(100% - 12px) 50%,#fff 0 8.5px,transparent 9.5px),var(--ts-off);transition:background-color .15s}
+#studio-toolbar .st-pop .st-check input[type=checkbox]:checked{background:radial-gradient(circle at 12px 50%,#fff 0 8.5px,transparent 9.5px),var(--ts-teal)}
+#studio-toolbar .st-pop .st-check input[type=checkbox]:focus-visible{outline:3px solid #7ad0d0;outline-offset:2px}
+#studio-toolbar .st-pop .st-check input:disabled{opacity:.45;cursor:default}
+#studio-toolbar .st-pop .st-check:has(input:disabled),.ts-off{color:var(--ts-muted)}
+
+/* ---- Notewise rows (pen, brush, highlighter) ---- */
+.ts-hr{flex:0 0 auto;height:1px;margin:6px 0;background:var(--ts-line)}
+.ts-ct{font:500 14px system-ui;color:var(--ts-ink)}
+.ts-pill{display:inline-grid;place-items:center;flex:0 0 auto;min-width:56px;height:30px;padding:0 12px;border-radius:15px;background:var(--ts-pill);color:var(--ts-ink);font:600 14px system-ui;font-variant-numeric:tabular-nums;direction:ltr}
+/* value line + Material slider (−  track  +); the slider row reads left to right like the quick bar */
+.ts-slider{display:flex;flex-direction:column}
+.ts-vrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
+.ts-slrow{display:flex;align-items:center;gap:2px;height:40px;direction:ltr}
+.ts-stp{flex:0 0 36px;display:inline-grid;place-items:center;width:36px;height:40px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--ts-ink);cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ts-stp:active{background:var(--ts-pill)}
+.ts-range{--f:0;flex:1 1 auto;width:100%;min-width:0;height:28px;margin:0;padding:0;background:transparent;-webkit-appearance:none;appearance:none;touch-action:none;direction:ltr;cursor:pointer}
+.ts-range:focus{outline:0}
+.ts-range:focus-visible{outline:2px solid var(--ts-acc);outline-offset:3px;border-radius:8px}
+/* track: active pill up to the thumb, an 8px gap each side of it, the inactive track and a stop dot at the end */
+.ts-range::-webkit-slider-runnable-track{height:8px;border:0;border-radius:4px;background:radial-gradient(circle at calc(100% - 4px) 50%,var(--ts-acc) 0 1px,transparent 1.6px),linear-gradient(to right,var(--ts-acc) 0 calc(12px + (100% - 24px) * var(--f) - 8px),transparent 0 calc(12px + (100% - 24px) * var(--f) + 8px),var(--ts-acc-track) 0)}
+.ts-range::-webkit-slider-thumb{width:24px;height:28px;margin-top:-10px;border:0;border-radius:2px;background:linear-gradient(var(--ts-acc),var(--ts-acc)) 50% 50%/4px 24px no-repeat;box-shadow:none;-webkit-appearance:none;appearance:none;cursor:grab}
+.ts-range::-moz-range-track{height:8px;border:0;border-radius:4px;background:radial-gradient(circle at calc(100% - 4px) 50%,var(--ts-acc) 0 1px,transparent 1.6px),linear-gradient(to right,var(--ts-acc) 0 calc(12px + (100% - 24px) * var(--f) - 8px),transparent 0 calc(12px + (100% - 24px) * var(--f) + 8px),var(--ts-acc-track) 0)}
+.ts-range::-moz-range-thumb{width:24px;height:28px;border:0;border-radius:2px;background:linear-gradient(var(--ts-acc),var(--ts-acc)) 50% 50%/4px 24px no-repeat;box-shadow:none;cursor:grab}
+/* opacity: transparent → colour over a checkerboard, a white ring thumb (no − / +) */
+.ts-sl-alpha .ts-slrow{padding:0 2px}
+.ts-sl-alpha .ts-range::-webkit-slider-runnable-track{height:24px;border-radius:12px;background:radial-gradient(circle at calc(100% - 12px) 50%,#fff 0 2.5px,transparent 3px),linear-gradient(to right,#0000,var(--sw,#f2c230)),repeating-conic-gradient(#dfe3e8 0 25%,#fff 0 50%) 0 0/12px 12px}
+.ts-sl-alpha .ts-range::-webkit-slider-thumb{width:28px;height:28px;margin-top:-2px;border:5px solid #fff;border-radius:50%;background:transparent;box-shadow:0 1px 4px #0005}
+.ts-sl-alpha .ts-range::-moz-range-track{height:24px;border-radius:12px;background:radial-gradient(circle at calc(100% - 12px) 50%,#fff 0 2.5px,transparent 3px),linear-gradient(to right,#0000,var(--sw,#f2c230)),repeating-conic-gradient(#dfe3e8 0 25%,#fff 0 50%) 0 0/12px 12px}
+.ts-sl-alpha .ts-range::-moz-range-thumb{box-sizing:border-box;width:28px;height:28px;border:5px solid #fff;border-radius:50%;background:transparent;box-shadow:0 1px 4px #0005}
+/* one line per setting: title (+ ⓘ, + current value) at the start, the control at the end */
+.ts-cgroup{display:flex;flex-direction:column}
+.ts-cgroup[hidden]{display:none}
+.ts-crow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px}
+.ts-crow.ts-crow-2l{min-height:48px}
+.ts-clab{display:flex;flex-direction:column;flex:1 1 auto;min-width:0}
+.ts-cline{display:flex;align-items:center;gap:2px;min-width:0}
+.ts-cs{font:400 12.5px system-ui;color:var(--ts-muted)}
+.ts-info{display:inline-grid;place-items:center;flex:0 0 auto;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ts-muted);cursor:pointer}
+.ts-info[aria-expanded=true]{background:var(--ts-acc-soft);color:var(--ts-acc)}
+.ts-ihint{margin:-4px 0 6px;font:400 12px/1.55 system-ui;color:var(--ts-muted)}
+.ts-ihint[hidden]{display:none}
+.ts-pillsel{display:inline-block;min-width:64px;height:36px;padding:0 14px;border:0;border-radius:18px;text-align:center;text-align-last:center;cursor:pointer;-webkit-appearance:none;appearance:none}
+.ts-pillsel:focus-visible{outline:2px solid var(--ts-acc);outline-offset:2px}
+.ts-pillsel:disabled{opacity:.45;cursor:default}
+.ts-crow:has(.ts-pillsel:disabled) .ts-ct{color:var(--ts-muted)}
+/* icon choices (line style, tip, straight line): the chosen one is a white circle with a blue icon */
+.ts-isg{display:inline-flex;flex:0 0 auto;align-items:center;gap:2px;height:40px;padding:3px;border-radius:20px;background:var(--ts-pill);direction:ltr}
+.ts-isb{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ts-ink);cursor:pointer;transition:background-color .12s,color .12s}
+.ts-isb[aria-pressed=true]{background:var(--ts-bg);color:var(--ts-acc);box-shadow:0 1px 3px #0000001f}
+/* Material switch, outlined when off; RTL: the knob starts on the right */
+.ts-sw2{flex:0 0 auto;width:48px;height:28px;margin:0;border:2px solid var(--ts-off-b);border-radius:14px;background:radial-gradient(circle at calc(100% - 12px) 50%,var(--ts-off-b) 0 7px,transparent 7.6px) var(--ts-off-bg);cursor:pointer;-webkit-appearance:none;appearance:none;transition:background-color .15s,border-color .15s}
+.ts-sw2:checked{border-color:var(--ts-acc);background:radial-gradient(circle at 12px 50%,#fff 0 10px,transparent 10.6px) var(--ts-acc)}
+.ts-sw2:focus-visible{outline:2px solid var(--ts-acc);outline-offset:2px}
+/* colour: header (+ ≡), then one scrolling row · divider · rainbow */
+.ts-chead{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:28px}
+.ts-cact{display:flex;align-items:center;gap:0;margin-inline-end:-6px}
+.ts-cbtn{display:inline-grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ts-ink);cursor:pointer;transition:background-color .12s}
+.ts-cbtn[aria-pressed=true]{background:var(--ts-acc-soft);color:var(--ts-acc)}
+.ts-cbtn:disabled{opacity:.35;cursor:default}
+.ts-crow2{display:flex;align-items:center;height:44px}
+.ts-cscroll{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:0;height:44px;padding-inline:3px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 16px),transparent)}
+.ts-cscroll::-webkit-scrollbar{display:none}
+.ts-cdiv{flex:0 0 1px;width:1px;height:24px;margin:0 4px;background:var(--ts-line2)}
+.ts-cscroll .ts-sw{flex:0 0 36px;width:36px;height:44px;border-radius:0;scroll-snap-align:start}
+.ts-cscroll .ts-sw::before{width:24px;height:24px;transition:width .12s,height .12s}
+.ts-cscroll .ts-sw[aria-pressed=true]::before{width:26px;height:26px;box-shadow:0 0 0 3px var(--ts-bg),0 0 0 6px var(--ts-ring)}
+.ts-crow2 .ts-custom{flex:0 0 36px;width:36px;height:44px;border-radius:0}
+.ts-crow2 .ts-custom::before{inset:10px 6px;border-radius:50%;background:conic-gradient(#ff3b30,#ff9500,#ffcc00,#34c759,#5ac8fa,#007aff,#af52de,#ff2d55,#ff3b30)}
+.ts-crow2 .ts-custom.on::before{box-shadow:0 0 0 3px var(--ts-bg),0 0 0 6px var(--ts-ring)}
+.ts-crow2 .ts-custom input{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0}
+.ts-cscroll .ts-fav{flex:0 0 auto;height:34px;min-height:34px;margin-inline-end:6px;padding:0 10px;border:1px solid var(--ts-line2);border-radius:17px;background:var(--ts-bg);color:var(--ts-ink);box-shadow:none;scroll-snap-align:start;white-space:nowrap}
+.ts-cscroll .ts-fav[aria-pressed=true]{border-color:var(--ts-acc);background:var(--ts-acc-soft);color:var(--ts-ink);box-shadow:none}
+
+/* ---- «الإعدادات»: insert a picture, touch & stylus input ---- */
+.st-row-ic{display:flex;align-items:center;gap:10px}
+.st-row-ic svg{flex:0 0 auto;color:var(--ts-teal)}
+.st-inputset{display:flex;flex-direction:column;gap:0;margin-top:6px;padding-top:4px;border-top:1px solid var(--ts-line)}
+.st-subrow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding-inline:18px 2px;font-size:13px;color:var(--ts-ink)}   /* belongs to «تجاهل راحة اليد» above it */
+.st-subrow:has(select:disabled){color:var(--ts-muted)}
+#studio-palm-sens{flex:0 0 auto;min-width:96px;min-height:44px;padding:0 6px;border:1px solid var(--ts-line);border-radius:8px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui}
+#studio-palm-sens:disabled{opacity:.5}
+.st-penstat{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:12px;color:var(--ts-muted)}
+.st-penstat>span::before{content:"";display:inline-block;width:8px;height:8px;margin-inline-end:6px;border-radius:50%;background:var(--ts-off);vertical-align:middle}
+.st-penstat[data-seen=true]>span::before{background:var(--ts-teal)}
+.st-forget{flex:0 0 auto}
+.st-forget:disabled{opacity:.45;cursor:default}
+.st-input-note{margin:2px 2px 4px;font-size:12px;line-height:1.5;color:var(--ts-muted)}
+#studio-toolbar .st-pop .st-pop-h{color:var(--ts-muted)}
+
+/* ---- phones: the settings open as a bottom sheet above the one-row bar (no drag handle: it closes with ✕, the tool or a tap outside) ---- */
+@media(max-width:720px){
+  #studio-toolbar .st-toolset{width:auto;border-radius:20px;padding:6px 16px 16px;box-shadow:0 -10px 36px #12304a3d;max-height:min(68vh,calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));max-height:min(68dvh,calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));overscroll-behavior:contain;transform-origin:50% 100%;animation-name:ts-in-up}   /* the page stays in sight above */
+  #studio-toolbar .st-tools .st-btn.st-has-set.active::after{bottom:auto;top:3px;transform:rotate(-135deg)}   /* the sheet opens upwards */
+  .ts-presets{gap:8px}
+}
+
+/* ---- night mode: the toolbar's popovers follow the reader chrome; the Notewise sheets take Notewise's dark values ---- */
+body.medixa-dark #studio-toolbar{--ts-bg:#1e1f23;--ts-ink:#e6e6e9;--ts-muted:#a1a1aa;--ts-line:#34363b;--ts-line2:#44464c;--ts-pill:#2a2c31;--ts-acc:#5e9eff;--ts-acc-soft:#1f375b;--ts-acc-track:#0f4a72;--ts-dot:#3a3a3c;--ts-ring:#474955;--ts-off-bg:#2a2c31;--ts-off-b:#8e9099;--ts-soft:#22313c;--ts-teal:#2bb3b3;--ts-teal-2:#7fe0e0;--ts-teal-soft:#173d40;--ts-off:#4a5d69}
+body.medixa-dark #studio-toolbar .st-pop{background:var(--ts-bg);color:var(--ts-ink);border-color:var(--ts-line);box-shadow:0 14px 36px #0009}
+body.medixa-dark #studio-toolbar .st-pop .st-btn,body.medixa-dark #studio-toolbar .st-colorlab,body.medixa-dark #studio-toolbar .st-width{color:var(--ts-ink)}
+body.medixa-dark #studio-toolbar .st-pop .st-btn:hover,body.medixa-dark #studio-toolbar .st-pop .st-swatch:hover,body.medixa-dark #studio-toolbar .st-pop .st-size:hover{background:var(--ts-soft);color:var(--ts-ink)}
+body.medixa-dark #studio-toolbar .st-pop .st-btn.active{background:var(--st-teal,#168c8c);color:#fff}
+body.medixa-dark #studio-toolbar .st-grid .st-btn{border-color:var(--ts-line)}
+body.medixa-dark #studio-toolbar .st-row-btn{background:var(--ts-soft);color:var(--ts-ink);border-color:var(--ts-line)}
+body.medixa-dark #studio-toolbar .st-row-btn:hover{background:#2a3b47}
+body.medixa-dark #studio-toolbar .st-pop .st-size span{background:var(--ts-ink)}
+body.medixa-dark #studio-toolbar .st-pop .st-size[aria-pressed=true]{background:var(--ts-teal-soft)}
+body.medixa-dark #studio-toolbar .st-pop .st-swatch[aria-pressed=true]::before{box-shadow:0 0 0 2px var(--ts-bg),0 0 0 4px var(--ts-teal)}
+body.medixa-dark #studio-toolbar .st-colorlab input{background:var(--ts-soft);border-color:var(--ts-line)}
+body.medixa-dark .ts-eprev{border-color:var(--ts-line)}
+body.medixa-dark .ts-preview{--ts-dot:#cfd5dc;background-color:#fff}
+body.medixa-dark #studio-toolbar .st-toolset{border-color:var(--ts-line)}
+
+/* ---- reduced motion (system or the site's setting) ---- */
+@media(prefers-reduced-motion:reduce){#studio-toolbar .st-toolset{animation:none}#studio-toolbar .st-pop .st-check input[type=checkbox],.ts-sw2,.ts-isb,.ts-preset,.ts-cbtn,.ts-cscroll .ts-sw::before{transition:none}}
+.reduced-motion #studio-toolbar .st-toolset{animation:none}
+
+/* favourite chips (now inside the colour row, behind ≡) and the eraser's quick sizes */
+.ts-favs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ts-fav{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 10px;border:1px solid var(--ts-line);border-radius:999px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui;cursor:pointer;transition:background-color .12s,border-color .12s}
+.ts-fav:hover{background:var(--ts-soft)}
+.ts-fav[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);color:var(--ts-teal-2);box-shadow:inset 0 0 0 1px var(--ts-teal)}
+.ts-fav-dot{width:12px;height:12px;border-radius:50%;background:var(--fc,#168c8c);box-shadow:inset 0 0 0 1px #0003;flex:0 0 auto}
+.ts-fav-rm{display:inline-grid;place-items:center;width:20px;height:20px;margin-inline-start:2px;border-radius:50%;color:var(--ts-muted);font-size:14px;line-height:1}
+.ts-fav-rm:hover{background:#e43d5622;color:#a32727}
+.ts-qsizes{display:flex;gap:5px;margin-bottom:4px}
+.ts-qsize{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:4px 6px;border:1px solid var(--ts-line);border-radius:10px;background:var(--ts-bg);color:var(--ts-ink);font:600 11px system-ui;cursor:pointer}
+.ts-qsize:hover{background:var(--ts-soft)}
+.ts-qsize[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);color:var(--ts-teal-2)}
+.ts-qdot{display:block;width:var(--qd,6px);height:var(--qd,6px);border-radius:50%;background:currentColor;flex:0 0 auto}
+.ts-danger-btn{color:#a32727!important;border-color:#f1c5cb!important;background:#fff8f9!important;text-align:center!important}
+.ts-danger-btn:hover{background:#ffecef!important}
+body.medixa-dark .ts-danger-btn{color:#ff8a8a!important;border-color:#5c2b33!important;background:#2d1a1f!important}

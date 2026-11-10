@@ -1,0 +1,144 @@
+/* MEDIXA Study Studio — laser pointer, view mode and study timer (طلبات محمد 5 و7 و10، 2026-10-21). */
+
+/* ---------- laser button: the colour dot in the corner, like pen and highlighter ---------- */
+#studio-toolbar .st-laserbtn{position:relative}
+#studio-toolbar .st-laserbtn::after{content:"";position:absolute;top:6px;inset-inline-end:6px;width:7px;height:7px;border-radius:50%;background:var(--tool-c,#ff0000);box-shadow:0 0 0 1.5px #fff}
+
+/* ---------- laser settings sheet ---------- */
+.st-laserpop{position:absolute;top:calc(100% + 8px);width:340px;max-width:calc(100vw - 16px);padding:6px 14px 14px;border-radius:20px;background:#fff;color:#1f2328;border:1px solid #dcdfe3;box-shadow:0 12px 34px #18273a26;direction:rtl;display:flex;flex-direction:column;gap:10px;z-index:20}
+.st-laserpop:not([hidden]){animation:lz-in .2s ease-out}
+@keyframes lz-in{from{opacity:0}}
+.st-laserpop .lz-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;min-height:40px}
+.st-laserpop .lz-title{grid-column:2;margin:0;text-align:center;font:600 15px system-ui}
+.st-laserpop .lz-x{grid-column:3;justify-self:end;width:40px;height:40px;border:0;border-radius:50%;background:transparent;display:inline-flex;align-items:center;justify-content:center;color:#6b7280;cursor:pointer}
+.st-laserpop .lz-x svg{width:30px;height:30px;padding:7px;border-radius:50%;background:#f1f3f5;box-sizing:border-box}
+.st-laserpop .lz-prev{display:block;width:100%;height:104px;border-radius:12px;background:#1d1e22 radial-gradient(circle,#3d3e42 1px,transparent 1.5px) 0 0/38px 38px}
+.st-laserpop .lz-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.st-laserpop .lz-modes button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:57px;border:1px solid #dfe3e8;border-radius:12px;background:#fff;color:#1f2328;font:500 13px system-ui;cursor:pointer}
+.st-laserpop .lz-modes button[aria-pressed=true]{border:1.5px solid #2f6fed;background:#e3edfd;color:#2f6fed}
+.lz-glyph{display:block;background:currentColor;border-radius:3px}
+.lz-glyph[data-g=dot]{width:4px;height:4px;border-radius:50%}
+.lz-glyph[data-g=line]{width:16px;height:2.5px}
+.lz-glyph[data-g=delay]{width:16px;height:4px}
+.st-laserpop .lz-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:500 14px system-ui}
+.st-laserpop .lz-pill,.st-timerpop .tm-pill{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:29px;border-radius:15px;background:#f1f3f5;font:600 13px system-ui;font-variant-numeric:tabular-nums}
+.st-laserpop .lz-range{width:100%;margin:8px 0 2px;direction:ltr;-webkit-appearance:none;appearance:none;height:28px;background:transparent}
+.st-laserpop .lz-range::-webkit-slider-runnable-track{height:7px;border-radius:4px;background:radial-gradient(circle,#fff 0 1.6px,transparent 2px) 0 50%/25% 100% repeat-x content-box,linear-gradient(to right,#2f6fed 0 calc(var(--f,.25)*100%),#c9dafa calc(var(--f,.25)*100%));padding:0 2px}
+.st-laserpop .lz-range::-webkit-slider-thumb{-webkit-appearance:none;width:6px;height:22px;margin-top:-7.5px;border-radius:3px;background:#2f6fed;border:2px solid #fff;box-shadow:0 1px 3px #0003}
+.st-laserpop .lz-range::-moz-range-track{height:7px;border-radius:4px;background:#c9dafa}
+.st-laserpop .lz-range::-moz-range-progress{height:7px;border-radius:4px;background:#2f6fed}
+.st-laserpop .lz-range::-moz-range-thumb{width:6px;height:22px;border-radius:3px;background:#2f6fed;border:2px solid #fff}
+.st-laserpop .lz-h{margin:2px 0 0;font:500 14px system-ui}
+.st-laserpop .lz-colors{display:flex;align-items:center;gap:0;direction:ltr;overflow-x:auto;scrollbar-width:none}
+.st-laserpop .lz-colors::-webkit-scrollbar{display:none}
+.st-laserpop .lz-sw,.st-laserpop .lz-custom{flex:0 0 36px;width:36px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;position:relative}
+.st-laserpop .lz-sw::before{content:"";width:22px;height:22px;border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 1px #0000001f}
+.st-laserpop .lz-sw[aria-pressed=true]::before,.st-laserpop .lz-custom[aria-pressed=true]::before{box-shadow:0 0 0 3px #fff,0 0 0 5.5px #c9ced5}
+.st-laserpop .lz-sep{flex:0 0 1px;height:20px;margin:0 6px;background:#dfe3e8}
+.st-laserpop .lz-custom::before{content:"";width:22px;height:22px;border-radius:50%;background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red)}
+.st-laserpop .lz-custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+body.medixa-dark .st-laserpop{background:#1e1f23;color:#e6e6e9;border-color:#34363b}
+body.medixa-dark .st-laserpop .lz-modes button{background:#1e1f23;border-color:#44464c;color:#e6e6e9}
+body.medixa-dark .st-laserpop .lz-modes button[aria-pressed=true]{background:#1f375b;border-color:#5e9eff;color:#5e9eff}
+body.medixa-dark .st-laserpop .lz-pill,body.medixa-dark .st-laserpop .lz-x svg{background:#2a2c31}
+
+/* ---------- view mode (eye): the drawing tools leave the screen; the page never moves ---------- */
+body.st-compact header .st-eye{background:#efefef!important;color:#686869!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0 4px}
+body.st-compact header .st-eye[aria-pressed=true]{background:#c5e0fe!important;color:#0b2545!important}
+body.st-compact.medixa-dark header .st-eye{background:#464a53!important;color:#c4c7ce!important}
+body.st-compact.medixa-dark header .st-eye[aria-pressed=true]{background:#0f4a72!important;color:#c9e7ff!important}
+#studio-toolbar{transition:opacity .28s ease,visibility 0s}
+body.st-viewmode #studio-toolbar{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .28s ease,visibility 0s .28s}
+body.st-viewmode #st-timer-pop,body.st-viewmode .st-laserpop{display:none}
+#mx-dock .st-dock-laser{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
+#mx-dock .st-dock-laser[hidden]{display:none!important}
+#mx-dock .st-dock-laser[aria-pressed=true]{background:#c5e0fe;color:#0b2545}
+
+/* ---------- study timer ---------- */
+.st-timerpop,#st-timer-float{--tm-bg:#29333d;--tm-track:#161f28;--tm-seg:#2e3843;--tm-line:#39434d;--tm-text:#eef2f5;--tm-muted:#8b949e;--tm-orange:#ed7a43;--tm-red:#f0545c;--tm-break:#34c3a0}
+#studio-toolbar .st-timerbtn{position:relative}
+#studio-toolbar .st-timerbtn[aria-expanded=true]{background:var(--reader-hover,#f1f3f5)}
+#studio-toolbar .st-timerbtn.tm-running::after{content:"";position:absolute;top:6px;inset-inline-end:6px;width:7px;height:7px;border-radius:50%;background:#ed7a43}
+.st-timerpop{position:absolute;top:calc(100% + 8px);right:0;width:320px;max-width:calc(100vw - 16px);padding:0!important;border:0!important;border-radius:18px!important;background:var(--tm-bg)!important;color:var(--tm-text)!important;box-shadow:0 16px 40px rgba(10,16,24,.35)!important;overflow:hidden;direction:rtl;z-index:20;display:block!important}
+.st-timerpop[hidden]{display:none!important}
+.st-timerpop:not([hidden]){animation:tm-in .18s ease-out}
+@keyframes tm-in{from{opacity:0;transform:translateY(-6px)}}
+.st-timerpop button{font:inherit;color:inherit}
+.tm-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;height:48px;padding:0 6px;border-bottom:1px solid var(--tm-line)}
+.tm-title{margin:0;text-align:center;font:600 17px system-ui}
+.tm-hbtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:var(--tm-muted)!important;cursor:pointer}
+.tm-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:16px;padding:3px;height:40px;box-sizing:border-box;border-radius:10px;background:var(--tm-track)}
+.tm-seg button{border:0;border-radius:8px;background:transparent;color:var(--tm-muted)!important;font:600 14px system-ui!important;cursor:pointer}
+.tm-seg button[aria-pressed=true]{background:var(--tm-seg);color:var(--tm-text)!important}
+.tm-prev{text-align:center;padding:4px 16px 0}
+.tm-big{margin:0;font:600 40px/1.15 system-ui;font-variant-numeric:tabular-nums}
+.tm-sub{margin:6px 0 0;font:400 13px/1.5 system-ui;color:var(--tm-muted)}
+.tm-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}
+.tm-dot-f{background:var(--tm-orange)}.tm-dot-b{background:var(--tm-break)}
+.tm-ready{display:block;width:120px;height:42px;margin:14px auto 18px;border:1.5px solid var(--tm-orange)!important;border-radius:12px;background:transparent;color:var(--tm-orange)!important;font:600 16px system-ui!important;cursor:pointer}
+.tm-list{border-top:1px solid var(--tm-line)}
+.tm-li{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:0 16px;box-sizing:border-box;border:0;border-bottom:1px solid var(--tm-line);background:transparent;font:400 16px system-ui;text-align:start;cursor:pointer}
+.tm-li:last-child{border-bottom:0}
+.tm-name{flex:1;min-width:0;border:0;background:transparent;color:var(--tm-muted);font:400 15px system-ui;text-align:end;outline:none}
+.tm-name::placeholder{color:var(--tm-muted)}
+.tm-chev{color:var(--tm-muted);font-size:20px}
+.tm-new{display:inline-block;width:6px;height:6px;margin-inline-start:6px;border-radius:50%;background:var(--tm-red);vertical-align:middle}
+.tm-swrow{min-height:52px;cursor:default}
+.tm-switch{-webkit-appearance:none;appearance:none;position:relative;width:44px;height:26px;margin:0;border-radius:13px;background:var(--tm-line);cursor:pointer;transition:background .15s}
+.tm-switch::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:right .15s}
+.tm-switch:checked{background:var(--tm-orange)}
+.tm-switch:checked::after{right:21px}
+.tm-oprow{cursor:default}
+.tm-oprow .tm-range{flex:1;accent-color:var(--tm-orange);direction:ltr}
+.tm-oprow .tm-range:disabled{opacity:.4}
+.st-timerpop .tm-pill{background:var(--tm-track);color:var(--tm-text)}
+.tm-hint{margin:10px 16px 14px;font:400 12px/1.6 system-ui;color:var(--tm-muted)}
+.tm-card{margin:14px 16px 8px;padding:12px;border-radius:12px;background:var(--tm-track);font:500 14px system-ui}
+.tm-hist{max-height:260px;overflow:auto;padding:0 16px}
+.tm-grp{margin:12px 0 4px;font:600 12px system-ui;color:var(--tm-muted)}
+.tm-hrow{margin:0;padding:8px 0;border-bottom:1px solid var(--tm-line);font:400 14px system-ui}
+.tm-clear{display:block;margin:10px auto 14px;border:0;background:transparent;color:var(--tm-red)!important;font:500 15px system-ui!important;cursor:pointer;min-height:44px}
+
+/* floating bar / badge */
+#st-timer-float{position:fixed;top:120px;right:56px;z-index:16;direction:rtl;font-family:system-ui;color:var(--tm-text);transition:opacity .25s ease}
+#st-timer-float.is-ghost{opacity:var(--tm-op,.4)}
+#st-timer-float.is-ghost.is-awake{opacity:1}
+#st-timer-float .tm-bar{display:flex;align-items:center;width:min(356px,calc(100vw - 16px));height:56px;padding:0 6px 0 10px;box-sizing:border-box;border-radius:16px;background:var(--tm-bg);box-shadow:0 8px 24px rgba(16,24,40,.28)}
+#st-timer-float.is-badge .tm-bar,#st-timer-float.is-bar .tm-badge{display:none}
+#st-timer-float.is-badge.is-peek .tm-bar{display:flex}
+#st-timer-float.is-badge.is-peek .tm-badge{display:none}
+#st-timer-float button{font:inherit;cursor:pointer}
+#st-timer-float .tm-col{width:44px;height:44px;flex:0 0 44px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:12px;background:transparent;color:var(--tm-muted)}
+#st-timer-float .tm-sep{flex:0 0 1px;height:32px;background:var(--tm-line)}
+#st-timer-float .tm-txt{display:flex;flex-direction:column;margin:0 10px;min-width:0}
+#st-timer-float .tm-cap{font:400 11px/14px system-ui;color:var(--tm-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+#st-timer-float.is-break .tm-cap{color:var(--tm-break)}
+#st-timer-float .tm-time{font:600 22px/26px system-ui;font-variant-numeric:tabular-nums;text-align:start}
+#st-timer-float .tm-sp{flex:1}
+#st-timer-float .tm-end,#st-timer-float .tm-reset{min-width:44px;height:44px;padding:0 4px;border:0;background:transparent;font:500 15px system-ui}
+#st-timer-float .tm-end{color:var(--tm-red)}
+#st-timer-float .tm-reset{color:var(--tm-text)}
+#st-timer-float .tm-reset.is-off{color:var(--tm-muted)}
+#st-timer-float .tm-main{width:44px;height:44px;flex:0 0 44px;margin-inline-start:4px;border:0;border-radius:50%;background:var(--tm-orange);color:#fff;font:600 13px system-ui}
+#st-timer-float .tm-main.is-run{background:transparent;box-shadow:inset 0 0 0 2px var(--tm-orange);color:var(--tm-orange)}
+#st-timer-float.is-break .tm-main.is-run{box-shadow:inset 0 0 0 2px var(--tm-break);color:var(--tm-break)}
+#st-timer-float .tm-badge{position:relative;width:56px;height:56px;padding:0;border:0;border-radius:16px;background:var(--tm-bg);box-shadow:0 8px 24px rgba(16,24,40,.28);color:var(--tm-orange);display:inline-flex;align-items:center;justify-content:center}
+#st-timer-float.is-break .tm-badge{color:var(--tm-break)}
+#st-timer-float .tm-badge svg{position:absolute;inset:5px;width:46px;height:46px;transform:rotate(-90deg)}
+#st-timer-float .tm-badge circle{fill:none;stroke-width:2}
+#st-timer-float .tm-trk{stroke:rgba(237,122,67,.25)}
+#st-timer-float .tm-prog{stroke:currentColor;stroke-linecap:round;transition:stroke-dashoffset .9s linear}
+#st-timer-float .tm-btime{position:relative;font:600 12px system-ui;font-variant-numeric:tabular-nums}
+#st-timer-float.tm-hour .tm-btime{font-size:10.5px}
+#st-timer-float .tm-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#st-timer-float.tm-anim{animation:tm-pop .2s ease-out}
+@keyframes tm-pop{from{opacity:0;transform:scale(.96)}}
+#st-timer-float.tm-out{opacity:0;transform:scale(.96);transition:opacity .2s,transform .2s}
+#st-timer-float.tm-pulse{animation:tm-pulse .3s ease-in-out 3}
+@keyframes tm-pulse{50%{transform:scale(1.06)}}
+/* the old v8.3 floating timer in the dock is replaced by this one in the compact reader */
+body.st-compact #mx-timer-float{display:none!important}
+@media(max-width:720px){#st-timer-float{right:8px}}
+@media(prefers-reduced-motion:reduce){.st-laserpop:not([hidden]),.st-timerpop:not([hidden]),#st-timer-float.tm-anim,#st-timer-float.tm-pulse{animation:none}#studio-toolbar,body.st-viewmode #studio-toolbar,#st-timer-float,#st-timer-float.tm-out{transition:none}}
+/* the laser has its own colour in its own sheet: no generic colour dot on the bar */
+html[data-studio-tool=laser] #studio-toolbar .st-style{display:none}

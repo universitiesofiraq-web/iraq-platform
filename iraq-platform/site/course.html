@@ -90,6 +90,7 @@
       <div class="viewer-title en" id="viewerTitle"></div>
       <a class="btn btn-secondary btn-sm" id="viewerOpen" target="_blank" rel="noopener">فتح في تبويب</a>
       <a class="btn btn-secondary btn-sm" id="viewerDl" download>تنزيل</a>
+      <a class="btn btn-secondary btn-sm" id="annotateLink">✎ اكتب وظلّل على PDF</a>
       <button class="icon-btn" id="viewerClose" type="button" aria-label="إغلاق"></button>
     </div>
     <div class="viewer-stage">
@@ -266,6 +267,7 @@
         $("viewerTitle").textContent = title;
         $("viewerOpen").href = url;
         $("viewerDl").href = url;
+        $("annotateLink").href = "pdf-notes.html?file=" + encodeURIComponent(url);
         if (dlg.showModal) {
           $("viewerLoading").hidden = false;
           frame.src = url;

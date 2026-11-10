@@ -44,6 +44,7 @@
       var a = el("a", (it.number ? "المحاضرة " + it.number + (it.title ? " — " + it.title : "") + " · " : "") + it.label);
       a.href = href(it); a.target = "_blank"; a.rel = "noopener";
       left.appendChild(a);
+      if (it.kind !== "link") { var an = el("a", "✎ اكتب وظلّل", "sj-annot"); an.href = "pdf-notes.html?file=" + encodeURIComponent(href(it)); left.appendChild(document.createTextNode(" ")); left.appendChild(an); }
       var s = el("small", it.added ? " " + it.added : ""); left.appendChild(s);
       if (pending) left.appendChild(el("span", "بانتظار الموافقة", "sj-tag"));
       r.appendChild(left);

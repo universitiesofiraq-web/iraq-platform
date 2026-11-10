@@ -1,0 +1,35 @@
+/* MEDIXA Study Studio — find in document: the #st-find card under the header and the match marks on the page. */
+#st-find{position:fixed;z-index:17;top:calc(var(--st-hdr-h,56px) + var(--st-tb-h,0px) + 16px);inset-inline:12px;margin-inline:auto;width:min(460px,calc(100vw - 24px));display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px;background:#fff;color:#18334b;border:1px solid #dbe5ea;border-radius:14px;box-shadow:0 10px 30px #12304a2e,0 1px 3px #12304a14;direction:rtl;font:500 14px system-ui}
+#st-find[hidden]{display:none}
+/* 16px text: iOS Safari zooms the page into smaller inputs */
+#st-find-q{flex:1 1 140px;min-width:0;height:44px;margin-inline-end:4px;padding:0 12px;border:1px solid #dbe5ea;border-radius:10px;background:#f4f8f9;color:#18334b;font:500 16px system-ui;-webkit-appearance:none;appearance:none}
+#st-find-q::placeholder{color:#7b909c}
+#st-find-q:focus{outline:none;border-color:#168c8c;background:#fff;box-shadow:0 0 0 3px #168c8c2e}
+#st-find-n{flex:0 0 auto;min-width:52px;padding:0 6px;text-align:center;color:#5b7382;font:600 13px system-ui;white-space:nowrap;font-variant-numeric:tabular-nums}
+#st-find-n:empty{min-width:0;padding:0}
+#st-find button{flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:10px;background:transparent;color:#18334b;cursor:pointer}
+#st-find button:hover:not(:disabled){background:#e3f3f1;color:#0f6b6b}
+#st-find button:focus-visible{outline:3px solid #168c8c;outline-offset:1px}
+#st-find button:disabled{opacity:.35;cursor:default}
+#st-find-msg{flex:1 0 100%;margin:4px 8px 2px;color:#5b7382;font-size:13px;line-height:1.5}
+#st-find-msg:empty{display:none}
+body.medixa-focus #st-find{top:calc(var(--st-tb-h,0px) + 16px)}
+body.medixa-dark #st-find{background:#1b2630;color:#e8eef2;border-color:#34444f}
+body.medixa-dark #st-find-q{background:#22313c;color:#e8eef2;border-color:#3a4b57}
+body.medixa-dark #st-find button{color:#e8eef2}
+body.medixa-dark #st-find button:hover:not(:disabled){background:#22313c;color:#8fd8d8}
+body.medixa-dark #st-find-n,body.medixa-dark #st-find-msg{color:#a9bcc8}
+header #st-find-btn[aria-expanded=true]{background:#ffffff1f}
+#st-docmenu>#st-find-menu{display:none}
+
+/* marks: page-area percentages (like .st-src-flash), so zoom keeps them on the word until the text layer re-renders */
+.st-find-hit{position:absolute;z-index:1;pointer-events:none;border-radius:3px;background:#ffc4004d;mix-blend-mode:multiply;left:calc(var(--pa-l,0%) + var(--x) * var(--pa-w,100%) - 2px);top:calc(var(--pa-t,0%) + var(--y) * var(--pa-h,100%) - 1px);width:calc(var(--w) * var(--pa-w,100%) + 4px);height:calc(var(--h) * var(--pa-h,100%) + 2px)}
+.st-find-hit.st-find-cur{background:#ffa8008c;box-shadow:0 0 0 2px #168c8c}
+
+@media(max-width:720px){
+  #st-find{inset-inline:8px;left:8px;right:8px;width:auto;top:calc(var(--st-hdr-h,52px) + var(--st-pbar,53px) + 6px)}
+  body.medixa-focus #st-find{top:calc(max(12px,env(safe-area-inset-top)) + 52px + var(--st-pbar,53px) + 6px)}   /* under the focus-mode page bar */
+  html.st-find-in-menu header #st-find-btn{display:none}
+  #st-docmenu>#st-find-menu{display:flex}
+}
+@media print{#st-find,.st-find-hit{display:none!important}}

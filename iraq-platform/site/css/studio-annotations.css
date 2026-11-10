@@ -1,0 +1,50 @@
+/* MEDIXA Study Studio — «ملاحظاتي» as an annotation navigator (summary line, kind chips, grouped cards, image previews)
+   and the per-page count pills on the page thumbnails. Builds on the panel styles in studio.css (studio-panels.js). */
+
+/* summary: one calm line under the panel title */
+.st-ann-sum{margin:0;padding:8px 12px;border-radius:10px;background:var(--st-teal-soft,#e3f3f1);color:var(--st-teal-2,#0f6b6b);font:600 13px/1.5 system-ui}
+.st-ann-sum[hidden]{display:none}
+/* 16px: iOS Safari zooms the page into smaller inputs */
+.st-notes #st-notes-q{font-size:16px}
+.st-notes #st-notes-q:focus{outline:none;border-color:var(--st-teal,#168c8c);background:#fff;box-shadow:0 0 0 3px #168c8c2e}
+.st-notes .st-chip{padding:0 12px}
+.st-notes .st-chip[hidden]{display:none}
+
+/* cards (the base look is .st-note in studio.css; the coloured inline-start bar is --note-fill).
+   The list is a scrolling flex column: cards must keep their height instead of shrinking into each other. */
+.st-notes-list>*{flex-shrink:0}
+.st-ann-row{flex-direction:row;align-items:center;gap:10px}
+.st-ann-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
+.st-ann-ic{flex:0 0 36px;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--st-teal-soft,#e3f3f1);color:var(--st-teal-2,#0f6b6b)}
+.st-ann-q{font-size:13px;line-height:1.65;color:var(--st-ink,#18334b);overflow-wrap:anywhere}
+.st-ann-q mark{color:inherit;background:#f2c23059;background:color-mix(in srgb,var(--note-fill,#f2c230) 35%,transparent);border-radius:3px;padding:0 2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.st-ann .st-note-t{overflow-wrap:anywhere}
+.st-ann-img{position:relative;flex:0 0 44px;width:44px;height:44px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:#eef3f5;border:1px solid var(--st-line,#dbe5ea);color:#7b909c}
+.st-ann-img canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+.st-ann-img.has-img{background:#fff}
+.st-ann-img.has-img canvas{display:block}
+.st-ann-img.has-img svg{display:none}
+
+/* per-page count on thumbnails (the page number sits at the other corner) */
+.st-th-b{position:absolute;inset-block-start:6px;inset-inline-start:6px;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 7px;border-radius:11px;background:var(--st-teal,#168c8c);color:#fff;font:700 11px/1 system-ui;box-shadow:0 1px 4px #12304a33;pointer-events:none;font-variant-numeric:tabular-nums}
+.st-th-b[hidden]{display:none}
+.st-th-b svg{flex:0 0 auto}
+.st-blank.st-pulse{outline:4px solid #2fd0d0;outline-offset:4px}
+
+/* phones: the chips scroll in one row so the list keeps the room */
+@media(max-width:720px){
+  .st-notes .st-chips{flex-wrap:nowrap;overflow-x:auto;margin-inline:-12px;padding-inline:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .st-notes .st-chips::-webkit-scrollbar{display:none}
+  .st-notes .st-chip{flex:0 0 auto}
+}
+
+/* night mode */
+body.medixa-dark .st-ann-sum{background:#163b3d;color:#9fe0dc}
+body.medixa-dark .st-notes #st-notes-q:focus{background:#22313c!important}
+body.medixa-dark .st-ann-ic{background:#163b3d;color:#8fd8d8}
+body.medixa-dark .st-ann-q{color:#e8eef2}
+body.medixa-dark .st-ann-q mark{background:color-mix(in srgb,var(--note-fill,#f2c230) 40%,transparent)}
+body.medixa-dark .st-note-p{color:#8fd8d8}
+body.medixa-dark .st-ann-img{background:#22313c;border-color:#3a4b57;color:#a9bcc8}
+body.medixa-dark .st-ann-img.has-img{background:#fff}
+body.medixa-dark .st-th-b{box-shadow:0 0 0 2px #1b2630}

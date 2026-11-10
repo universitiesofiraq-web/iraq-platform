@@ -2,7 +2,9 @@
 // يتطلب ربط KV باسم LECTURES وسرّ UPLOAD_CODES من لوحة Cloudflare. بدون الربط: القائمة فارغة وبقية المسارات 503.
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
-import { handleAuth, uploadAccount } from "../_lib/auth.js";
+import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
+import { handlePdfNotes } from "../_lib/pdfnotes.js";
+import { handleAi } from "../_lib/ai.js";
 import { handleCatalog } from "../_lib/catalog.js";
 
 export async function onRequest({ request, env }) {
@@ -10,6 +12,10 @@ export async function onRequest({ request, env }) {
   if (authRes) return authRes;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
+  const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط
+  if (pnRes) return pnRes;
+  const aiRes = await handleAi(request, env, { currentUser }); // ترجمة/شرح النص المحدد في قارئ PDF (يحتاج ربط Workers AI باسم AI)
+  if (aiRes) return aiRes;
   if (!env.LECTURES) {
     const path = new URL(request.url).pathname;
     if (path.endsWith("/api/uploads.js")) {
