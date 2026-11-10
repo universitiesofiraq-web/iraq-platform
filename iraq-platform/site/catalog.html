@@ -24,12 +24,12 @@
     <p class="cg-empty" id="joinHint" hidden>جامعتك غير موجودة في القائمة؟ <a href="join.html">سجّل جامعتك من كل جامعات العراق</a></p>
     <form class="cg-add" id="add" hidden>
       <strong id="addTitle"></strong>
-      <input id="fName" placeholder="الاسم بالعربية" required maxlength="120">
-      <input id="fEn" placeholder="الاسم بالإنجليزية (اختياري)" maxlength="120">
+      <input aria-label="الاسم بالعربية" id="fName" placeholder="الاسم بالعربية" required maxlength="120">
+      <input aria-label="الاسم بالإنجليزية (اختياري)" id="fEn" placeholder="الاسم بالإنجليزية (اختياري)" maxlength="120">
       <div class="cg-row" id="subExtra" hidden>
-        <select id="fStage"></select><select id="fTerm"></select>
+        <select id="fStage" aria-label="المرحلة"></select><select id="fTerm" aria-label="الكورس"></select>
       </div>
-      <input id="fProf" placeholder="اسم الأستاذ (اختياري)" maxlength="120" hidden>
+      <input aria-label="اسم الأستاذ (اختياري)" id="fProf" placeholder="اسم الأستاذ (اختياري)" maxlength="120" hidden>
       <button class="btn btn-primary" type="submit">إضافة</button>
       <div class="cg-msg" id="msg" role="alert"></div>
     </form>

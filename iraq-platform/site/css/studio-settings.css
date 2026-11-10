@@ -2,7 +2,7 @@
    section of «الإعدادات», switches, and night mode for the toolbar's popovers. Loaded after studio.css.
    The pen / brush / highlighter sheets are Notewise sheets (طلب محمد 3 و6، 2026-10-21): light, compact one-line rows,
    blue accent like the bar's active tool; night mode uses Notewise's dark values. --ts-teal* stay for the other sheets. */
-#studio-toolbar{--ts-bg:#fff;--ts-ink:#1f2328;--ts-muted:#6b7280;--ts-line:#eceef1;--ts-line2:#dfe3e8;--ts-pill:#f1f3f5;--ts-acc:#2f6fed;--ts-acc-soft:#e3edfd;--ts-acc-track:#c9dafa;--ts-dot:#cfd5dc;--ts-ring:#c9ced5;--ts-off-bg:#eceef1;--ts-off-b:#7a818b;--ts-soft:#f3f8f9;--ts-teal:#168c8c;--ts-teal-2:#0f6b6b;--ts-teal-soft:#e3f3f1;--ts-off:#c3d1d8}
+#studio-toolbar{--ts-bg:#fff;--ts-ink:#1f2328;--ts-muted:#6b7280;--ts-line:#eceef1;--ts-line2:#dfe3e8;--ts-pill:#f1f3f5;--ts-acc:#2f6fed;--ts-acc-soft:#e3edfd;--ts-acc-track:#c9dafa;--ts-dot:#cfd5dc;--ts-ring:#c9ced5;--ts-off-bg:#eceef1;--ts-off-b:#7a818b;--ts-soft:#f3f8f9;--ts-teal:#0f6e6e;--ts-teal-2:#0f6b6b;--ts-teal-soft:#e3f3f1;--ts-off:#c3d1d8}
 
 /* the active tool shows a small chevron: tap it again for its settings (old layout and phones; the Notewise bar has none) */
 #studio-toolbar .st-btn.st-has-set{position:relative}
@@ -48,7 +48,7 @@
 .ts-colors .ts-sw:hover{background:var(--ts-soft)}
 .ts-sw[aria-pressed=true]::before{box-shadow:0 0 0 2px var(--ts-bg),0 0 0 4px var(--ts-teal)}
 .ts-custom{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;cursor:pointer}
-.ts-custom::before{content:"";position:absolute;inset:7px;border-radius:50%;background:conic-gradient(#e43d56,#f2c230,#7bd88f,#168c8c,#2f6fed,#c39bff,#e43d56)}
+.ts-custom::before{content:"";position:absolute;inset:7px;border-radius:50%;background:conic-gradient(#e43d56,#f2c230,#7bd88f,#0f6e6e,#2f6fed,#c39bff,#e43d56)}
 .ts-custom input{position:relative;width:20px;height:20px;padding:0;border:2px solid var(--ts-bg);border-radius:50%;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none}
 .ts-custom input::-webkit-color-swatch-wrapper{padding:0}
 .ts-custom input::-webkit-color-swatch{border:0;border-radius:50%}
@@ -64,7 +64,7 @@
 .ts-seg button small{font:500 11px/1.35 system-ui;color:var(--ts-muted);text-align:center}
 .ts-seg button[aria-pressed=true]{background:var(--ts-bg);color:var(--ts-teal-2);box-shadow:0 1px 4px #12304a29,inset 0 0 0 1px var(--ts-teal)}
 .ts-eprev{display:grid;place-items:center;height:132px;margin-top:4px;border:1px dashed var(--ts-line);border-radius:12px;background:#fff}
-.ts-eprev span{display:block;width:24px;height:24px;border:1.5px solid var(--ts-teal);border-radius:50%;background:#168c8c14}
+.ts-eprev span{display:block;width:24px;height:24px;border:1.5px solid var(--ts-teal);border-radius:50%;background:#0f6e6e14}
 /* text: size · B · I on one line */
 .ts-line{display:flex;align-items:center;gap:8px;font-size:13px}
 .ts-line select{flex:1 1 auto;min-height:44px;padding:0 10px;border:1px solid var(--ts-line);border-radius:10px;background:var(--ts-bg);color:var(--ts-ink);font:600 14px system-ui}
@@ -174,7 +174,7 @@ body.medixa-dark #studio-toolbar{--ts-bg:#1e1f23;--ts-ink:#e6e6e9;--ts-muted:#a1
 body.medixa-dark #studio-toolbar .st-pop{background:var(--ts-bg);color:var(--ts-ink);border-color:var(--ts-line);box-shadow:0 14px 36px #0009}
 body.medixa-dark #studio-toolbar .st-pop .st-btn,body.medixa-dark #studio-toolbar .st-colorlab,body.medixa-dark #studio-toolbar .st-width{color:var(--ts-ink)}
 body.medixa-dark #studio-toolbar .st-pop .st-btn:hover,body.medixa-dark #studio-toolbar .st-pop .st-swatch:hover,body.medixa-dark #studio-toolbar .st-pop .st-size:hover{background:var(--ts-soft);color:var(--ts-ink)}
-body.medixa-dark #studio-toolbar .st-pop .st-btn.active{background:var(--st-teal,#168c8c);color:#fff}
+body.medixa-dark #studio-toolbar .st-pop .st-btn.active{background:var(--st-teal,#0f6e6e);color:#fff}
 body.medixa-dark #studio-toolbar .st-grid .st-btn{border-color:var(--ts-line)}
 body.medixa-dark #studio-toolbar .st-row-btn{background:var(--ts-soft);color:var(--ts-ink);border-color:var(--ts-line)}
 body.medixa-dark #studio-toolbar .st-row-btn:hover{background:#2a3b47}
@@ -195,7 +195,7 @@ body.medixa-dark #studio-toolbar .st-toolset{border-color:var(--ts-line)}
 .ts-fav{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 10px;border:1px solid var(--ts-line);border-radius:999px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui;cursor:pointer;transition:background-color .12s,border-color .12s}
 .ts-fav:hover{background:var(--ts-soft)}
 .ts-fav[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);color:var(--ts-teal-2);box-shadow:inset 0 0 0 1px var(--ts-teal)}
-.ts-fav-dot{width:12px;height:12px;border-radius:50%;background:var(--fc,#168c8c);box-shadow:inset 0 0 0 1px #0003;flex:0 0 auto}
+.ts-fav-dot{width:12px;height:12px;border-radius:50%;background:var(--fc,#0f6e6e);box-shadow:inset 0 0 0 1px #0003;flex:0 0 auto}
 .ts-fav-rm{display:inline-grid;place-items:center;width:20px;height:20px;margin-inline-start:2px;border-radius:50%;color:var(--ts-muted);font-size:14px;line-height:1}
 .ts-fav-rm:hover{background:#e43d5622;color:#a32727}
 .ts-qsizes{display:flex;gap:5px;margin-bottom:4px}

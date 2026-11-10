@@ -5,7 +5,7 @@
 #studio-banner button{min-height:44px;padding:8px 14px}
 
 /* ---- tokens ---- */
-:root{--st-navy:#122c47;--st-navy-2:#0d223a;--st-teal:#168c8c;--st-teal-2:#0f6b6b;--st-teal-soft:#e3f3f1;--st-line:#dbe5ea;--st-ink:#18334b;--st-muted:#5b7382;--st-shadow:0 6px 24px #12304a1f}
+:root{--st-navy:#122c47;--st-navy-2:#0d223a;--st-teal:#0f6e6e;--st-teal-2:#0f6b6b;--st-teal-soft:#e3f3f1;--st-line:#dbe5ea;--st-ink:#18334b;--st-muted:#5b7382;--st-shadow:0 6px 24px #12304a1f}
 
 /* ---- header: brand · document tabs · save state · study tools · «المزيد» ---- */
 header{z-index:16;min-height:56px;padding:6px max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left));padding-top:max(6px,env(safe-area-inset-top));gap:12px;flex-wrap:nowrap;background:var(--st-navy)}
@@ -58,8 +58,8 @@ body.medixa-focus #pages>section{scroll-margin-top:calc(var(--st-tb-h,0px) + 16p
 .st-size:hover,.st-swatch:hover{background:#ffffff14}
 .st-size[aria-pressed=true]{background:#ffffff24}
 .st-size[aria-pressed=true] span{background:#fff}
-.st-dot{display:block;width:22px;height:22px;border-radius:50%;background:var(--st-cur,#168c8c);box-shadow:0 0 0 2px #fff}
-.st-dot-any{background:conic-gradient(#e43d56,#f2c230,#168c8c,#2f6fed,#e43d56)}
+.st-dot{display:block;width:22px;height:22px;border-radius:50%;background:var(--st-cur,#0f6e6e);box-shadow:0 0 0 2px #fff}
+.st-dot-any{background:conic-gradient(#e43d56,#f2c230,#0f6e6e,#2f6fed,#e43d56)}
 /* popovers (the toolbar's and the header menu): white cards, light borders */
 .st-pop{position:absolute;top:calc(100% + 8px);inset-inline-start:0;z-index:15;display:flex;flex-direction:column;gap:4px;padding:10px;background:#fff;color:var(--st-ink);border:1px solid var(--st-line);border-radius:14px;box-shadow:0 14px 36px #12304a33;min-width:220px}
 .st-pop[hidden]{display:none}
@@ -109,15 +109,15 @@ dialog .st-btn:hover{background:#eef6f7;color:var(--st-ink)}
 
 /* ---- text / sticky editor ---- */
 .st-editor{position:absolute;z-index:6;display:flex;flex-direction:column;gap:4px}
-.st-editor textarea{width:100%;min-height:64px;padding:8px;border:2px solid #168c8c;border-radius:8px;background:#fffdf2;color:#18334b;font-family:inherit;resize:vertical;line-height:1.35}
+.st-editor textarea{width:100%;min-height:64px;padding:8px;border:2px solid #0f6e6e;border-radius:8px;background:#fffdf2;color:#18334b;font-family:inherit;resize:vertical;line-height:1.35}
 .st-editor-row{display:flex;gap:4px;flex-wrap:wrap}
 .st-editor-row button{min-height:44px;padding:4px 12px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
-.st-editor-row .st-ok{background:#168c8c;border-color:#168c8c;color:#fff}
+.st-editor-row .st-ok{background:#0f6e6e;border-color:#0f6e6e;color:#fff}
 .st-editor-row .st-del{color:#a32727}
 .st-editor-row .st-fill{width:44px;padding:0;border-radius:50%}
 
 /* ---- Zoom Writing strip ---- */
-#zw{position:fixed;z-index:22;inset-inline:8px;bottom:8px;max-width:960px;margin-inline:auto;background:#fff;border:2px solid #168c8c;border-radius:14px;box-shadow:0 8px 32px #0004;padding:8px;color:#18334b;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+#zw{position:fixed;z-index:22;inset-inline:8px;bottom:8px;max-width:960px;margin-inline:auto;background:#fff;border:2px solid #0f6e6e;border-radius:14px;box-shadow:0 8px 32px #0004;padding:8px;color:#18334b;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 #zw[hidden]{display:none}
 .zw-head{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .zw-head button{min-width:44px;min-height:44px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
@@ -162,7 +162,7 @@ html[data-gesture=panning] main#pages canvas.ink,html[data-gesture=pinching] mai
 .st-x:hover{background:#e6eef2}
 .st-thumbs{flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px}
 .st-th{position:relative;border:1px solid var(--st-line);border-radius:10px;background:#fff;padding:0;cursor:pointer;display:block;width:100%;min-height:44px;overflow:hidden}
-.st-th.current{border-color:var(--st-teal);box-shadow:0 0 0 2px #168c8c59}
+.st-th.current{border-color:var(--st-teal);box-shadow:0 0 0 2px #0f6e6e59}
 .st-th-c{display:block;width:100%;height:auto}
 .st-th-n{position:absolute;inset-block-end:6px;inset-inline-end:6px;min-width:26px;height:26px;border-radius:13px;background:var(--st-teal);color:#fff;font:700 12px/26px system-ui;text-align:center}
 .st-bm{flex:0 0 auto;max-height:28%;overflow:auto;font-size:13px;border-top:1px solid var(--st-line);padding-top:8px}
@@ -253,7 +253,7 @@ body.st-split-narrow .st-split{inset-inline-start:0;width:auto}
 body.st-split-narrow .st-divider{display:none}
 body.st-split-narrow.st-split-on .st-split-switch{display:flex}
 body.st-split-narrow .st-sw-b{min-width:120px;min-height:44px;border:1px solid #ffffff40;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font:600 14px system-ui}
-body.st-split-narrow .st-sw-b[aria-selected=true]{background:#168c8c}
+body.st-split-narrow .st-sw-b[aria-selected=true]{background:#0f6e6e}
 body.st-split-narrow:not(.st-show-second) .st-split{display:none}
 body.st-split-narrow.st-show-second main#pages,body.st-split-narrow.st-show-second #studio-toolbar{display:none}
 body.st-split-narrow.st-split-on main#pages{margin-inline-end:0}
@@ -267,7 +267,7 @@ html.st-embed body{padding-bottom:12px!important}
 /* focus mode: chrome goes away; tools, save status, page controls and an obvious exit stay */
 body.medixa-focus .st-tabs,body.medixa-focus .st-split{display:none!important}
 body.medixa-focus #mx-dock>*:not(#mx-reader-nav):not(#mx-save-state){display:none!important}
-#medixa-focus-exit{min-height:44px;padding:0 16px!important;background:#168c8c!important;color:#fff!important;border:2px solid #fff!important;border-radius:999px!important;font:700 14px system-ui;top:max(12px,env(safe-area-inset-top))!important;inset-inline-start:12px!important;left:auto!important}
+#medixa-focus-exit{min-height:44px;padding:0 16px!important;background:#0f6e6e!important;color:#fff!important;border:2px solid #fff!important;border-radius:999px!important;font:700 14px system-ui;top:max(12px,env(safe-area-inset-top))!important;inset-inline-start:12px!important;left:auto!important}
 #st-focus-status{display:none;position:fixed;z-index:15;top:max(12px,env(safe-area-inset-top));inset-inline-start:190px;min-height:44px;align-items:center;padding:0 14px;border-radius:999px;background:#122c47;color:#fff;font-size:13px}
 body.medixa-focus #st-focus-status{display:flex}
 body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
@@ -316,7 +316,7 @@ html.st-tsel-dragging,html.st-tsel-dragging *{cursor:grabbing!important}
 .st-opt-row input[type=radio]{width:24px;height:24px;flex:0 0 auto}
 .st-ai-note{font-size:12px;color:#7a5a00;background:#fff6dc;border-radius:8px;padding:6px 10px}
 .st-err{color:#a32727;min-height:1.4em;font-size:13px;margin:4px 0}
-.st-draft .st-ok{background:#168c8c;color:#fff;border-color:#168c8c}
+.st-draft .st-ok{background:#0f6e6e;color:#fff;border-color:#0f6e6e}
 
 /* the study-tools drawer is modal-like: it sits above the floating toolbar and the header */
 #study-panel{z-index:30!important}

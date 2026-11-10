@@ -37,10 +37,10 @@
     <h1 id="title">…</h1>
     <div class="dp-tools" id="tools"></div>
     <form class="dp-add" id="addf">
-      <input class="wide" id="nm" maxlength="120" placeholder="اسم المادة" required>
-      <select id="st"></select>
-      <select id="tm"><option value="1">الكورس الأول</option><option value="2">الكورس الثاني</option></select>
-      <input class="wide" id="pf" maxlength="120" placeholder="اسم التدريسي (اختياري)">
+      <input aria-label="اسم المادة" class="wide" id="nm" maxlength="120" placeholder="اسم المادة" required>
+      <select id="st" aria-label="المرحلة"></select>
+      <select id="tm" aria-label="الكورس"><option value="1">الكورس الأول</option><option value="2">الكورس الثاني</option></select>
+      <input aria-label="اسم التدريسي (اختياري)" class="wide" id="pf" maxlength="120" placeholder="اسم التدريسي (اختياري)">
       <button class="btn btn-primary" type="submit">إضافة المادة</button>
     </form>
     <p class="ct-msg" id="msg" role="alert"></p>

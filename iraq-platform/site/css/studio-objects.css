@@ -1,13 +1,13 @@
 /* MEDIXA Study Studio — object editing (studio-tools.js): the selection bar #studio-selbar (selection mode, colour,
    thickness, opacity, copy / paste / duplicate / z-order / delete, picture controls, crop) and the note editor's style row.
    Loaded after studio.css; phones get one horizontally scrollable row above the drawing bar. */
-#studio-selbar{--sel-line:#dbe5ea;--sel-ink:#122c47;--sel-teal:#168c8c;--sel-hover:#eef6f7;--sel-on:#e3f3f3;gap:4px;padding:6px 8px;border-color:var(--sel-line);border-radius:14px;box-shadow:0 8px 28px #12304a24;color:var(--sel-ink);font:500 13px/1.2 system-ui,"Noto Naskh Arabic",sans-serif;align-items:center}
+#studio-selbar{--sel-line:#dbe5ea;--sel-ink:#122c47;--sel-teal:#0f6e6e;--sel-hover:#eef6f7;--sel-on:#e3f3f3;gap:4px;padding:6px 8px;border-color:var(--sel-line);border-radius:14px;box-shadow:0 8px 28px #12304a24;color:var(--sel-ink);font:500 13px/1.2 system-ui,"Noto Naskh Arabic",sans-serif;align-items:center}
 #studio-selbar [hidden]{display:none!important}
 #studio-selbar .sel-g{display:flex;align-items:center;gap:0;padding-inline-end:4px;margin-inline-end:2px;border-inline-end:1px solid var(--sel-line)}
 #studio-selbar .sel-b{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:44px;min-height:44px;padding:0 7px;border:1px solid transparent;border-radius:10px;background:transparent;color:inherit;font:inherit;white-space:nowrap;cursor:pointer}
 #studio-selbar .sel-b:hover{background:var(--sel-hover)}
 #studio-selbar .sel-b[aria-pressed=true]{background:var(--sel-on);border-color:var(--sel-teal);color:#0f6d6d}
-#studio-selbar .sel-b:focus-visible,#studio-selbar .sel-sw:focus-visible,#studio-selbar input:focus-visible,.st-editor-style :focus-visible{outline:3px solid var(--sel-teal,#168c8c);outline-offset:2px}
+#studio-selbar .sel-b:focus-visible,#studio-selbar .sel-sw:focus-visible,#studio-selbar input:focus-visible,.st-editor-style :focus-visible{outline:3px solid var(--sel-teal,#0f6e6e);outline-offset:2px}
 #studio-selbar .sel-ic{flex:0 0 auto}
 #studio-selbar #sel-del{color:#a32727}
 #studio-selbar #sel-crop-ok{background:var(--sel-teal);border-color:var(--sel-teal);color:#fff}
@@ -33,7 +33,7 @@
 .st-editor-style select{min-height:44px;min-width:58px;padding:0 6px;border:1px solid #bacbd1;border-radius:8px;background:#fff;color:#122c47;font:500 14px system-ui,sans-serif;cursor:pointer}
 .st-editor-style .st-ed-tog{min-width:44px;min-height:44px;padding:0;border:1px solid #bacbd1;border-radius:8px;background:#fff;color:#122c47;font:700 16px/1 Georgia,"Times New Roman",serif;cursor:pointer}
 .st-editor-style .st-ed-i{font-style:italic;font-weight:500}
-.st-editor-style .st-ed-tog[aria-pressed=true]{background:#e3f3f3;border-color:#168c8c;color:#0f6d6d}
+.st-editor-style .st-ed-tog[aria-pressed=true]{background:#e3f3f3;border-color:#0f6e6e;color:#0f6d6d}
 .st-editor-style .st-ed-color{width:44px;height:44px;padding:6px;border:1px solid #bacbd1;border-radius:8px;background:#fff;cursor:pointer}
 /* phones: one row above the drawing bar, scrolled sideways, never wider than the screen */
 @media(max-width:720px){

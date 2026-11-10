@@ -285,7 +285,7 @@
       if (requestedRoom && !rooms.some(function (r) { return r.id === requestedRoom; })) {
         $("joinStatus").textContent = "هذه المجموعة تظهر للأعضاء المقبولين.";
       } else if (first) await openRoom(first);
-      setInterval(poll, 5000);
+      setInterval(function () { if (!document.hidden) poll(); }, 15000);
     } catch (err) {
       $("roomList").textContent = "";
       $("authBanner").hidden = false;

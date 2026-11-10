@@ -89,7 +89,7 @@ async function archiveBody(env, messageId, reason, now) {
 
 export async function handleGroupChat(req, env, opts = {}) {
   const url = new URL(req.url);
-  const match = /^\/api\/group-chat\/(rooms|create|join|manage|messages|send|edit|delete|pin|read|mute|rotate-code|report)$/.exec(url.pathname.replace(/\/$/, ""));
+  const match = /^\/api\/group-chat\/(rooms|create|join|manage|messages|send|edit|delete|pin|read|mute|rotate-code|report|silence)$/.exec(url.pathname.replace(/\/$/, ""));
   if (!match) return null;
   if (env.GROUP_CHAT_ENABLED !== "1") return fail("feature_disabled", 503);
   if (!env.DB) return fail("not_configured", 503);
