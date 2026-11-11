@@ -365,6 +365,12 @@
   $("cancelReply").onclick = function () { editing = null; replyTo = null; $("messageInput").value = ""; composeBar(); };
   $("olderBtn").onclick = loadOlder;
   $("backToRooms").onclick = function () {
+    if (rooms.length === 1) { /* مجموعة واحدة: الرجوع إلى المنصة */
+      var dept = (myProfile && myProfile.department_id) || 0;
+      if (!dept) { try { var s = JSON.parse(localStorage.getItem("iq.dept") || "null"); dept = s && Number(s.id) || 0; } catch (_) {} }
+      location.href = dept ? "platform.html?dept=" + dept + (myProfile && myProfile.stage ? "&stage=" + myProfile.stage : "") : "index.html";
+      return;
+    }
     var roomId = active;
     resetThread();
     status("");
@@ -426,7 +432,7 @@
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
       var first = requestedRoom || (rooms[0] && rooms[0].id); /* تفتح المجموعة مباشرة، على الهاتف أيضاً */
       if (rooms.length) $("profileBanner").hidden = true; /* التنبيه فقط عند عدم وجود مجموعة */
-      if (rooms.length === 1) $("backToRooms").hidden = true;
+      if (rooms.length === 1) $("backToRooms").textContent = "← المنصة";
       if (requestedRoom && !rooms.some(function (r) { return r.id === requestedRoom; })) {
         $("joinStatus").textContent = "هذه المجموعة تظهر للأعضاء المقبولين.";
       } else if (first) await openRoom(first);
