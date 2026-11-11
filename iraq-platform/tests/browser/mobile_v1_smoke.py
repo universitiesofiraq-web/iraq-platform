@@ -104,7 +104,7 @@ with sync_playwright() as p:
     # الدردشة: صور/أسماء، مرفق، حذف بلا أثر، رسالة خاصة
     c = b.new_context(service_workers="block", viewport={"width": 390, "height": 800}); pg = c.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.route("**/*", lambda r: route(r) if "/api/" in r.request.url else r.continue_())
-    pg.goto("http://127.0.0.1:8793/group-chat.html"); pg.wait_for_selector(".room"); pg.click(".room"); pg.wait_for_selector(".message")
+    pg.goto("http://127.0.0.1:8793/group-chat.html"); pg.wait_for_selector(".message")
     ck("chat: registered-stage banner", "مرحلتك المسجّلة" in pg.locator("#profileBanner").inner_text())
     ck("chat: deleted message leaves no trace", pg.locator(".message").count() == 2 and "حُذفت" not in pg.locator("#conversation").inner_text())
     ck("chat: attachment card", pg.locator(".att-card").count() == 1)

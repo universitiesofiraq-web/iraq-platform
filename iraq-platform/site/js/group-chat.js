@@ -424,7 +424,9 @@
       await profileBanner();
       await refreshRooms();
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
-      var first = requestedRoom || (!mobile.matches && rooms[0] && rooms[0].id);
+      var first = requestedRoom || (rooms[0] && rooms[0].id); /* تفتح المجموعة مباشرة، على الهاتف أيضاً */
+      if (rooms.length) $("profileBanner").hidden = true; /* التنبيه فقط عند عدم وجود مجموعة */
+      if (rooms.length === 1) $("backToRooms").hidden = true;
       if (requestedRoom && !rooms.some(function (r) { return r.id === requestedRoom; })) {
         $("joinStatus").textContent = "هذه المجموعة تظهر للأعضاء المقبولين.";
       } else if (first) await openRoom(first);
