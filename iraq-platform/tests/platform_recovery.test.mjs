@@ -72,6 +72,31 @@ test("signed-in continuation prefers the current account's active department", a
   }
 });
 
+test("logout preserves local state on a failed request and clears account data on success", async () => {
+  const saved = new Map([
+    ["ms.fav", "[]"], ["ms.sync.t", "{}"], ["iq.dept", "{}"], ["iq.stage", "{}"], ["theme", "dark"]
+  ]);
+  const context = {
+    window: {}, location: { pathname: "/login.html" }, clearTimeout,
+    localStorage: {
+      getItem: key => saved.get(key) ?? null,
+      removeItem: key => saved.delete(key)
+    },
+    fetch: async () => { throw new TypeError("offline"); }
+  };
+  vm.runInNewContext(script("js/auth.js"), context);
+  const auth = context.window.MSAuth;
+  const user = { id: 1 };
+  auth.afterLogin(user);
+  await assert.rejects(auth.logout(), /logout_failed/);
+  assert.equal(auth.user(), user);
+  assert.equal(saved.size, 5);
+  context.fetch = async () => Response.json({ ok: true });
+  await auth.logout();
+  assert.equal(auth.user(), null);
+  assert.deepEqual([...saved], [["theme", "dark"]]);
+});
+
 test("database failures return a retryable response without exposing diagnostics", async () => {
   for (const structured of [false, true]) {
     const response = serviceErrorResponse(quotaError(), structured);
