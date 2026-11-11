@@ -1,7 +1,7 @@
 // Development 07 — group-scoped chat for Cloudflare Pages + D1.
 // Explicit membership is mandatory. Invite secrets are revealed only when created/rotated.
 import { currentUser } from "./auth.js";
-import { policy } from "./scope.js";
+import { policy, isGlobalAdmin } from "./scope.js";
 import { manageGroupChat } from "./group_chat_moderation.js";
 import { serviceErrorResponse } from "./service-errors.js";
 
@@ -41,11 +41,24 @@ async function room(env, userId, groupId) {
     WHERE g.id=? AND g.active=1`).bind(userId, groupId).first();
 }
 
-const msgSelect = `SELECT m.id, m.group_id, m.sender_id, u.name AS sender, m.body, m.reply_to,
-    p.body AS reply_body, pu.name AS reply_sender, p.deleted_at AS reply_deleted,
-    m.created_at, m.edited_at, m.deleted_at, m.pinned_at
-    FROM chat_messages m JOIN users u ON u.id=m.sender_id
-    LEFT JOIN chat_messages p ON p.id=m.reply_to LEFT JOIN users pu ON pu.id=p.sender_id`;
+/* الاسم الظاهر والصورة (user_avatars، ترحيل 0022) بدل اسم Google إن وضعهما الطالب */
+const msgSelect = `SELECT m.id, m.group_id, m.sender_id, COALESCE(NULLIF(av.display_name,''), u.name) AS sender, m.body, m.reply_to,
+    p.body AS reply_body, COALESCE(NULLIF(pav.display_name,''), pu.name) AS reply_sender, p.deleted_at AS reply_deleted,
+    m.created_at, m.edited_at, m.deleted_at, m.pinned_at, CASE WHEN av.avatar IS NULL THEN 0 ELSE av.updated_at END AS av
+    FROM chat_messages m JOIN users u ON u.id=m.sender_id LEFT JOIN user_avatars av ON av.user_id=m.sender_id
+    LEFT JOIN chat_messages p ON p.id=m.reply_to LEFT JOIN users pu ON pu.id=p.sender_id LEFT JOIN user_avatars pav ON pav.user_id=p.sender_id`;
+/* مرفق داخل الرسالة: سطر أول "[[att]]{json}" (ملف من ملفات المنصة أو تبليغ). روابط داخلية فقط. */
+const ATT = "[[att]]";
+const ATT_HREF = /^(course\.html\?id=[A-Za-z0-9_-]{1,80}(&dept=\d{1,9})?(#lec-\d{1,4})?|api\/file\/[A-Za-z0-9_-]{1,80}|platform\.html\?dept=\d{1,9}(&stage=\d{1,2})?#(announcements|latest))$/;
+export function cleanAttach(a) {
+  if (!a || typeof a !== "object" || Array.isArray(a)) return null;
+  const type = a.type === "file" || a.type === "announcement" ? a.type : null;
+  const title = typeof a.title === "string" ? a.title.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 120) : "";
+  const sub = typeof a.sub === "string" ? a.sub.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 160) : "";
+  const href = typeof a.href === "string" && ATT_HREF.test(a.href) ? a.href : null;
+  if (!type || !title || !href) return null;
+  return { type, title, sub, href };
+}
 const formatMsg = (r) => ({ ...r, body: r.deleted_at ? null : r.body,
   reply_body: r.reply_deleted ? null : r.reply_body });
 async function message(env, id) {
@@ -60,13 +73,14 @@ async function audit(env, groupId, messageId, actorId, action, now) {
 /* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند دخول أول طالب مؤكَّد، وينضم إليها الطالب المؤكَّد تلقائياً
    (إلا من رُفض أو أُلغيت عضويته من المشرف). العضوية تبقى مشروطة بمرحلة ملفه الشخصي. */
 const DEFAULT_GROUP = "مجموعة المرحلة";
-async function autoJoin(env, userId, now) {
+async function autoJoin(env, userId, now, canManageStage) {
   const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
   if (!p || !p.stage_id) return;
   const stage = p.stage_id;
-  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي */
+  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي.
+     استثناء: من يدير هذه المرحلة (ممثلها أو المشرف) لا يحتاج تأكيداً. */
   const ok = await env.DB.prepare("SELECT 1 AS x FROM student_verification WHERE user_id=? AND stage_id=?").bind(userId, stage).first();
-  if (!ok) return;
+  if (!ok && !(canManageStage && await canManageStage(stage))) return;
   const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
   if (!has) {
     if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;
@@ -111,7 +125,10 @@ export async function handleGroupChat(req, env, opts = {}) {
         { json, fail, idOf, bodyOf, secret, now });
     }
     if (op === "rooms" && req.method === "GET") {
-      if (env.GROUP_CHAT_AUTO !== "0") await autoJoin(env, user.id, now);
+      if (env.GROUP_CHAT_AUTO !== "0") await autoJoin(env, user.id, now, (st) => canManage("stage", st));
+      /* مجموعات مرحلة أخرى (بعد تغيير المرحلة في الملف الشخصي) لا تظهر للمشرف العام في قائمته؛ يديرها من صفحة الإدارة.
+         ممثل تلك المرحلة يبقى يراها لأنه مسؤول عنها. */
+      const globalAdmin = await isGlobalAdmin(user, env).catch(() => false);
       const rows = await env.DB.prepare(`SELECT g.id, g.name, g.created_by, g.stage_id, p.stage_id AS profile_stage_id, s.number AS stage,
         d.id AS department_id, d.name_ar AS department, c.id AS college_id, c.name_ar AS college,
         u.id AS university_id, u.name_ar AS university, cm.muted,
@@ -124,7 +141,8 @@ export async function handleGroupChat(req, env, opts = {}) {
         .bind(user.id, user.id).all();
       const items = [];
       for (const { profile_stage_id, ...item } of rows.results || []) {
-        if (await canAccessStage({ stage_id: item.stage_id, profile_stage_id })) items.push(item);
+        const own = profile_stage_id === item.stage_id;
+        if (own || (!globalAdmin && await canAccessStage({ stage_id: item.stage_id, profile_stage_id }))) items.push(item);
       }
       const requests = await env.DB.prepare(`SELECT g.name, r.status FROM chat_join_requests r
         JOIN chat_groups g ON g.id=r.group_id JOIN user_profile p ON p.user_id=r.user_id AND p.stage_id=g.stage_id
@@ -206,7 +224,14 @@ export async function handleGroupChat(req, env, opts = {}) {
     const g = await room(env, user.id, groupId);
     if (!g || !(await canAccessStage(g))) return fail("forbidden", 403);
     if (op === "send") {
-      const body = safeName(b.body, MAX_BODY), clientId = String(b.client_id || "");
+      let body = typeof b.body === "string" ? b.body.trim().slice(0, MAX_BODY) : "";
+      const clientId = String(b.client_id || "");
+      if (body.startsWith(ATT)) body = body.replace(/^(\[\[att\]\])+/, ""); // لا يُقبل مرفق مزوّر داخل النص
+      if (b.attach != null) {
+        const att = cleanAttach(b.attach);
+        if (!att) return fail("bad_request", 400);
+        body = (ATT + JSON.stringify(att) + (body ? "\n" + body : "")).slice(0, MAX_BODY);
+      }
       if (!body || !/^[a-zA-Z0-9-]{16,64}$/.test(clientId)) return fail("bad_request", 400);
       const duplicate = await env.DB.prepare("SELECT id FROM chat_messages WHERE sender_id=? AND client_id=?").bind(user.id, clientId).first();
       if (duplicate) {

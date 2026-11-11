@@ -8,9 +8,12 @@ import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
 import { handleOnboarding } from "../_lib/onboarding.js";
 import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
+import { handleUploadOptions } from "../_lib/upload-options.js";
 import { handleCatalog } from "../_lib/catalog.js";
 import { handleInvites } from "../_lib/invites.js";
 import { handleGroupChat } from "../_lib/group_chat.js";
+import { handleAvatar } from "../_lib/avatar.js";
+import { handleDm } from "../_lib/dm.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
@@ -21,8 +24,14 @@ export async function onRequest({ request, env }) {
   if (workspaceRes) return workspaceRes;
   const inviteRes = await handleInvites(request, env);
   if (inviteRes) return inviteRes;
+  const uploadOptions = await handleUploadOptions(request, env);
+  if (uploadOptions) return uploadOptions;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
+  const avRes = await handleAvatar(request, env, { currentUser }); // صورة الطالب واسمه الظاهر (منقول من ميدكسا)
+  if (avRes) return avRes;
+  const dmRes = await handleDm(request, env, { currentUser }); // الرسائل الخاصة
+  if (dmRes) return dmRes;
   const chatRes = await handleGroupChat(request, env, { currentUser });
   if (chatRes) return chatRes;
   const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط

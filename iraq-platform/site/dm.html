@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+  <meta name="theme-color" content="#0b1831">
+  <title>الرسائل الخاصة | منصة الجامعات العراقية</title>
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/group-chat.css?v=4">
+</head>
+<body>
+  <div class="chat-app dm-app">
+    <section class="thread-pane dm-pane" aria-label="الرسائل الخاصة">
+      <div class="thread-head">
+        <a id="dmBack" class="ghost dm-back" href="group-chat.html" aria-label="رجوع">→</a>
+        <span id="dmAv" class="m-av hue-1" aria-hidden="true">✉</span>
+        <div class="thread-head-text"><h2 id="dmTitle">الرسائل الخاصة</h2><p id="dmSub">محادثات بينك وبين زملائك وممثليك</p></div>
+        <button id="dmNew" class="ghost" type="button">+ محادثة</button>
+        <button id="dmBlock" class="ghost" type="button" hidden>حظر</button>
+      </div>
+      <p id="dmNote" class="notice" hidden></p>
+      <div id="dmList" class="dm-list"></div>
+      <p id="dmPrivacy" class="dm-privacy">الرسائل الخاصة بين الطرفين فقط، ولا تُراجَع إلا إذا أبلغ عنها أحدهما.</p>
+      <div id="log" class="conversation" role="log" aria-live="polite" hidden></div>
+      <p id="dmBlocked" class="dm-blocked" hidden>حظرتَ هذا الحساب. ارفع الحظر لتتراسلا.</p>
+      <form id="form" class="composer" hidden>
+        <label class="sr-only" for="msg">نص الرسالة</label>
+        <textarea id="msg" rows="1" maxlength="1000" placeholder="اكتب رسالة خاصة..."></textarea>
+        <button id="send" class="send" type="submit">إرسال <span aria-hidden="true">➤</span></button>
+      </form>
+    </section>
+  </div>
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-label="محادثة جديدة">
+      <div class="sheet-head"><strong>محادثة جديدة</strong><button id="sheetX" type="button" aria-label="إغلاق">×</button></div>
+      <div id="sheetList" class="sheet-list"></div>
+    </div>
+  </div>
+  <script src="js/dm.js?v=1" defer></script>
+</body>
+</html>

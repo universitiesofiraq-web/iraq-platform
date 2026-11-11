@@ -53,3 +53,55 @@
   .composer .send{padding:10px}
   .brand-icon{width:30px;height:30px}
 }
+
+/* ===== تحسينات ميدكسا (2026-11-11): شكل تيليجرام، صور، مرفقات، رسائل خاصة ===== */
+.conversation{gap:3px;background-color:#081528;background-image:radial-gradient(circle at 20% 20%,#27c5a60d 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,#ffffff08 0 1.5px,transparent 2.5px);background-size:46px 46px,34px 34px}
+.message{flex-direction:row;align-items:flex-end;gap:7px;max-width:min(86%,620px);margin-top:8px}
+.message.cont{margin-top:2px}
+.message.mine{flex-direction:row-reverse}
+.message.cont .m-av{visibility:hidden}
+.m-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;overflow:hidden;font-weight:800;font-size:.85rem;color:#06231f;background:#7fd8c6}
+.m-av img{width:100%;height:100%;object-fit:cover;display:block}
+.m-av.hue-1{background:#7fd8c6}.m-av.hue-2{background:#9cc6ff}.m-av.hue-3{background:#ffc98a}.m-av.hue-4{background:#e5a6ff}.m-av.hue-5{background:#ff9fa8}.m-av.hue-6{background:#b6e388}
+.bubble{position:relative;display:flex;flex-direction:column;gap:2px;padding:7px 11px 5px;border-radius:16px 16px 16px 5px;font-style:normal;color:var(--fg);background:#16294a;border-color:#2a4166;line-height:1.7;cursor:pointer;min-width:84px}
+.message.mine .bubble{background:linear-gradient(140deg,#135b59,#166b68);border-color:#258b7e;border-radius:16px 16px 5px 16px}
+.message.cont .bubble{border-radius:16px}
+.bubble .msg-label{padding:0;font-weight:700;font-size:.76rem}
+.msg-label.hue-1{color:#7fd8c6}.msg-label.hue-2{color:#9cc6ff}.msg-label.hue-3{color:#ffc98a}.msg-label.hue-4{color:#e5a6ff}.msg-label.hue-5{color:#ff9fa8}.msg-label.hue-6{color:#b6e388}
+.msg-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-time{align-self:flex-end;font-size:.64rem;color:#cfe3ffaa;margin-top:1px}
+.bubble .msg-actions{display:none;border-top:1px solid #ffffff1f;margin-top:4px;padding-top:3px}
+.bubble.show-actions .msg-actions{display:flex}
+.msg-actions button{font-size:.74rem;color:#d9f3ee;min-height:32px;padding:4px 8px}
+.day-sep{align-self:center;margin:12px 0 4px;padding:3px 12px;border-radius:999px;background:#0e1d36cc;border:1px solid var(--line);font-size:.72rem;color:var(--muted)}
+.att-card{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:12px;background:#ffffff12;border:1px solid #ffffff1c;color:var(--fg);text-decoration:none;margin:2px 0}
+.att-ico{flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#27c5a62b;font-size:1.05rem}
+.att-txt{display:grid;min-width:0}.att-txt strong{font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.att-txt small{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attach-btn{flex:none;width:46px;min-height:46px;border-radius:50%;border:1px solid #33506d;background:#152c48;color:var(--fg);font-size:1.15rem;cursor:pointer}
+.sheet{position:fixed;inset:0;z-index:60;background:#020a17b3;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet-card{width:min(560px,100%);max-height:78vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.sheet-head button{border:0;background:none;color:var(--fg);font-size:1.5rem;min-width:44px;min-height:44px}
+.sheet-tabs{display:flex;gap:6px;margin-bottom:8px}.sheet-tabs button{flex:1;min-height:40px;border-radius:12px;border:1px solid var(--line);background:#132540;color:var(--fg)}.sheet-tabs [aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.sheet-list{overflow:auto;display:grid;gap:4px}
+.sheet-search{width:100%;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid #33506d;background:#152c48;color:var(--fg);font:inherit;font-size:16px;margin-bottom:6px}
+.sheet-row{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:12px;background:transparent;color:var(--fg);text-align:start;font:inherit;cursor:pointer}.sheet-row:hover{background:#ffffff10}
+.dm-link{display:grid;gap:2px;margin:4px 0 10px;padding:10px 12px;border-radius:14px;border:1px solid #258b7e;background:#135b5933;color:var(--fg);text-decoration:none;font-weight:700}.dm-link small{font-weight:400;color:var(--muted);font-size:.74rem}
+@media(max-width:850px){.message{max-width:94%}.m-av{width:30px;height:30px}}
+/* الرسائل الخاصة */
+.dm-app{max-width:760px;padding:0;min-height:100dvh}
+.dm-pane{display:flex;flex-direction:column;height:100dvh;height:var(--chat-viewport,100dvh);border:0;border-radius:0}
+.dm-back{text-decoration:none;font-size:1.2rem}
+.dm-list{flex:1;overflow:auto}
+.dm-list[hidden],.conversation[hidden],.dm-privacy[hidden],.dm-blocked[hidden],.composer[hidden]{display:none}
+.dm-row{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);color:var(--fg);text-decoration:none}.dm-row:hover{background:#ffffff08}
+.dm-row .m-av{width:46px;height:46px}
+.dm-row-txt{display:grid;gap:2px;flex:1;min-width:0}.dm-row-top{display:flex;align-items:baseline;gap:7px}.dm-row-top strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-row-top small{margin-inline-start:auto;color:var(--muted);font-size:.7rem}.dm-role{font-style:normal;font-size:.68rem;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 6px}
+.dm-snip{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-privacy{margin:0;padding:9px 14px;font-size:.72rem;color:var(--muted);text-align:center;border-top:1px solid var(--line)}
+.dm-blocked{margin:0;padding:10px;text-align:center;color:#ffc98a;background:#ffc98a14}
+.dm-pane .thread-head{position:sticky;top:0;padding-top:calc(11px + env(safe-area-inset-top));background:var(--panel);z-index:2}
+.dm-pane .composer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+.dm-pane .muted{margin:8px 4px 2px;font-size:.78rem}
+.profile-banner{font-size:.8rem}.profile-banner a{color:var(--accent);font-weight:700;margin-inline-start:4px}

@@ -7,7 +7,7 @@
   <meta name="description" content="دردشة خاصة وآمنة بمجموعتك الدراسية في منصة الجامعات العراقية">
   <title>دردشة مجموعتي | منصة الجامعات العراقية</title>
   <link rel="icon" href="assets/icon-192.png">
-  <link rel="stylesheet" href="css/group-chat.css?v=2">
+  <link rel="stylesheet" href="css/group-chat.css?v=4">
 </head>
 <body>
   <div class="chat-app">
@@ -18,7 +18,9 @@
     <main class="chat-layout" id="chatLayout">
       <aside class="rooms-pane" aria-label="المجموعات">
         <div class="pane-title"><div><small>المساحة الجامعية</small><h1>دردشة مجموعتي</h1></div><span id="roomCount" class="count">0</span></div>
+        <a class="dm-link" href="dm.html">✉ الرسائل الخاصة <small>تواصل مع زميل أو ممثلك</small></a>
         <div id="authBanner" class="notice" hidden></div>
+        <div id="profileBanner" class="notice profile-banner" hidden></div>
         <div id="roomList" class="rooms-list" role="group" aria-label="غرف الدردشة"><p class="muted">جارٍ تحميل مجموعاتك...</p></div>
         <details class="group-panel" id="joinPanel" hidden>
           <summary>+ اطلب الانضمام برمز الدعوة</summary>
@@ -43,15 +45,24 @@
         </div>
         <div class="older-wrap"><button id="olderBtn" type="button" hidden>تحميل رسائل سابقة</button></div>
         <div id="replyBar" class="reply-bar" hidden><span id="replyText"></span><button id="cancelReply" type="button" aria-label="إلغاء الرد">×</button></div>
+        <div id="attachBar" class="reply-bar" hidden><span id="attachText"></span><button id="cancelAttach" type="button" aria-label="إلغاء المرفق">×</button></div>
         <form id="sendForm" class="composer" hidden>
+          <button id="attachBtn" class="attach-btn" type="button" aria-label="إرفاق ملف أو تبليغ">📎</button>
           <label class="sr-only" for="messageInput">نص الرسالة</label>
-          <textarea id="messageInput" placeholder="اكتب رسالة لمجموعتك..." maxlength="2000" rows="1" required></textarea>
+          <textarea id="messageInput" placeholder="اكتب رسالة لمجموعتك..." maxlength="1800" rows="1"></textarea>
           <button class="send" id="sendBtn" type="submit" aria-label="إرسال الرسالة">إرسال <span aria-hidden="true">➤</span></button>
         </form>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </section>
     </main>
   </div>
-  <script src="js/group-chat.js?v=2" defer></script>
+  <div id="attachSheet" class="sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-label="إرفاق">
+      <div class="sheet-head"><strong>إرفاق في الرسالة</strong><button id="sheetClose" type="button" aria-label="إغلاق">×</button></div>
+      <div class="sheet-tabs"><button type="button" data-tab="files">ملفات القسم</button><button type="button" data-tab="ann">التبليغات</button></div>
+      <div id="sheetList" class="sheet-list"></div>
+    </div>
+  </div>
+  <script src="js/group-chat.js?v=4" defer></script>
 </body>
 </html>
