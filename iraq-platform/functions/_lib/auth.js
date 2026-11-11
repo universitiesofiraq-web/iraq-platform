@@ -310,6 +310,13 @@ export async function handleAuth(req, env, opts = {}) {
   if (p === "/api/auth/me" && req.method === "GET") {
     if (!user) return fail("unauthorized", 401);
     const sc = await userScopes(env, user.id);
+    for (const x of sc) { // اسم النطاق للعرض فقط (جامعة/كلية/قسم/مرحلة)
+      try {
+        const q = { university: "SELECT name_ar AS n FROM universities WHERE id=?", college: "SELECT name_ar AS n FROM colleges WHERE id=?",
+          department: "SELECT name_ar AS n FROM departments WHERE id=?", stage: "SELECT d.name_ar || ' · المرحلة ' || st.number AS n FROM stages st JOIN departments d ON d.id=st.department_id WHERE st.id=?" }[x.type];
+        if (q) x.label = (await env.DB.prepare(q).bind(x.node_id).first())?.n || "";
+      } catch (e) { x.label = ""; }
+    }
     return json({ ok: true, user: { ...publicUser(user), scopes: sc, admin: await isGlobalAdmin(user, env), owner: isAdminUser(user, env) } });
   }
   if (!user) return fail("unauthorized", 401);

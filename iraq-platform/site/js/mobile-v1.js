@@ -224,7 +224,7 @@
       if (prof.membership === "pending") facts.appendChild(el("span", "", "بانتظار تأكيد الممثل"));
     } else if (u) facts.appendChild(el("span", "", "لم تسجّل قسمك ومرحلتك بعد"));
     if (u && u.admin) facts.appendChild(el("span", "", "مشرف"));
-    else if (u && (u.scopes || []).some(function (x) { return x.level === "rep"; })) facts.appendChild(el("span", "", "ممثل"));
+    else if (u) (u.scopes || []).filter(function (x) { return x.level === "rep"; }).forEach(function (x) { facts.appendChild(el("span", "", "ممثل" + (x.label ? " · " + x.label : ""))); });
     if (facts.childNodes.length) sheet.appendChild(facts);
 
     if (u) { /* الصورة والاسم الظاهر (كما في ميدكسا): يراهما الزملاء في الدردشة ولا يغيّران الاسم الحقيقي */
