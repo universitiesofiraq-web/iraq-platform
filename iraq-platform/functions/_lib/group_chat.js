@@ -1,7 +1,7 @@
 // Development 07 — group-scoped chat for Cloudflare Pages + D1.
 // Explicit membership is mandatory. Invite secrets are revealed only when created/rotated.
 import { currentUser } from "./auth.js";
-import { policy } from "./scope.js";
+import { policy, isGlobalAdmin } from "./scope.js";
 import { manageGroupChat } from "./group_chat_moderation.js";
 import { serviceErrorResponse } from "./service-errors.js";
 
@@ -73,13 +73,14 @@ async function audit(env, groupId, messageId, actorId, action, now) {
 /* بلا رمز دعوة: لكل مرحلة في كل قسم مجموعة افتراضية تُنشأ عند دخول أول طالب مؤكَّد، وينضم إليها الطالب المؤكَّد تلقائياً
    (إلا من رُفض أو أُلغيت عضويته من المشرف). العضوية تبقى مشروطة بمرحلة ملفه الشخصي. */
 const DEFAULT_GROUP = "مجموعة المرحلة";
-async function autoJoin(env, userId, now) {
+async function autoJoin(env, userId, now, canManageStage) {
   const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
   if (!p || !p.stage_id) return;
   const stage = p.stage_id;
-  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي */
+  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي.
+     استثناء: من يدير هذه المرحلة (ممثلها أو المشرف) لا يحتاج تأكيداً. */
   const ok = await env.DB.prepare("SELECT 1 AS x FROM student_verification WHERE user_id=? AND stage_id=?").bind(userId, stage).first();
-  if (!ok) return;
+  if (!ok && !(canManageStage && await canManageStage(stage))) return;
   const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
   if (!has) {
     if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;
@@ -124,7 +125,10 @@ export async function handleGroupChat(req, env, opts = {}) {
         { json, fail, idOf, bodyOf, secret, now });
     }
     if (op === "rooms" && req.method === "GET") {
-      if (env.GROUP_CHAT_AUTO !== "0") await autoJoin(env, user.id, now);
+      if (env.GROUP_CHAT_AUTO !== "0") await autoJoin(env, user.id, now, (st) => canManage("stage", st));
+      /* مجموعات مرحلة أخرى (بعد تغيير المرحلة في الملف الشخصي) لا تظهر للمشرف العام في قائمته؛ يديرها من صفحة الإدارة.
+         ممثل تلك المرحلة يبقى يراها لأنه مسؤول عنها. */
+      const globalAdmin = await isGlobalAdmin(user, env).catch(() => false);
       const rows = await env.DB.prepare(`SELECT g.id, g.name, g.created_by, g.stage_id, p.stage_id AS profile_stage_id, s.number AS stage,
         d.id AS department_id, d.name_ar AS department, c.id AS college_id, c.name_ar AS college,
         u.id AS university_id, u.name_ar AS university, cm.muted,
@@ -137,7 +141,8 @@ export async function handleGroupChat(req, env, opts = {}) {
         .bind(user.id, user.id).all();
       const items = [];
       for (const { profile_stage_id, ...item } of rows.results || []) {
-        if (await canAccessStage({ stage_id: item.stage_id, profile_stage_id })) items.push(item);
+        const own = profile_stage_id === item.stage_id;
+        if (own || (!globalAdmin && await canAccessStage({ stage_id: item.stage_id, profile_stage_id }))) items.push(item);
       }
       const requests = await env.DB.prepare(`SELECT g.name, r.status FROM chat_join_requests r
         JOIN chat_groups g ON g.id=r.group_id JOIN user_profile p ON p.user_id=r.user_id AND p.stage_id=g.stage_id

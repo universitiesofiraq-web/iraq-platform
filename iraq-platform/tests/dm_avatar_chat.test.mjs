@@ -89,3 +89,12 @@ test("avatar + display name flow into group chat messages", async () => {
   assert.equal(forged.code, 201); assert.ok(!forged.data.item.body.startsWith("[[att]]"), "forged attachment stripped");
   assert.equal(cleanAttach({ type: "announcement", title: "ت", href: "platform.html?dept=4&stage=1#announcements" }).type, "announcement");
 });
+
+test("chat rooms follow the profile stage: admin sees only the new stage group and joins it without verification", async () => {
+  const f = fixture();
+  f.env.ADMIN_EMAILS = "u2@x"; delete f.env.GROUP_CHAT_AUTO;
+  f.q("INSERT INTO chat_groups(id,stage_id,name,invite_hash,created_by,created_at) VALUES(1,31,'قديمة','h1',5,1),(2,11,'جديدة','h2',3,1)");
+  f.q("INSERT INTO chat_members(group_id,user_id,joined_at) VALUES(1,2,1)"); // عضو قديم في مجموعة جامعة أخرى
+  const rooms = await f.gc(2, "rooms");
+  assert.deepEqual(rooms.data.items.map((r) => r.id), [2], "old university group hidden, joined own stage group");
+});
