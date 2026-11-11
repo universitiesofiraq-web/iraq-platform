@@ -260,7 +260,7 @@ async function finish(req, deps, who, auth) {
   const already = (await readManifest(deps)).find((e) => e.id === id);
   if (already) {
     if (already.courseId !== courseId || (auth.userId && already.uploadedBy !== auth.userId)) return fail("already_completed", 409);
-    return json({ ok: true, entry: publicEntry(already) });
+    return json({ ok: true, entry: publicEntry(already), status: already.status || "approved" });
   }
 
   // Existing clients without a course on chunk requests may finish in their own account namespace.
@@ -302,7 +302,7 @@ async function finish(req, deps, who, auth) {
   const saved = (await updateManifest(deps, (list) => list.some((existing) => existing.id === id) ? list : list.concat([entry])))
     .find((existing) => existing.id === id);
   if (saved.courseId !== courseId || (auth.userId && saved.uploadedBy !== auth.userId)) return fail("already_completed", 409);
-  return json({ ok: true, entry: publicEntry(saved) });
+  return json({ ok: true, entry: publicEntry(saved), status: saved.status || "approved" });
 }
 
 // الشكل المقبول: المحاضرة (lecture) تحتاج رقماً من 1، والرقم 0 (للمادة كلها) لـ quiz وexam فقط، وأي رقم فوق 0 يحتاج عنواناً
@@ -333,7 +333,7 @@ async function addLink(req, deps, who, auth) {
   const showInLatest = number > 0 ? flag(b.showInLatest) : undefined;
   if (showInLatest !== undefined) entry.showInLatest = showInLatest;
   await updateManifest(deps, (list) => list.concat([entry]));
-  return json({ ok: true, entry: publicEntry(entry) });
+  return json({ ok: true, entry: publicEntry(entry), status: entry.status });
 }
 
 /* تعديل بيانات عنصر مرفوع. عنوان المحاضرة يُطبَّق على كل المرفوعات التي لها المادة والرقم نفسه */
