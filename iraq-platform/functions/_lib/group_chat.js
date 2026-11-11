@@ -41,11 +41,24 @@ async function room(env, userId, groupId) {
     WHERE g.id=? AND g.active=1`).bind(userId, groupId).first();
 }
 
-const msgSelect = `SELECT m.id, m.group_id, m.sender_id, u.name AS sender, m.body, m.reply_to,
-    p.body AS reply_body, pu.name AS reply_sender, p.deleted_at AS reply_deleted,
-    m.created_at, m.edited_at, m.deleted_at, m.pinned_at
-    FROM chat_messages m JOIN users u ON u.id=m.sender_id
-    LEFT JOIN chat_messages p ON p.id=m.reply_to LEFT JOIN users pu ON pu.id=p.sender_id`;
+/* الاسم الظاهر والصورة (user_avatars، ترحيل 0022) بدل اسم Google إن وضعهما الطالب */
+const msgSelect = `SELECT m.id, m.group_id, m.sender_id, COALESCE(NULLIF(av.display_name,''), u.name) AS sender, m.body, m.reply_to,
+    p.body AS reply_body, COALESCE(NULLIF(pav.display_name,''), pu.name) AS reply_sender, p.deleted_at AS reply_deleted,
+    m.created_at, m.edited_at, m.deleted_at, m.pinned_at, CASE WHEN av.avatar IS NULL THEN 0 ELSE av.updated_at END AS av
+    FROM chat_messages m JOIN users u ON u.id=m.sender_id LEFT JOIN user_avatars av ON av.user_id=m.sender_id
+    LEFT JOIN chat_messages p ON p.id=m.reply_to LEFT JOIN users pu ON pu.id=p.sender_id LEFT JOIN user_avatars pav ON pav.user_id=p.sender_id`;
+/* مرفق داخل الرسالة: سطر أول "[[att]]{json}" (ملف من ملفات المنصة أو تبليغ). روابط داخلية فقط. */
+const ATT = "[[att]]";
+const ATT_HREF = /^(course\.html\?id=[A-Za-z0-9_-]{1,80}(&dept=\d{1,9})?(#lec-\d{1,4})?|api\/file\/[A-Za-z0-9_-]{1,80}|platform\.html\?dept=\d{1,9}(&stage=\d{1,2})?#(announcements|latest))$/;
+export function cleanAttach(a) {
+  if (!a || typeof a !== "object" || Array.isArray(a)) return null;
+  const type = a.type === "file" || a.type === "announcement" ? a.type : null;
+  const title = typeof a.title === "string" ? a.title.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 120) : "";
+  const sub = typeof a.sub === "string" ? a.sub.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 160) : "";
+  const href = typeof a.href === "string" && ATT_HREF.test(a.href) ? a.href : null;
+  if (!type || !title || !href) return null;
+  return { type, title, sub, href };
+}
 const formatMsg = (r) => ({ ...r, body: r.deleted_at ? null : r.body,
   reply_body: r.reply_deleted ? null : r.reply_body });
 async function message(env, id) {
@@ -206,7 +219,14 @@ export async function handleGroupChat(req, env, opts = {}) {
     const g = await room(env, user.id, groupId);
     if (!g || !(await canAccessStage(g))) return fail("forbidden", 403);
     if (op === "send") {
-      const body = safeName(b.body, MAX_BODY), clientId = String(b.client_id || "");
+      let body = typeof b.body === "string" ? b.body.trim().slice(0, MAX_BODY) : "";
+      const clientId = String(b.client_id || "");
+      if (body.startsWith(ATT)) body = body.replace(/^(\[\[att\]\])+/, ""); // لا يُقبل مرفق مزوّر داخل النص
+      if (b.attach != null) {
+        const att = cleanAttach(b.attach);
+        if (!att) return fail("bad_request", 400);
+        body = (ATT + JSON.stringify(att) + (body ? "\n" + body : "")).slice(0, MAX_BODY);
+      }
       if (!body || !/^[a-zA-Z0-9-]{16,64}$/.test(clientId)) return fail("bad_request", 400);
       const duplicate = await env.DB.prepare("SELECT id FROM chat_messages WHERE sender_id=? AND client_id=?").bind(user.id, clientId).first();
       if (duplicate) {

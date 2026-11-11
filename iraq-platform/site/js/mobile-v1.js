@@ -51,7 +51,8 @@
   if (text && !text.querySelector(".mv-chips")) {
     var chips = el("div", "mv-chips");
     var parts = String((window.SITE && SITE.subtitle) || "").split(" · ").filter(Boolean);
-    parts.forEach(function (p) { chips.appendChild(el("span", "mv-chip", p)); });
+    var head = ($("heroTitle") && $("heroTitle").textContent.trim()) || "";
+    parts.forEach(function (p) { if (p.trim() !== head) chips.appendChild(el("span", "mv-chip", p)); });
     if (window.IQ_STAGE) chips.appendChild(el("span", "mv-chip", "المرحلة " + IQ_STAGE));
     text.appendChild(chips);
   }
@@ -119,7 +120,7 @@
   nav.appendChild(item("الرئيسية", "home", "home", BASE + "#home"));
   nav.appendChild(item("المواد", "book", "semesters", BASE + "#semesters"));
   nav.appendChild(item("المحاضرات", "file", "latest", BASE + "#latest"));
-  nav.appendChild(item("المساعد", "sparkles", "ai", null, function () { var g = document.querySelector("[data-open-guide]"); if (g) g.click(); }));
+  nav.appendChild(item("الدردشة", "users", "chat", "group-chat.html"));
   nav.appendChild(item("حسابي", "user", "me", null, function () { openSheet(); }));
   body.appendChild(nav);
 
@@ -135,7 +136,7 @@
   var sheet = el("div", "mv-sheet"); sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true"); sheet.setAttribute("aria-label", "حسابي");
   var scrim = el("div", "mv-sheet-scrim");
   function closeSheet() { body.classList.remove("mv-sheet-open"); }
-  function openSheet() { fill(); body.classList.add("mv-sheet-open"); }
+  function openSheet() { fill(); body.classList.add("mv-sheet-open"); if (who && who.user) loadPub().then(function () { if (body.classList.contains("mv-sheet-open")) fill(); }); }
   scrim.addEventListener("click", closeSheet);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
   var who = null;
@@ -143,10 +144,90 @@
     var r = el(href ? "a" : "button", "mv-row"); if (href) r.href = href; else r.type = "button";
     r.appendChild(el("span", "", label)); if (click) r.addEventListener("click", click); return r;
   }
+  var pub = null;
+  function hue(id) { return 1 + (Math.abs(Number(id) || 0) % 6); }
+  function shrink(file) { /* مثل ميدكسا: مربع 256 JPEG أقل من 80 ألف حرف */
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var S = 256, c = document.createElement("canvas"); c.width = c.height = S;
+        var side = Math.min(img.naturalWidth, img.naturalHeight), sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, S, S); x.drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        var q = 0.86, out = c.toDataURL("image/jpeg", q);
+        while (out.length > 80000 && q > 0.4) { q -= 0.1; out = c.toDataURL("image/jpeg", q); }
+        out.length > 80000 ? rej(new Error("big")) : res(out);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error("bad")); };
+      img.src = url;
+    });
+  }
+  function postPub(body) {
+    return fetch("/api/profile/public", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || "server"); return j; }); });
+  }
+  function loadPub() {
+    return fetch("/api/profile/public", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { pub = j && j.ok ? j : null; }).catch(function () { pub = null; });
+  }
+  function bigAvatar(u) {
+    var shown = (pub && pub.display_name) || u.name || "?";
+    var a = el("span", "mv-av hue-" + hue(u.id), String(shown).trim().charAt(0).toUpperCase());
+    if (pub && pub.has_avatar) { var im = el("img"); im.alt = ""; im.src = "/api/avatar/" + u.id + "?v=" + pub.updated_at; im.onload = function () { a.textContent = ""; a.appendChild(im); }; }
+    return a;
+  }
   function fill() {
     sheet.textContent = "";
     sheet.appendChild(el("h2", "", "حسابي"));
-    sheet.appendChild(el("p", "mv-who", who && who.user ? (who.user.name || who.user.email || "") : "أنت تتصفح كزائر"));
+    var u = who && who.user;
+    var acct = el("div", "mv-acct");
+    if (u) {
+      acct.appendChild(bigAvatar(u));
+      var tx = el("div", "mv-acct-txt");
+      tx.appendChild(el("strong", "", (pub && pub.display_name) || u.name || ""));
+      if (pub && pub.display_name && pub.display_name !== u.name) tx.appendChild(el("small", "", "الاسم في الحساب: " + u.name));
+      tx.appendChild(el("small", "", u.email || ""));
+      acct.appendChild(tx);
+    } else acct.appendChild(el("p", "mv-who", "أنت تتصفح كزائر"));
+    sheet.appendChild(acct);
+    var facts = el("div", "mv-facts");
+    String((window.SITE && SITE.subtitle) || "").split(" · ").filter(Boolean).forEach(function (p) { facts.appendChild(el("span", "", p)); });
+    if (window.IQ_DEPT && IQ_DEPT.name) facts.appendChild(el("span", "", IQ_DEPT.name));
+    if (window.IQ_STAGE) facts.appendChild(el("span", "", "المرحلة " + IQ_STAGE));
+    if (u && u.admin) facts.appendChild(el("span", "", "مشرف"));
+    else if (u && (u.scopes || []).some(function (x) { return x.level === "rep"; })) facts.appendChild(el("span", "", "ممثل"));
+    if (facts.childNodes.length) sheet.appendChild(facts);
+
+    if (u) { /* الصورة والاسم الظاهر (كما في ميدكسا): يراهما الزملاء في الدردشة ولا يغيّران الاسم الحقيقي */
+      var box = el("div", "mv-pub");
+      box.appendChild(el("strong", "", "صورتك واسمك في الدردشة"));
+      box.appendChild(el("p", "", "يراهما زملاؤك في الدردشة والرسائل الخاصة. لا يغيّران اسمك في الحساب."));
+      var msg = el("span", "mv-msg");
+      var r1 = el("div", "mv-pub-row");
+      var name = el("input", "field"); name.type = "text"; name.maxLength = 30; name.placeholder = "الاسم الظاهر"; name.value = (pub && pub.display_name) || "";
+      var save = el("button", "btn btn-secondary btn-sm", "حفظ الاسم"); save.type = "button";
+      save.onclick = function () { save.disabled = true; postPub({ name: name.value }).then(function () { msg.textContent = "حُفظ الاسم."; return loadPub(); }).then(fill).catch(function () { msg.textContent = "تعذّر الحفظ (حرفان على الأقل)."; }).then(function () { save.disabled = false; }); };
+      r1.appendChild(name); r1.appendChild(save); box.appendChild(r1);
+      var r2 = el("div", "mv-pub-row");
+      var file = el("input"); file.type = "file"; file.accept = "image/*"; file.hidden = true;
+      var pick = el("button", "btn btn-secondary btn-sm", pub && pub.has_avatar ? "تغيير الصورة" : "إضافة صورة"); pick.type = "button";
+      pick.onclick = function () { file.click(); };
+      file.onchange = function () {
+        var f = file.files && file.files[0]; if (!f) return;
+        msg.textContent = "جارٍ الرفع…";
+        shrink(f).then(function (data) { return postPub({ image: data }); }).then(function () { msg.textContent = "حُفظت الصورة."; return loadPub(); }).then(fill)
+          .catch(function () { msg.textContent = "تعذّر رفع الصورة. جرّب صورة أخرى."; });
+      };
+      r2.appendChild(pick); r2.appendChild(file);
+      if (pub && pub.has_avatar) {
+        var rm = el("button", "btn btn-secondary btn-sm", "إزالة الصورة"); rm.type = "button";
+        rm.onclick = function () { postPub({ remove: true }).then(loadPub).then(fill).catch(function () { msg.textContent = "تعذّر الحذف."; }); };
+        r2.appendChild(rm);
+      }
+      box.appendChild(r2); box.appendChild(msg);
+      sheet.appendChild(box);
+    }
+
     var lang = el("label", "mv-row"); lang.appendChild(el("span", "", "اللغة"));
     var sel = document.createElement("select"); sel.className = "field";
     [["ar", "عربي"], ["fa", "فارسی"], ["en", "English"]].forEach(function (o) { var op = el("option", "", o[1]); op.value = o[0]; sel.appendChild(op); });
@@ -154,11 +235,11 @@
     sel.addEventListener("change", function () { var s = $("langSel"); if (s) { s.value = sel.value; s.dispatchEvent(new Event("change")); } else if (window.I18N) I18N.set(sel.value); });
     lang.appendChild(sel); sheet.appendChild(lang);
     sheet.appendChild(row("تبديل الوضع الليلي/النهاري", null, function () { var b = $("themeBtn"); if (b) b.click(); }));
+    sheet.appendChild(row("الرسائل الخاصة", "dm.html"));
+    sheet.appendChild(row("المرشد الذكي", null, function () { closeSheet(); var g = document.querySelector("[data-open-guide]"); if (g) g.click(); }));
     sheet.appendChild(row("المفضلة", BASE + "#favorites", closeSheet));
-    sheet.appendChild(row("دردشة مجموعتي", "group-chat.html"));
     sheet.appendChild(row("تغيير القسم", "catalog.html"));
-    if (who && who.user) {
-      var u = who.user;
+    if (u) {
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("لوحة الإدارة", "admin.html"));
       sheet.appendChild(row("تسجيل الخروج", null, function () {
         if (window.MSAuth && MSAuth.logout) MSAuth.logout().then(function () { location.reload(); });

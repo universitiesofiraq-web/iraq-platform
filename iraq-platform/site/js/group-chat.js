@@ -2,7 +2,8 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var active = null, rooms = [], messages = new Map(), more = false, loading = false;
-  var replyTo = null, editing = null, me = null, polling = false;
+  var replyTo = null, editing = null, me = null, polling = false, attach = null;
+  var ATT = "[[att]]";
   var pollTimer = null, pollDelay = 15000, roomsUpdatedAt = 0;
   var removedCount = null, historyEpoch = 0, roomSignature, requestSignature;
   var stamp = new Intl.DateTimeFormat("ar-IQ", { hour: "2-digit", minute: "2-digit" });
@@ -93,50 +94,96 @@
     $("muteBtn").hidden = true; $("manageLink").hidden = true; $("replyBar").hidden = true;
     renderRooms();
   }
+  /* المرفق في السطر الأول "[[att]]{json}" (يتحقق منه الخادم) */
+  function parseAtt(body) {
+    var t = String(body || ""), att = null;
+    if (t.indexOf(ATT) === 0) {
+      var nl = t.indexOf("\n"), line = nl < 0 ? t.slice(ATT.length) : t.slice(ATT.length, nl);
+      try { att = JSON.parse(line); } catch (_) { att = null; }
+      t = nl < 0 ? "" : t.slice(nl + 1);
+    }
+    return { att: att, text: t };
+  }
+  function plain(body) { var p = parseAtt(body); return p.text || (p.att ? "📎 " + p.att.title : ""); }
+  function hue(id) { return 1 + (Math.abs(Number(id) || 0) % 6); }
+  function avatarFor(m) {
+    var a = node("span", "m-av hue-" + hue(m.sender_id), (String(m.sender || "?").trim().charAt(0) || "?").toUpperCase());
+    a.setAttribute("aria-hidden", "true");
+    if (m.av) {
+      var im = document.createElement("img"); im.alt = ""; im.decoding = "async";
+      im.src = "/api/avatar/" + m.sender_id + "?v=" + m.av;
+      im.onload = function () { a.textContent = ""; a.appendChild(im); a.classList.add("has-img"); };
+    }
+    return a;
+  }
+  function attCard(att) {
+    var a = node("a", "att-card"); a.href = att.href;
+    a.appendChild(node("span", "att-ico", att.type === "announcement" ? "📣" : "📄"));
+    var t = node("span", "att-txt"); t.appendChild(node("strong", null, att.title)); if (att.sub) t.appendChild(node("small", null, att.sub));
+    a.appendChild(t); return a;
+  }
   function actionsFor(msg, r) {
     var actionRow = node("span", "msg-actions");
-    function action(label, callback) { var a = node("button", null, label); a.type = "button"; a.onclick = callback; actionRow.appendChild(a); }
+    function action(label, callback) { var a = node("button", null, label); a.type = "button"; a.onclick = function (e) { e.stopPropagation(); callback(); }; actionRow.appendChild(a); }
     if (msg.deleted_at) return actionRow;
     action("رد", function () { replyTo = msg; editing = null; composeBar(); $("messageInput").focus(); });
     var canEdit = msg.sender_id === me.id && Date.now() - msg.created_at < 15 * 60 * 1000;
-    if (canEdit) action("تعديل", function () { editing = msg; replyTo = null; $("messageInput").value = msg.body; composeBar(); $("messageInput").focus(); });
-    if (canEdit || isModerator(r)) action("حذف", function () { if (confirm("حذف هذه الرسالة؟")) mutate("delete", { message_id: msg.id }); });
+    if (canEdit && !parseAtt(msg.body).att) action("تعديل", function () { editing = msg; replyTo = null; $("messageInput").value = msg.body; composeBar(); $("messageInput").focus(); });
+    if (canEdit || isModerator(r)) action("حذف للجميع", function () { if (confirm("حذف هذه الرسالة من عند الجميع؟")) mutate("delete", { message_id: msg.id }); });
     if (isModerator(r)) action(msg.pinned_at ? "إلغاء التثبيت" : "تثبيت", function () { mutate("pin", { message_id: msg.id, pinned: !msg.pinned_at }); });
-    if (msg.sender_id !== me.id) action("إبلاغ", function () {
-      var reason = prompt("ما سبب الإبلاغ عن هذه الرسالة؟");
-      if (reason) mutate("report", { message_id: msg.id, reason: reason });
-    });
+    if (msg.sender_id !== me.id) {
+      action("رسالة خاصة", function () { location.href = "dm.html?u=" + msg.sender_id; });
+      action("إبلاغ", function () {
+        var reason = prompt("ما سبب الإبلاغ عن هذه الرسالة؟");
+        if (reason) mutate("report", { message_id: msg.id, reason: reason });
+      });
+    }
     return actionRow;
   }
+  function dayKey(t) { return new Date(t).toDateString(); }
   function drawMessages(keepPosition) {
     var root = $("conversation"), oldHeight = root.scrollHeight, oldTop = root.scrollTop;
     var nearBottom = root.scrollHeight - root.scrollTop - root.clientHeight < 90;
     root.textContent = "";
     var r = chosenRoom();
-    var sorted = Array.from(messages.values()).sort(function (a, b) { return a.id - b.id; });
+    /* الحذف للجميع بلا أثر: الرسالة المحذوفة لا تُرسم أصلاً */
+    var sorted = Array.from(messages.values()).filter(function (m) { return !m.deleted_at; }).sort(function (a, b) { return a.id - b.id; });
     if (!sorted.length) root.appendChild(node("div", "empty-thread", "ابدأ المحادثة مع زملائك في مجموعتك."));
+    var prev = null;
     sorted.forEach(function (m) {
-      var mine = m.sender_id === me.id, item = node("article", "message" + (mine ? " mine" : "") + (m.deleted_at ? " deleted" : ""));
-      item.appendChild(node("div", "msg-label", mine ? "أنت" : m.sender));
+      if (!prev || dayKey(prev.created_at) !== dayKey(m.created_at)) {
+        root.appendChild(node("div", "day-sep", new Date(m.created_at).toLocaleDateString("ar-IQ", { weekday: "long", day: "numeric", month: "long" })));
+        prev = null;
+      }
+      var mine = m.sender_id === me.id;
+      var cont = !!prev && prev.sender_id === m.sender_id && m.created_at - prev.created_at < 300000;
+      var item = node("article", "message" + (mine ? " mine" : "") + (cont ? " cont" : ""));
+      if (!mine) item.appendChild(avatarFor(m));
       var bubble = node("div", "bubble");
-      if (m.reply_to) bubble.appendChild(node("span", "msg-reply", "↳ " + (m.reply_sender || "عضو") + ": " + (m.reply_body || "رسالة محذوفة")));
-      bubble.appendChild(node("span", null, m.deleted_at ? "حُذفت هذه الرسالة" : m.body));
+      if (!mine && !cont) bubble.appendChild(node("div", "msg-label hue-" + hue(m.sender_id), m.sender));
+      if (m.reply_to) bubble.appendChild(node("span", "msg-reply", (m.reply_sender || "عضو") + ": " + (m.reply_body ? plain(m.reply_body).slice(0, 120) : "رسالة محذوفة")));
+      var parsed = parseAtt(m.body);
+      if (parsed.att) bubble.appendChild(attCard(parsed.att));
+      if (parsed.text) { var tx = node("span", "msg-text", parsed.text); tx.dir = "auto"; bubble.appendChild(tx); }
+      bubble.appendChild(node("span", "msg-time", stamp.format(new Date(m.created_at)) + (m.edited_at ? " · معدلة" : "") + (m.pinned_at ? " · 📌" : "")));
+      bubble.appendChild(actionsFor(m, r));
+      bubble.addEventListener("click", function (e) { if (e.target.closest("a,button")) return; bubble.classList.toggle("show-actions"); });
       item.appendChild(bubble);
-      var foot = node("div", "msg-meta");
-      foot.appendChild(node("span", null, stamp.format(new Date(m.created_at)) + (m.edited_at ? " · معدلة" : "") + (m.pinned_at ? " · 📌" : "")));
-      foot.appendChild(actionsFor(m, r)); item.appendChild(foot);
       root.appendChild(item);
+      prev = m;
     });
-    var pinned = sorted.filter(function (m) { return m.pinned_at && !m.deleted_at; });
+    var pinned = sorted.filter(function (m) { return m.pinned_at; });
     $("pinnedBar").hidden = !pinned.length;
-    $("pinnedBar").textContent = pinned.length ? "📌 المثبتة: " + pinned.map(function (m) { return m.body.slice(0, 80); }).join(" · ") : "";
+    $("pinnedBar").textContent = pinned.length ? "📌 " + pinned.map(function (m) { return plain(m.body).slice(0, 80); }).join(" · ") : "";
     $("olderBtn").hidden = !more;
     if (keepPosition === "older") root.scrollTop = root.scrollHeight - oldHeight + oldTop;
     else if (!keepPosition || nearBottom) root.scrollTop = root.scrollHeight;
   }
   function composeBar() {
     $("replyBar").hidden = !replyTo && !editing;
-    $("replyText").textContent = editing ? "تعديل الرسالة" : replyTo ? "الرد على " + replyTo.sender + ": " + replyTo.body.slice(0, 90) : "";
+    $("replyText").textContent = editing ? "تعديل الرسالة" : replyTo ? "الرد على " + replyTo.sender + ": " + plain(replyTo.body).slice(0, 90) : "";
+    $("attachBar").hidden = !attach;
+    $("attachText").textContent = attach ? "📎 " + attach.title : "";
     $("sendBtn").firstChild.textContent = editing ? "حفظ " : "إرسال ";
   }
   async function markRead() {
@@ -240,20 +287,76 @@
   }
   $("sendForm").addEventListener("submit", async function (e) {
     e.preventDefault();
-    var value = $("messageInput").value.trim(); if (!active || !value) return;
+    var value = $("messageInput").value.trim(); if (!active || (!value && !attach)) return;
     var roomId = active;
     $("sendBtn").disabled = true; status("");
     try {
       var d;
       if (editing) d = await api("edit", { room_id: roomId, message_id: editing.id, body: value });
-      else d = await api("send", { room_id: roomId, body: value, client_id: crypto.randomUUID(), reply_to: replyTo ? replyTo.id : null });
+      else d = await api("send", { room_id: roomId, body: value, client_id: crypto.randomUUID(), reply_to: replyTo ? replyTo.id : null, attach: attach || undefined });
       if (active === roomId) {
         messages.set(d.item.id, d.item); $("messageInput").value = "";
-        replyTo = null; editing = null; composeBar(); drawMessages(); await markRead(); await refreshRooms();
+        replyTo = null; editing = null; attach = null; composeBar(); drawMessages(); await markRead(); await refreshRooms();
       }
     } catch (err) { status(errorText(err)); }
     finally { $("sendBtn").disabled = false; }
   });
+  /* ---- إرفاق: ملفات القسم والتبليغات ---- */
+  var deptCache = {};
+  function sheetRow(icon, title, sub, pick) {
+    var b = node("button", "sheet-row"); b.type = "button";
+    b.appendChild(node("span", "att-ico", icon));
+    var t = node("span", "att-txt"); t.appendChild(node("strong", null, title)); if (sub) t.appendChild(node("small", null, sub));
+    b.appendChild(t); b.onclick = function () { pick(); closeSheet(); }; return b;
+  }
+  function closeSheet() { $("attachSheet").hidden = true; }
+  async function filesOf(r) {
+    if (deptCache[r.department_id]) return deptCache[r.department_id];
+    var res = await fetch("/api/platform?dept=" + r.department_id); var d = await res.json();
+    var out = [];
+    (d.courses || []).forEach(function (c) {
+      if (r.stage && Math.floor(Number(c.semester) / 10) !== Number(r.stage)) return;
+      (c.lectures || []).forEach(function (l) {
+        if (!(l.files || []).length) return;
+        out.push({ type: "file", title: (l.title || ("المحاضرة " + l.number)).slice(0, 120), sub: (c.name || "").slice(0, 160), href: "course.html?id=" + c.id + "&dept=" + r.department_id + "#lec-" + l.number });
+      });
+    });
+    return (deptCache[r.department_id] = out);
+  }
+  async function openSheet(tab) {
+    var r = chosenRoom(); if (!r) return;
+    $("attachSheet").hidden = false;
+    var list = $("sheetList"); list.textContent = "";
+    [].forEach.call(document.querySelectorAll("[data-tab]"), function (b) { b.setAttribute("aria-pressed", String(b.dataset.tab === tab)); });
+    list.appendChild(node("p", "muted", "جارٍ التحميل..."));
+    try {
+      if (tab === "files") {
+        var files = await filesOf(r), q = node("input", "sheet-search"); q.type = "search"; q.placeholder = "ابحث في ملفات القسم";
+        var box = node("div");
+        function draw() {
+          box.textContent = ""; var k = q.value.trim();
+          var hit = files.filter(function (f) { return !k || (f.title + " " + f.sub).indexOf(k) >= 0; }).slice(0, 80);
+          if (!hit.length) box.appendChild(node("p", "muted", "لا توجد ملفات."));
+          hit.forEach(function (f) { box.appendChild(sheetRow("📄", f.title, f.sub, function () { attach = f; composeBar(); })); });
+        }
+        q.oninput = draw; list.textContent = ""; list.appendChild(q); list.appendChild(box); draw();
+      } else {
+        var res = await fetch("/api/stage-announcements"); var d = await res.json();
+        list.textContent = "";
+        if (!(d.items || []).length) list.appendChild(node("p", "muted", "لا توجد تبليغات."));
+        (d.items || []).slice(0, 30).forEach(function (a) {
+          list.appendChild(sheetRow("📣", a.title, String(a.body || "").slice(0, 100), function () {
+            attach = { type: "announcement", title: String(a.title).slice(0, 120), sub: String(a.body || "").slice(0, 160), href: "platform.html?dept=" + r.department_id + "&stage=" + r.stage + "#announcements" }; composeBar();
+          }));
+        });
+      }
+    } catch (_) { list.textContent = ""; list.appendChild(node("p", "muted", "تعذّر التحميل.")); }
+  }
+  $("attachBtn").onclick = function () { openSheet("files"); };
+  [].forEach.call(document.querySelectorAll("[data-tab]"), function (b) { b.onclick = function () { openSheet(b.dataset.tab); }; });
+  $("sheetClose").onclick = closeSheet;
+  $("attachSheet").addEventListener("click", function (e) { if (e.target === $("attachSheet")) closeSheet(); });
+  $("cancelAttach").onclick = function () { attach = null; composeBar(); };
   $("cancelReply").onclick = function () { editing = null; replyTo = null; $("messageInput").value = ""; composeBar(); };
   $("olderBtn").onclick = loadOlder;
   $("backToRooms").onclick = function () {
