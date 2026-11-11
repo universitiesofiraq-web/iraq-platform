@@ -106,6 +106,7 @@ async function handleCatalogRaw(req, env) {
   const q = url.searchParams;
 
   try {
+    if (part === "fixdepts") return await fixStageDepartments(req, env, url);
     if (req.method === "GET") {
       const directory = q.get("view") === "directory";
       const joining = q.get("view") === "join"; // التسجيل: كل جامعات الدليل عدا المعلّقة، للمستخدم المسجّل دخوله
@@ -377,4 +378,57 @@ async function join(req, env, url) {
   ]);
   // التسجيل لا يغيّر حالة الجامعة: التفعيل والتعليق للإدارة المخوّلة فقط (onboarding.js)
   return json({ ok: true, department_id: did, university_state: dep.state === "active" ? "active" : "pending", university_activated: false });
+}
+
+
+/* إصلاح: أقسام اسمها "المرحلة الأولى…" تُدمج في قسم واحد حقيقي لكل كلية (طب عام + ست مراحل).
+   GET = معاينة بلا تغيير، POST = تنفيذ. للمشرف العام فقط. لا يحذف أي مرحلة ولا يغيّر معرّفاتها،
+   فتبقى الدردشة والمواد والملفات الشخصية والصلاحيات كما هي. */
+const STAGE_NAME = /^\s*المرحلة\s+(الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|الثامنة)\s*$/;
+async function fixStageDepartments(req, env, url) {
+  const me = await currentUser(req, env);
+  if (!me || !(await isGlobalAdmin(me, env))) return fail("forbidden", 403);
+  const apply = req.method === "POST";
+  if (apply) {
+    const origin = req.headers.get("origin");
+    if (origin && origin !== url.origin) return fail("forbidden", 403);
+  } else if (req.method !== "GET") return fail("not_found", 404);
+  const colleges = await all(env, "SELECT id, name_ar FROM colleges");
+  const deps = await all(env, "SELECT id, college_id, name_ar FROM departments");
+  const plan = [];
+  for (const c of colleges) {
+    const mine = deps.filter((d) => d.college_id === c.id);
+    const fake = mine.filter((d) => STAGE_NAME.test(d.name_ar || ""));
+    if (!fake.length) continue;
+    const real = mine.filter((d) => !STAGE_NAME.test(d.name_ar || ""));
+    const wanted = /^\s*كلية\s+(ال)?طب\s*$/.test(c.name_ar || "") ? "الطب العام" : String(c.name_ar || "").replace(/^\s*كلية\s+/, "").trim();
+    const target = real.length === 1 ? real[0] : null;
+    const stages = [];
+    for (const f of fake) stages.push(...(await all(env, "SELECT id, number, department_id FROM stages WHERE department_id=?", f.id)));
+    const taken = new Set(target ? (await all(env, "SELECT number FROM stages WHERE department_id=?", target.id)).map((x) => x.number) : []);
+    const moves = [], conflicts = [];
+    for (const st of stages.sort((a, b) => a.number - b.number)) {
+      if (taken.has(st.number)) conflicts.push(st.number); else { taken.add(st.number); moves.push(st); }
+    }
+    plan.push({ college_id: c.id, college: c.name_ar, target: target ? target.name_ar : wanted + " (جديد)", create: !target,
+      real_departments: real.length, stages_to_move: moves.map((m) => m.number), conflicts, fake_departments: fake.map((f) => f.name_ar), _t: target, _wanted: wanted, _moves: moves, _fake: fake });
+  }
+  if (!apply) return json({ ok: true, preview: true, colleges: plan.map(({ _t, _wanted, _moves, _fake, ...x }) => x) });
+  let moved = 0, removed = 0, created = 0;
+  for (const p of plan) {
+    if (p.real_departments > 1) continue; // أكثر من قسم حقيقي: لا نخمّن
+    let tid = p._t && p._t.id;
+    if (!tid) {
+      const r = await env.DB.prepare("INSERT INTO departments (college_id,name_ar) VALUES (?,?)").bind(p.college_id, p._wanted).run();
+      tid = r.meta && r.meta.last_row_id; created++;
+    }
+    if (!tid) continue;
+    for (const st of p._moves) { await env.DB.prepare("UPDATE stages SET department_id=? WHERE id=?").bind(tid, st.id).run(); moved++; }
+    for (const f of p._fake) {
+      const left = await env.DB.prepare("SELECT (SELECT COUNT(*) FROM stages WHERE department_id=?1) + (SELECT COUNT(*) FROM scopes WHERE type='department' AND node_id=?1) + (SELECT COUNT(*) FROM invitations WHERE type='department' AND node_id=?1) AS n").bind(f.id).first();
+      if (left && left.n === 0) { await env.DB.prepare("DELETE FROM departments WHERE id=?").bind(f.id).run(); removed++; }
+    }
+  }
+  searchIndexes.delete(env.DB);
+  return json({ ok: true, moved_stages: moved, created_departments: created, removed_fake_departments: removed });
 }

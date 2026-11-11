@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>إصلاح الأقسام | المنصة العراقية</title>
+  <link rel="stylesheet" href="css/iq.css?v=3">
+</head>
+<body>
+  <main class="ct up">
+    <a class="back" href="admin.html">← لوحة الإدارة</a>
+    <h1>إصلاح أقسام الكليات</h1>
+    <p class="ct-note">يدمج الأقسام المسمّاة «المرحلة الأولى…» في قسم واحد لكل كلية (مثل «الطب العام» وتحته المراحل). لا يحذف مرحلة ولا يغيّر الدردشة أو المواد أو الصلاحيات. المعاينة لا تغيّر شيئاً.</p>
+    <button class="btn btn-secondary" id="pv" type="button">معاينة</button>
+    <div id="out" class="up-card" hidden></div>
+    <button class="btn btn-primary up-go" id="ap" type="button" hidden>تطبيق الإصلاح</button>
+    <p class="ct-msg" id="msg" role="alert"></p>
+  </main>
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    function line(t) { var p = document.createElement("p"); p.textContent = t; $("out").appendChild(p); }
+    $("pv").onclick = function () {
+      $("msg").textContent = "جارٍ الفحص…"; $("out").textContent = ""; $("ap").hidden = true;
+      fetch("/api/catalog/fixdepts", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d.ok) { $("msg").textContent = d.error === "forbidden" ? "للمشرف العام فقط." : "تعذّر الفحص."; return; }
+        $("msg").textContent = ""; $("out").hidden = false;
+        if (!d.colleges.length) { line("لا توجد أقسام تحتاج إصلاحاً."); return; }
+        d.colleges.forEach(function (c) {
+          line(c.college + ": سيُنقل (المراحل " + (c.stages_to_move.join("، ") || "—") + ") إلى «" + c.target + "»" +
+            (c.conflicts.length ? " — متعارضة وتُترك: " + c.conflicts.join("، ") : "") +
+            (c.real_departments > 1 ? " — فيها أكثر من قسم حقيقي فلن تُمس." : ""));
+        });
+        $("ap").hidden = false;
+      }).catch(function () { $("msg").textContent = "تعذّر الاتصال."; });
+    };
+    $("ap").onclick = function () {
+      if (!confirm("تطبيق الإصلاح على قاعدة البيانات الحقيقية؟")) return;
+      $("ap").disabled = true; $("msg").textContent = "جارٍ التطبيق…";
+      fetch("/api/catalog/fixdepts", { method: "POST", credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+        $("ap").disabled = false;
+        $("msg").textContent = d.ok ? "تم: نُقلت " + d.moved_stages + " مرحلة، وأُنشئ " + d.created_departments + " قسم، وحُذف " + d.removed_fake_departments + " قسم قديم." : "تعذّر التطبيق.";
+        $("msg").className = "ct-msg " + (d.ok ? "ok" : "bad");
+      }).catch(function () { $("ap").disabled = false; $("msg").textContent = "تعذّر الاتصال."; });
+    };
+  })();
+  </script>
+</body>
+</html>
