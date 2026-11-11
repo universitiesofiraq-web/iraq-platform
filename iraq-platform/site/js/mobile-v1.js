@@ -271,9 +271,19 @@
     sheet.appendChild(row("تصفّح قسم آخر", "catalog.html"));
     if (u) {
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("لوحة الإدارة", "admin.html"));
-      sheet.appendChild(row("تسجيل الخروج", null, function () {
-        if (window.MSAuth && MSAuth.logout) MSAuth.logout().then(function () { location.reload(); });
-      }));
+      var logoutStatus = el("p", "mv-who");
+      logoutStatus.setAttribute("role", "status");
+      var logoutButton = row("تسجيل الخروج", null, function () {
+        if (!window.MSAuth || !MSAuth.logout) return;
+        logoutButton.disabled = true;
+        logoutStatus.textContent = "";
+        MSAuth.logout().then(function () { location.reload(); }, function () {
+          logoutButton.disabled = false;
+          logoutStatus.textContent = "تعذّر تسجيل الخروج. تحقق من الاتصال وحاول مرة أخرى.";
+        });
+      });
+      sheet.appendChild(logoutButton);
+      sheet.appendChild(logoutStatus);
     } else {
       sheet.appendChild(row("تسجيل الدخول", "login.html?next=" + encodeURIComponent(location.pathname + location.search)));
     }
