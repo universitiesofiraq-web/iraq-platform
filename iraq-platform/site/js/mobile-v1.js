@@ -4,22 +4,31 @@
    النصوص من الخادم تُكتب textContent فقط. */
 (function () {
   "use strict";
-  if (!window.MS || !document.getElementById("home")) return;
+  if (!window.MS) return;
   var MS = window.MS, el = MS.el, $ = MS.$;
   var T = function (s) { return window.I18N && I18N.t ? I18N.t(s) : s; };
   var VIEWS = { home: "home", semesters: "subjects", subjects: "subjects", favorites: "subjects", latest: "lectures", lectures: "lectures",
     tools: "tools", review: "tools", professors: "tools", help: "tools" };
   var body = document.body;
+  var isHome = !!document.getElementById("home");
   body.classList.add("mv");
+  /* صفحات المادة والكورس: شريط التنقل والرأس فقط، وروابطه تعود إلى صفحة القسم مع ?dept= و?stage= */
+  var BASE = "";
+  if (!isHome) {
+    var d = window.IQ_DEPT && IQ_DEPT.id;
+    BASE = "platform.html" + (d ? "?dept=" + d + (window.IQ_STAGE ? "&stage=" + IQ_STAGE : "") : "");
+  }
+  var SUB = /\/(course|semester)(\.html)?$/.test(location.pathname) ? "semesters" : null;
 
   function view() {
+    if (!isHome) return "";
     var h = (location.hash || "#home").slice(1);
     return VIEWS[h] || "home";
   }
   function apply() {
     var v = view();
-    body.setAttribute("data-mv", v);
-    var cur = { home: "home", subjects: "semesters", lectures: "latest", tools: "tools" }[v];
+    body.setAttribute("data-mv", v || "page");
+    var cur = isHome ? { home: "home", subjects: "semesters", lectures: "latest", tools: "tools" }[v] : SUB;
     var links = document.querySelectorAll(".mv-nav [data-v]");
     for (var i = 0; i < links.length; i++) {
       if (links[i].getAttribute("data-v") === cur) links[i].setAttribute("aria-current", "page"); else links[i].removeAttribute("aria-current");
@@ -36,6 +45,7 @@
     inner.insertBefore(tt, sb || null);
   }
 
+  if (isHome) {
   /* ---- M1: هوية القسم المختصرة (جامعة · كلية · مرحلة) ---- */
   var text = document.querySelector(".hero-text");
   if (text && !text.querySelector(".mv-chips")) {
@@ -96,6 +106,8 @@
     latest.querySelector(".container").appendChild(more);
   }
 
+  }
+
   /* ---- M2: شريط التنقل السفلي ---- */
   var nav = el("nav", "mv-nav"); nav.setAttribute("aria-label", "التنقل الرئيسي");
   function item(label, ico, v, href, click) {
@@ -104,9 +116,9 @@
     if (click) a.addEventListener("click", click);
     return a;
   }
-  nav.appendChild(item("الرئيسية", "home", "home", "#home"));
-  nav.appendChild(item("المواد", "book", "semesters", "#semesters"));
-  nav.appendChild(item("المحاضرات", "file", "latest", "#latest"));
+  nav.appendChild(item("الرئيسية", "home", "home", BASE + "#home"));
+  nav.appendChild(item("المواد", "book", "semesters", BASE + "#semesters"));
+  nav.appendChild(item("المحاضرات", "file", "latest", BASE + "#latest"));
   nav.appendChild(item("المساعد", "sparkles", "ai", null, function () { var g = document.querySelector("[data-open-guide]"); if (g) g.click(); }));
   nav.appendChild(item("حسابي", "user", "me", null, function () { openSheet(); }));
   body.appendChild(nav);
@@ -142,7 +154,7 @@
     sel.addEventListener("change", function () { var s = $("langSel"); if (s) { s.value = sel.value; s.dispatchEvent(new Event("change")); } else if (window.I18N) I18N.set(sel.value); });
     lang.appendChild(sel); sheet.appendChild(lang);
     sheet.appendChild(row("تبديل الوضع الليلي/النهاري", null, function () { var b = $("themeBtn"); if (b) b.click(); }));
-    sheet.appendChild(row("المفضلة", "#favorites", closeSheet));
+    sheet.appendChild(row("المفضلة", BASE + "#favorites", closeSheet));
     sheet.appendChild(row("دردشة مجموعتي", "group-chat.html"));
     sheet.appendChild(row("تغيير القسم", "catalog.html"));
     if (who && who.user) {
