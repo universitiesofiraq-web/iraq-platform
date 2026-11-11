@@ -13,24 +13,20 @@
     return "index.html";
   }
   // الوجهة بعد الدخول: مسار نسبي داخل الموقع فقط
-  function nextUrl() {
+  function requestedNext() {
     var n = new URLSearchParams(location.search).get("next") || "";
-    return /^[A-Za-z0-9._\-\/?=&%#]+$/.test(n) && n.indexOf("//") === -1 && n.indexOf(":") === -1 ? n.replace(/^\//, "") : savedHome();
+    return /^[A-Za-z0-9._\-\/?=&%#]+$/.test(n) && n.indexOf("//") === -1 && n.indexOf(":") === -1 ? n.replace(/^\//, "") : "";
   }
 
-  // المتابعة: الوجهة المطلوبة، وإلا قسمك المحفوظ (على الجهاز ثم في الحساب)، وإلا الصفحة الرئيسية
   function goNext() {
-    if (new URLSearchParams(location.search).get("next")) { location.href = nextUrl(); return; }
-    var s = null;
-    try { s = JSON.parse(localStorage.getItem("iq.dept") || "null"); } catch (e) { /* لا شيء */ }
-    if (s && Number(s.id) > 0) { location.href = "dept.html?id=" + Number(s.id); return; }
-    fetch("/api/sync", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
-      var v = d && d.data && d.data["iq.dept"] && d.data["iq.dept"].v;
-      if (v && Number(v.id) > 0) { location.href = "dept.html?id=" + Number(v.id); return; }
-      // طالب جديد بلا قسم محفوظ: صفحة التسجيل التي تعرض كل الجامعات
-      return fetch("/api/catalog/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (m) {
-        location.href = m && m.profile && m.profile.university_state === "active" ? "platform.html?dept=" + Number(m.profile.department_id) : "join.html";
-      });
+    var next = requestedNext();
+    if (next) { location.href = next; return; }
+    MSAuth.api("GET", "catalog/me").then(function (r) {
+      if (r.status !== 200) { location.href = "index.html"; return; }
+      var profile = r.data && r.data.profile;
+      var department = Number(profile && profile.department_id);
+      location.href = profile && profile.university_state === "active" && department > 0
+        ? "platform.html?dept=" + department : "join.html";
     }).catch(function () { location.href = "index.html"; });
   }
 
@@ -45,7 +41,11 @@
   }
 
   /* ---------- الزائر ---------- */
-  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () { goNext(); });
+  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () {
+    var next = requestedNext();
+    var page = next ? new URL(next, location.href).pathname.split("/").pop() : "";
+    location.href = next && !/^(login|join)(\.html)?$/i.test(page) ? next : savedHome();
+  });
 
   /* ---------- حالة: مسجّل الدخول ---------- */
   function row(label, glyphHtml) {
