@@ -7,6 +7,8 @@
  --brand-size: 34px; --mobile-art: 36%;
  background: var(--color-bg);
 }
+/* الوضع الليلي: الخلفية الفاتحة الخاصة بالصفحة كانت تُبقي العناوين البيضاء على خلفية فاتحة */
+[data-theme="dark"] .semester-design { --color-bg: #0f1a28; --rail-shadow: none; }
 .semester-design .site-header { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
 .semester-brand { font-family: Georgia,serif; font-size: var(--brand-size); font-weight: 700; color: var(--color-petrol); order: 5; margin-inline-start: auto; }
 .semester-design .search-pill { max-width: 620px; }

@@ -10,10 +10,11 @@
   /* ---- M3: شريط عنوان مختصر ---- */
   body.mv .site-header { --header-h: 56px; }
   body.mv .header-inner { gap: var(--space-2); padding-inline: var(--space-3); }
-  body.mv .header-actions, body.mv .hero-brand { display: none; }
+  body.mv .header-actions, body.mv .hero-brand, body.mv .semester-brand { display: none; }
   body.mv .mv-title { display: block; flex: 1; min-width: 0; text-align: center; font-weight: 700; font-size: var(--text-md); color: var(--color-heading); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.mv .search-pill { flex: none; width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: var(--radius-pill); }
   body.mv .search-pill > span:not(.ico) { display: none; }
+  body.mv.semester-design .search-pill { background: var(--color-surface-alt); color: var(--color-text); }
   body.mv .icon-btn { min-width: 44px; min-height: 44px; }
 
   /* ---- M1: الرئيسية المختصرة (عرض فقط للمقطع المختار) ---- */
