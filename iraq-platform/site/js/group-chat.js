@@ -48,7 +48,12 @@
   function renderRooms() {
     var root = $("roomList"); root.textContent = "";
     $("roomCount").textContent = rooms.length;
-    if (!rooms.length) root.appendChild(node("p", "muted", "لا توجد مجموعة بعد. اختر قسمك ومرحلتك في ملفك الشخصي لتنضم تلقائياً."));
+    if (!rooms.length) {
+      var pending = myProfile && myProfile.membership === "pending";
+      root.appendChild(node("p", "muted", pending
+        ? "ستنضم إلى مجموعة مرحلتك تلقائياً بعد أن يؤكّد ممثل المرحلة عضويتك. يمكنك مراسلته الآن من «الرسائل الخاصة»."
+        : myProfile ? "لا توجد مجموعة لمرحلتك بعد؛ ستُنشأ تلقائياً عند تأكيد أول طالب فيها." : "سجّل قسمك ومرحلتك لتنضم إلى مجموعة مرحلتك تلقائياً."));
+    }
     rooms.forEach(function (r) {
       var b = node("button", "room" + (r.id === active ? " is-active" : "")); b.type = "button"; b.dataset.roomId = r.id;
       var avatar = node("span", "room-avatar", "✦");
@@ -393,10 +398,11 @@
     if (!document.hidden) poll();
   });
   /* المجموعة تتبع المرحلة المسجّلة في الحساب (وليس القسم الذي تتصفحه): نوضّح ذلك ونعطي رابط التغيير */
+  var myProfile = null;
   async function profileBanner() {
     try {
       var d = await fetch("/api/catalog/me").then(function (r) { return r.json(); });
-      var p = d && d.profile, box = $("profileBanner"); box.textContent = ""; box.hidden = false;
+      var p = d && d.profile; myProfile = p || null; var box = $("profileBanner"); box.textContent = ""; box.hidden = false;
       if (!p) {
         box.appendChild(node("span", null, "لم تسجّل قسمك ومرحلتك بعد. "));
       } else {
@@ -415,7 +421,7 @@
       var res = await fetch("/api/auth/me"); var data = await res.json();
       if (!res.ok || !data.ok || !data.user) throw Error(data.error || (res.status === 401 ? "unauthorized" : "server"));
       me = data.user;
-      profileBanner();
+      await profileBanner();
       await refreshRooms();
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
       var first = requestedRoom || (!mobile.matches && rooms[0] && rooms[0].id);
