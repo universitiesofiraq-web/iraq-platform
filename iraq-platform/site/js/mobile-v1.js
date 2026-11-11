@@ -47,14 +47,18 @@
 
   if (isHome) {
   /* ---- M1: هوية القسم المختصرة (جامعة · كلية · مرحلة) ---- */
+  /* سطر واحد: الجامعة · الكلية · المرحلة، بلا تكرار لعنوان القسم */
   var text = document.querySelector(".hero-text");
-  if (text && !text.querySelector(".mv-chips")) {
-    var chips = el("div", "mv-chips");
-    var parts = String((window.SITE && SITE.subtitle) || "").split(" · ").filter(Boolean);
+  if (text && !text.querySelector(".mv-meta")) {
     var head = ($("heroTitle") && $("heroTitle").textContent.trim()) || "";
-    parts.forEach(function (p) { if (p.trim() !== head) chips.appendChild(el("span", "mv-chip", p)); });
-    if (window.IQ_STAGE) chips.appendChild(el("span", "mv-chip", "المرحلة " + IQ_STAGE));
-    text.appendChild(chips);
+    var seen = {}; seen[head] = 1;
+    var parts = String((window.SITE && SITE.subtitle) || "").split(" · ").map(function (p) { return p.trim(); })
+      .filter(function (p) { if (!p || seen[p]) return false; seen[p] = 1; return true; });
+    if (window.IQ_STAGE) parts.push("المرحلة " + IQ_STAGE);
+    var meta = el("p", "mv-meta");
+    meta.appendChild(MS.icon("cap", 16));
+    meta.appendChild(el("span", "", parts.join(" · ")));
+    if (parts.length) text.appendChild(meta);
   }
 
   /* ---- شبكة الاختصارات والبحث والترحيب ---- */
@@ -68,24 +72,26 @@
   search.type = "button"; search.insertBefore(MS.icon("search", 20), search.firstChild);
   search.addEventListener("click", function () { var b = $("searchBtn"); if (b) b.click(); });
 
-  function tile(label, ico, opts) {
-    var t = el(opts.href ? "a" : "button", "mv-tile");
+  /* بطاقة خدمة: أيقونة بلون ثابت لكل خدمة + عنوان + سطر وصف (يظهر في عرض العمودين) */
+  function tile(label, sub, ico, hue, opts) {
+    var t = el(opts.href ? "a" : "button", "mv-tile hue-" + hue);
     if (opts.href) t.href = opts.href; else t.type = "button";
-    var ic = el("span", "tile"); ic.setAttribute("data-ico", ico); ic.appendChild(MS.icon(ico, 22)); t.appendChild(ic);
-    t.appendChild(el("strong", "", label));
-    if (opts.soon) { t.classList.add("is-soon"); t.setAttribute("aria-disabled", "true"); t.appendChild(el("span", "mv-soon", "قريباً")); }
+    var ic = el("span", "mv-ic"); ic.setAttribute("aria-hidden", "true"); ic.appendChild(MS.icon(ico, 22)); t.appendChild(ic);
+    var tx = el("span", "mv-tx"); tx.appendChild(el("strong", "", label)); tx.appendChild(el("small", opts.soon ? "mv-soon" : "", opts.soon ? "قريباً" : sub)); t.appendChild(tx);
+    if (opts.soon) { t.classList.add("is-soon"); t.setAttribute("aria-disabled", "true"); t.tabIndex = -1; }
     if (opts.click) t.addEventListener("click", opts.click);
     return t;
   }
+  var openGuide = function () { var g = document.querySelector("[data-open-guide]"); if (g) g.click(); };
   var grid = el("div", "mv-grid");
-  grid.appendChild(tile("المواد الدراسية", "book", { href: "#semesters" }));
-  grid.appendChild(tile("المحاضرات", "file", { href: "#latest" }));
-  grid.appendChild(tile("المرشد الذكي", "sparkles", { click: function () { var g = document.querySelector("[data-open-guide]"); if (g) g.click(); } }));
-  grid.appendChild(tile("دردشة مجموعتي", "users", { href: "group-chat.html" }));
-  grid.appendChild(tile("المفضلة", "star", { href: "#favorites" }));
-  grid.appendChild(tile("أدوات الطالب", "tools", { href: "#tools" }));
-  grid.appendChild(tile("التقويم", "calendar", { soon: true }));
-  grid.appendChild(tile("بنك الأسئلة", "help", { soon: true }));
+  grid.appendChild(tile("المواد الدراسية", "مواد مرحلتك", "book", 1, { href: "#semesters" }));
+  grid.appendChild(tile("المحاضرات", "أحدث الملفات", "file", 2, { href: "#latest" }));
+  grid.appendChild(tile("المرشد الذكي", "اسأل ولخّص", "sparkles", 4, { click: openGuide }));
+  grid.appendChild(tile("دردشة مجموعتي", "زملاء مرحلتك", "users", 5, { href: "group-chat.html" }));
+  grid.appendChild(tile("المفضلة", "موادك المحفوظة", "star", 3, { href: "#favorites" }));
+  grid.appendChild(tile("أدوات الطالب", "التقدم والامتحان", "tools", 6, { href: "#tools" }));
+  grid.appendChild(tile("التقويم", "المواعيد", "calendar", 1, { soon: true }));
+  grid.appendChild(tile("بنك الأسئلة", "تدرّب واختبر", "help", 2, { soon: true }));
 
   var cont = el("a", "mv-continue"); cont.hidden = true;
   var last = null;
