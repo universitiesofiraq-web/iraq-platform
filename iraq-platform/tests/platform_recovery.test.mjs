@@ -100,46 +100,89 @@ test("a failed platform load preserves the saved department and stage and report
   assert.equal(context.SEMESTERS.length, 0);
 });
 
-test("upload selectors discard stale university responses and reset dependent selections", async () => {
+function uploadScreen(options, subjects, search = "") {
   class Element {
     constructor() { this.events = {}; this.children = []; this.style = {}; this.value = ""; }
     addEventListener(type, callback) { this.events[type] = callback; }
-    set innerHTML(value) { this.children = []; this.value = ""; }
+    replaceChildren(...children) { this.children = []; this.value = ""; children.forEach(child => this.appendChild(child)); }
     appendChild(child) { this.children.push(child); if (this.children.length === 1) this.value = child.value; return child; }
   }
   const source = script("contribute.html");
   const elements = new Map([...source.matchAll(/\bid="([^"]+)"/g)].map(([, id]) => [id, new Element()]));
-  let finishFirst;
+  const requests = [];
   const context = {
     document: { getElementById: id => elements.get(id) }, URLSearchParams,
-    location: { search: "" },
+    location: { search },
     Option: class { constructor(text, value) { this.textContent = text; this.value = String(value); } },
     IQApi: {
       request(url) {
-        if (url === "/api/auth/me") return Promise.resolve({ user: { role: "admin", admin: true } });
-        if (url === "/api/catalog/universities") return Promise.resolve({ items: [{ id: 1, name_ar: "الأولى" }, { id: 2, name_ar: "الثانية" }] });
-        if (url.endsWith("university_id=1")) return new Promise(resolve => { finishFirst = resolve; });
-        if (url.endsWith("university_id=2")) return Promise.resolve({ items: [{ id: 22, name_ar: "كلية الجامعة الثانية" }] });
-        throw new Error("Unexpected request " + url);
-      }
+        requests.push(url);
+        return url === "/api/upload-options" ? Promise.resolve(options) : subjects(url);
+      },
+      showError(target, error) { target.error = error.code; }
     }
   };
   vm.runInNewContext([...source.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1], context);
-  const tick = () => new Promise(resolve => setImmediate(resolve));
-  await tick();
-  const u = elements.get("u"), c = elements.get("c"), d = elements.get("d"), s = elements.get("s");
-  d.value = "old-department"; s.value = "old-subject";
+  return { elements, requests };
+}
+const uploadTick = () => new Promise(resolve => setImmediate(resolve));
+const uploadOptions = {
+  admin: true,
+  universities: [{ id: 1, name_ar: "الأولى" }, { id: 2, name_ar: "الثانية" }],
+  colleges: [{ id: 11, university_id: 1, name_ar: "كلية أولى" }, { id: 22, university_id: 2, name_ar: "كلية ثانية" }],
+  departments: [{ id: 1, college_id: 11, name_ar: "قسم أول" }, { id: 2, college_id: 22, name_ar: "قسم ثان" }]
+};
+
+test("upload selectors discard stale material responses and reset dependent selections", async () => {
+  let finishFirst;
+  const { elements } = uploadScreen(uploadOptions, url => {
+    if (url.includes("department_id=1&")) return new Promise(resolve => { finishFirst = resolve; });
+    if (url.includes("department_id=2&")) return Promise.resolve({ items: [{ id: 22, name_ar: "مادة ثانية", stage: 1, term: 1, can_publish: true }] });
+    throw new Error("Unexpected request " + url);
+  });
+  await uploadTick();
+  const u = elements.get("u"), c = elements.get("c"), d = elements.get("d"), material = elements.get("s");
   u.value = "1"; u.events.change();
-  assert.equal(s.value, "");
-  assert.equal(d.value, "");
-  assert.equal(elements.get("go").disabled, true);
+  c.value = "11"; c.events.change();
+  d.value = "1"; d.events.change();
+  material.value = "old-subject";
   u.value = "2"; u.events.change();
-  await tick();
-  assert.equal(c.children[1].value, "22");
-  finishFirst({ items: [{ id: 11, name_ar: "استجابة قديمة" }] });
-  await tick();
-  assert.equal(c.children[1].value, "22");
-  assert.equal(c.disabled, false);
+  assert.equal(d.value, "");
+  assert.equal(material.value, "");
+  assert.equal(elements.get("go").disabled, true);
+  c.value = "22"; c.events.change();
+  d.value = "2"; d.events.change();
+  await uploadTick();
+  assert.equal(material.children[1].value, "22");
+  finishFirst({ items: [{ id: 11, name_ar: "استجابة قديمة", stage: 1, term: 1, can_publish: true }] });
+  await uploadTick();
+  assert.equal(material.children[1].value, "22");
+});
+
+test("a representative's single academic path is selected and locked without public catalog requests", async () => {
+  const options = { admin: false,
+    universities: uploadOptions.universities.slice(0,1), colleges: uploadOptions.colleges.slice(0,1),
+    departments: uploadOptions.departments.slice(0,1) };
+  const { elements, requests } = uploadScreen(options, () => Promise.resolve({ items: [
+    { id: 12, name_ar: "مادة المرحلة الثانية", stage: 2, term: 1, can_publish: false }
+  ] }));
+  await uploadTick();
+  for (const [id, value] of [["u","1"],["c","11"],["d","1"],["s","12"]]) {
+    assert.equal(elements.get(id).value, value);
+    assert.equal(elements.get(id).disabled, true);
+  }
+  assert.equal(elements.get("go").disabled, false);
+  assert.match(elements.get("note").textContent, /بعد موافقة/);
+  assert.ok(requests.every(url => url.startsWith("/api/upload-options")));
+});
+
+test("a forged material preselection fails closed instead of showing another university", async () => {
+  const denied = new Error("forbidden"); denied.code = "forbidden";
+  const { elements, requests } = uploadScreen(uploadOptions, () => Promise.reject(denied), "?subject=999");
+  await uploadTick();
+  assert.equal(elements.get("form").hidden, true);
+  assert.equal(elements.get("gate").error, "forbidden");
+  assert.ok(requests.includes("/api/upload-options?subject_id=999"));
 });
 
 test("university tree queries stay in the selected university and keep directory permissions", async () => {
