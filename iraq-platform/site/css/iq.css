@@ -105,6 +105,7 @@ button,input,select{font:inherit}
 .ct{display:grid;gap:10px}
 .ct label{font-weight:600;font-size:.92rem;margin-top:6px}
 .ct-note{color:var(--ink2);font-size:.92rem}
+.ct-add{margin:12px 0;padding:12px 14px;border:1px dashed var(--line);border-radius:12px}.ct-add summary{cursor:pointer;font-weight:700;color:var(--accent)}.ct-add[open] summary{margin-bottom:8px}
 .ct-msg{min-height:1.4em}
 .ct-bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.ct-bar i{display:block;height:100%;width:0;background:var(--tile);transition:width .2s}
 .ct a.back,.cg a.back{color:var(--lapis);font-size:.92rem}

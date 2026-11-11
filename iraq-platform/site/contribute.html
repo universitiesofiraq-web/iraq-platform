@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=1">
+  <link rel="stylesheet" href="css/iq.css?v=2">
 </head>
 <body>
   <header class="iq-top">
@@ -27,6 +27,15 @@
       <label for="c">الكلية</label><select id="c"></select>
       <label for="d">القسم</label><select id="d"></select>
       <label for="s">المادة</label><select id="s"></select>
+      <details class="ct-add" id="addSub" hidden>
+        <summary>مادتي غير موجودة؟ أضفها</summary>
+        <label for="an">اسم المادة</label><input id="an" maxlength="120" placeholder="مثال: التشريح">
+        <div class="ct-row">
+          <div><label for="as">المرحلة</label><select id="as"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+          <div><label for="at">الكورس</label><select id="at"><option>1</option><option>2</option><option>3</option></select></div>
+        </div>
+        <button class="btn btn-secondary" id="addGo" type="button">إضافة المادة</button>
+      </details>
       <div class="ct-row">
         <div><label for="t">النوع</label>
           <select id="t"><option value="lecture">محاضرة</option><option value="exam">أسئلة سنوات سابقة</option><option value="quiz">اختبار</option></select></div>
@@ -66,8 +75,22 @@
       $("note").textContent = !S.value ? "اختر مادة ضمن نطاق صلاحياتك للرفع إليها." :
         canPublish ? "ملفات هذه المادة تُنشر مباشرة ضمن صلاحياتك." : "ملفات هذه المادة تظهر بعد موافقة مسؤولها أو ممثلها.";
     }
+    $("addGo").onclick = function () {
+      var name = $("an").value.trim();
+      if (!name || !D.value) { $("msg").textContent = "اكتب اسم المادة واختر القسم."; return; }
+      $("addGo").disabled = true; $("msg").textContent = "جارٍ إضافة المادة…";
+      fetch("/api/catalog/add", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "subject", department_id: Number(D.value), name_ar: name, stage: Number($("as").value), term: Number($("at").value) }) })
+        .then(function (r) { return r.json().then(function (d) { return { st: r.status, d: d }; }); })
+        .then(function (x) {
+          $("addGo").disabled = false;
+          if (x.d && x.d.ok) { $("an").value = ""; $("msg").textContent = "تمت إضافة المادة، اخترها الآن وارفع ملفك."; $("addSub").open = false; return loadSubjects({ id: x.d.id }); }
+          $("msg").textContent = x.st === 403 ? "إضافة المواد لممثل القسم أو الكلية فقط." : "تعذّرت الإضافة، حاول مرة أخرى.";
+        }).catch(function () { $("addGo").disabled = false; $("msg").textContent = "تعذّر الاتصال بالخادم."; });
+    };
     function loadSubjects(preferred) {
       var request = ++selectionVersion;
+      $("addSub").hidden = !D.value;
       subjectPermissions.clear();
       fill(S, [], "اختر المادة"); publicationNote();
       if (!D.value) return Promise.resolve();
@@ -81,7 +104,7 @@
           });
           fill(S, items, items.length ? "اختر المادة" : "لا توجد مواد مسموح بها في هذا القسم", preferred && preferred.id);
           publicationNote();
-          if (!items.length) $("note").textContent = "لا توجد مواد مضافة ضمن نطاق رفعك في هذا القسم. راجع مسؤول القسم.";
+          if (!items.length) $("note").textContent = "لا توجد مواد في هذا القسم بعد. إن كنت ممثل القسم فاضغط «مادتي غير موجودة؟ أضفها» أدناه.";
         }).catch(function (error) {
           if (request !== selectionVersion) return;
           $("note").textContent = "تعذّر تحميل مواد القسم.";
