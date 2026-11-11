@@ -195,6 +195,10 @@ async function handleCatalogRaw(req, env) {
       if (part === "add") {
         const par = { college: ["university", num(b.university_id)], department: ["college", num(b.college_id)], subject: ["department", num(b.department_id)] }[type];
         ok = !!par && !!par[1] && (await pol.manage(par[0], par[1]));
+        if (!ok && type === "subject" && num(b.stage_id) && num(b.department_id)) { // ممثل مرحلة: يضيف مواد مرحلته فقط
+          const own = await env.DB.prepare("SELECT id FROM stages WHERE id=? AND department_id=?").bind(num(b.stage_id), num(b.department_id)).first();
+          ok = !!own && (await pol.manage("stage", own.id));
+        }
       } else if (["college", "department", "subject"].includes(type)) {
         ok = !!num(b.id) && (await pol.manage(type, num(b.id), type)); // الحذف يتطلب نطاقاً أعلى من العقدة نفسها
         if (type === "subject") ok = !!num(b.id) && (await pol.manage("subject", num(b.id)));
@@ -241,7 +245,13 @@ async function handleCatalogRaw(req, env) {
       if (!cid) return fail("bad_request", 400);
       r = await env.DB.prepare("INSERT INTO departments (college_id,name_ar,name_en) VALUES (?,?,?)").bind(cid, name, en).run();
     } else if (type === "subject") {
-      const did = num(b.department_id), stage = num(b.stage), term = num(b.term);
+      const did = num(b.department_id), term = num(b.term);
+      let stage = num(b.stage);
+      if (num(b.stage_id)) { // المرحلة تُؤخذ من السجل لا من المدخل
+        const own = await env.DB.prepare("SELECT number FROM stages WHERE id=? AND department_id=?").bind(num(b.stage_id), did).first();
+        if (!own) return fail("bad_request", 400);
+        stage = own.number;
+      }
       if (!did || !stage || stage > 8 || !term || term > 3) return fail("bad_request", 400);
       await env.DB.prepare("INSERT OR IGNORE INTO stages (department_id,number) VALUES (?,?)").bind(did, stage).run();
       const st = await env.DB.prepare("SELECT id FROM stages WHERE department_id=? AND number=?").bind(did, stage).first();

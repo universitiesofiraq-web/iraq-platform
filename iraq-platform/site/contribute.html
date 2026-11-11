@@ -10,44 +10,64 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=2">
+  <link rel="stylesheet" href="css/iq.css?v=3">
 </head>
 <body>
   <header class="iq-top">
     <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
     <nav><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
   </header>
-  <main class="ct">
-    <a class="back" href="catalog.html">← الجامعات</a>
-    <h1>رفع ملف لمادة</h1>
+  <main class="ct up">
+    <a class="back" href="catalog.html">← رجوع</a>
+    <h1>رفع محاضرة</h1>
     <p class="ct-note" id="gate">جارٍ التحقق من حسابك…</p>
     <div id="form" hidden>
-      <p class="ct-note" id="note"></p>
-      <label for="u">الجامعة</label><select id="u"></select>
-      <label for="c">الكلية</label><select id="c"></select>
-      <label for="d">القسم</label><select id="d"></select>
-      <label for="s">المادة</label><select id="s"></select>
-      <details class="ct-add" id="addSub" hidden>
-        <summary>مادتي غير موجودة؟ أضفها</summary>
-        <label for="an">اسم المادة</label><input id="an" maxlength="120" placeholder="مثال: التشريح">
-        <div class="ct-row">
-          <div><label for="as">المرحلة</label><select id="as"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
-          <div><label for="at">الكورس</label><select id="at"><option>1</option><option>2</option><option>3</option></select></div>
-        </div>
-        <button class="btn btn-secondary" id="addGo" type="button">إضافة المادة</button>
-      </details>
-      <div class="ct-row">
-        <div><label for="t">النوع</label>
-          <select id="t"><option value="lecture">محاضرة</option><option value="exam">أسئلة سنوات سابقة</option><option value="quiz">اختبار</option></select></div>
-        <div><label for="n">رقم المحاضرة</label><input id="n" type="number" min="0" max="999" value="1"></div>
+      <div class="up-scope" id="scope" hidden></div>
+      <div class="up-pick" id="pick">
+        <div><label for="u">الجامعة</label><select id="u"></select></div>
+        <div><label for="c">الكلية</label><select id="c"></select></div>
+        <div><label for="d">القسم</label><select id="d"></select></div>
       </div>
-      <label for="ti">عنوان المحاضرة</label><input id="ti" maxlength="200" placeholder="مثال: مقدمة">
-      <label for="lb">وصف الملف</label><input id="lb" maxlength="120" value="ملزمة">
-      <label for="f">ملف PDF (حتى 20 ميغا)</label><input id="f" type="file" accept="application/pdf,.pdf">
-      <label for="lk">أو رابط بدل الملف (اختياري)</label><input id="lk" type="url" placeholder="https://" dir="ltr">
+
+      <section class="up-card">
+        <h2><b>1</b> المادة</h2>
+        <select id="s" aria-label="المادة"></select>
+        <p class="ct-note" id="note"></p>
+        <button class="up-link" id="addToggle" type="button">+ مادتي غير موجودة، أضفها</button>
+        <div class="up-add" id="addBox" hidden>
+          <input id="an" maxlength="120" placeholder="اسم المادة، مثال: التشريح" aria-label="اسم المادة الجديدة">
+          <div class="up-seg" id="termSeg" role="group" aria-label="الكورس">
+            <button type="button" data-v="1" class="on">الكورس الأول</button><button type="button" data-v="2">الكورس الثاني</button>
+          </div>
+          <div id="stageBox" hidden><label for="as">المرحلة</label><select id="as"></select></div>
+          <button class="btn btn-secondary" id="addGo" type="button">حفظ المادة</button>
+        </div>
+      </section>
+
+      <section class="up-card">
+        <h2><b>2</b> نوع الملف</h2>
+        <div class="up-seg" id="typeSeg" role="group" aria-label="النوع">
+          <button type="button" data-v="lecture" class="on">محاضرة</button><button type="button" data-v="exam">أسئلة سابقة</button><button type="button" data-v="quiz">اختبار</button>
+        </div>
+        <div class="up-row" id="lecRow">
+          <div class="up-num"><label for="n">رقم المحاضرة</label><input id="n" type="number" min="1" max="999" value="1" inputmode="numeric"></div>
+          <div class="up-grow"><label for="ti">عنوان المحاضرة</label><input id="ti" maxlength="200" placeholder="مثال: مقدمة"></div>
+        </div>
+        <div id="nameRow" hidden><label for="lb">اسم الملف</label><input id="lb" maxlength="120" value="ملزمة"></div>
+      </section>
+
+      <section class="up-card">
+        <h2><b>3</b> الملف</h2>
+        <input id="f" type="file" accept="application/pdf,.pdf" hidden>
+        <button class="up-drop" id="pickFile" type="button"><span class="up-ico">📄</span><strong id="fileName">اضغط لاختيار ملف PDF</strong><small>حتى 20 ميغا</small></button>
+        <details class="up-more"><summary>أو ضع رابطاً بدل الملف</summary>
+          <input id="lk" type="url" placeholder="https://" dir="ltr" aria-label="رابط">
+        </details>
+      </section>
+
       <div class="ct-bar" id="bar" hidden><i id="fill"></i></div>
-      <button class="btn btn-primary" id="go" type="button">رفع</button>
       <p class="ct-msg" id="msg" role="alert"></p>
+      <button class="btn btn-primary up-go" id="go" type="button">رفع</button>
     </div>
   </main>
   <script src="js/api-client.js"></script>
@@ -57,115 +77,140 @@
     var CH = 2 * 1024 * 1024, MAX = 20 * 1024 * 1024;
     var params = new URLSearchParams(location.search);
     var pre = Number(params.get("subject")) || 0;
-    var options = null, subjectPermissions = new Map();
+    var options = null, subjectPermissions = new Map(), selectionVersion = 0;
     var stageQuery = params.has("stage_id") ? "&stage_id=" + encodeURIComponent(params.get("stage_id")) : "";
-    var selectionVersion = 0;
-
     var U = $("u"), C = $("c"), D = $("d"), S = $("s");
+    var myStage = null; /* ممثل مرحلة: مرحلته الوحيدة */
+    var TYPE = "lecture", TERM = 1;
+    var STAGES = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة"];
+
+    function msg(t, ok) { var m = $("msg"); m.textContent = t || ""; m.className = "ct-msg" + (t ? (ok ? " ok" : " bad") : ""); }
+    function seg(id, cb) {
+      $(id).addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return;
+        [].forEach.call($(id).children, function (x) { x.classList.toggle("on", x === b); });
+        cb(b.dataset.v);
+      });
+    }
+    seg("typeSeg", function (v) {
+      TYPE = v; $("lecRow").hidden = v !== "lecture"; $("nameRow").hidden = v === "lecture";
+      $("lb").value = v === "exam" ? "أسئلة سابقة" : v === "quiz" ? "اختبار" : "ملزمة";
+    });
+    seg("termSeg", function (v) { TERM = Number(v); });
+    $("pickFile").onclick = function () { $("f").click(); };
+    $("f").onchange = function () { var f = $("f").files[0]; $("fileName").textContent = f ? f.name : "اضغط لاختيار ملف PDF"; };
+    $("addToggle").onclick = function () { $("addBox").hidden = !$("addBox").hidden; };
+
     function fill(sel, items, placeholder, preferred) {
       sel.replaceChildren(new Option(placeholder, ""));
       items.forEach(function (item) { sel.appendChild(new Option(item.name_ar, item.id)); });
       var selected = items.find(function (item) { return item.id === Number(preferred); });
-      sel.value = selected ? String(selected.id) : (!options.admin && items.length === 1 ? String(items[0].id) : "");
-      sel.disabled = !items.length || (!options.admin && items.length === 1);
+      sel.value = selected ? String(selected.id) : (items.length === 1 ? String(items[0].id) : "");
     }
-    function publicationNote() {
-      var canPublish = subjectPermissions.get(S.value);
-      $("go").disabled = !S.value || !subjectPermissions.has(S.value);
-      $("note").textContent = !S.value ? "اختر مادة ضمن نطاق صلاحياتك للرفع إليها." :
-        canPublish ? "ملفات هذه المادة تُنشر مباشرة ضمن صلاحياتك." : "ملفات هذه المادة تظهر بعد موافقة مسؤولها أو ممثلها.";
+    function note() {
+      var ok = S.value && subjectPermissions.has(S.value);
+      $("go").disabled = !ok;
+      $("note").textContent = !S.value ? "" : subjectPermissions.get(S.value) ? "تُنشر ملفاتك مباشرة." : "تظهر ملفاتك بعد موافقة الممثل.";
     }
-    $("addGo").onclick = function () {
-      var name = $("an").value.trim();
-      if (!name || !D.value) { $("msg").textContent = "اكتب اسم المادة واختر القسم."; return; }
-      $("addGo").disabled = true; $("msg").textContent = "جارٍ إضافة المادة…";
-      fetch("/api/catalog/add", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: "subject", department_id: Number(D.value), name_ar: name, stage: Number($("as").value), term: Number($("at").value) }) })
-        .then(function (r) { return r.json().then(function (d) { return { st: r.status, d: d }; }); })
-        .then(function (x) {
-          $("addGo").disabled = false;
-          if (x.d && x.d.ok) { $("an").value = ""; $("msg").textContent = "تمت إضافة المادة، اخترها الآن وارفع ملفك."; $("addSub").open = false; return loadSubjects({ id: x.d.id }); }
-          $("msg").textContent = x.st === 403 ? "إضافة المواد لممثل القسم أو الكلية فقط." : "تعذّرت الإضافة، حاول مرة أخرى.";
-        }).catch(function () { $("addGo").disabled = false; $("msg").textContent = "تعذّر الاتصال بالخادم."; });
-    };
     function loadSubjects(preferred) {
       var request = ++selectionVersion;
-      $("addSub").hidden = !D.value;
-      subjectPermissions.clear();
-      fill(S, [], "اختر المادة"); publicationNote();
+      subjectPermissions.clear(); fill(S, [], "اختر المادة"); note();
+      $("stageBox").hidden = !!myStage;
       if (!D.value) return Promise.resolve();
-      $("note").textContent = "جارٍ تحميل مواد القسم المسموح بها…";
-      return IQApi.request("/api/upload-options?department_id=" + D.value + "&college_id=" + C.value + "&university_id=" + U.value + stageQuery)
-        .then(function (data) {
-          if (request !== selectionVersion) return;
-          var items = data.items.map(function (item) {
-            subjectPermissions.set(String(item.id), item.can_publish);
-            return { id: item.id, name_ar: "المرحلة " + item.stage + " — الكورس " + item.term + " — " + item.name_ar };
-          });
-          fill(S, items, items.length ? "اختر المادة" : "لا توجد مواد مسموح بها في هذا القسم", preferred && preferred.id);
-          publicationNote();
-          if (!items.length) $("note").textContent = "لا توجد مواد في هذا القسم بعد. إن كنت ممثل القسم فاضغط «مادتي غير موجودة؟ أضفها» أدناه.";
-        }).catch(function (error) {
-          if (request !== selectionVersion) return;
-          $("note").textContent = "تعذّر تحميل مواد القسم.";
-          IQApi.showError($("msg"), error, function () { msg(""); loadSubjects(); });
+      var q = "/api/upload-options?department_id=" + D.value + "&college_id=" + C.value + "&university_id=" + U.value + (myStage ? "&stage_id=" + myStage.node_id : stageQuery);
+      return IQApi.request(q).then(function (data) {
+        if (request !== selectionVersion) return;
+        var items = data.items.map(function (item) {
+          subjectPermissions.set(String(item.id), item.can_publish);
+          return { id: item.id, name_ar: (myStage ? "" : "المرحلة " + item.stage + " — ") + "الكورس " + item.term + " — " + item.name_ar };
         });
+        fill(S, items, items.length ? "اختر المادة" : "لا توجد مواد بعد", preferred && preferred.id);
+        if (!items.length) { $("note").textContent = "لا توجد مواد بعد. أضف أول مادة من الزر أدناه."; $("addBox").hidden = false; }
+        else note();
+      }).catch(function (error) {
+        if (request !== selectionVersion) return;
+        IQApi.showError($("msg"), error, function () { msg(""); loadSubjects(); });
+      });
     }
     function loadDepartments(preferred) {
-      var items = options.departments.filter(function (item) { return item.college_id === Number(C.value); });
-      fill(D, items, "اختر القسم", preferred && preferred.department_id);
+      fill(D, options.departments.filter(function (i) { return i.college_id === Number(C.value); }), "اختر القسم", preferred && preferred.department_id);
       return loadSubjects(preferred);
     }
     function loadColleges(preferred) {
-      var items = options.colleges.filter(function (item) { return item.university_id === Number(U.value); });
-      fill(C, items, "اختر الكلية", preferred && preferred.college_id);
+      fill(C, options.colleges.filter(function (i) { return i.university_id === Number(U.value); }), "اختر الكلية", preferred && preferred.college_id);
       return loadDepartments(preferred);
     }
     U.addEventListener("change", function () { msg(""); loadColleges(); });
     C.addEventListener("change", function () { msg(""); loadDepartments(); });
     D.addEventListener("change", function () { msg(""); loadSubjects(); });
-    S.addEventListener("change", publicationNote);
+    S.addEventListener("change", note);
     $("go").disabled = true;
 
-    function msg(t, ok) { var m = $("msg"); m.textContent = t; m.style.color = ok ? "#2f855a" : "#c53030"; }
+    /* ممثل مرحلة واحدة: لا نعرض أي خيارات، فقط مكانه ومرحلته */
+    function simplify() {
+      var one = options.universities.length === 1 && options.colleges.length === 1 && options.departments.length === 1;
+      if (!one && !myStage) { /* مشرف/ممثل أوسع: نبقي الاختيارات وقائمة المراحل */
+        var as = $("as"); as.replaceChildren(); STAGES.forEach(function (n, i) { as.appendChild(new Option("المرحلة " + n, i + 1)); });
+        $("stageBox").hidden = false; return;
+      }
+      $("pick").hidden = true;
+      var sc = $("scope"); sc.hidden = false; sc.textContent = "";
+      var line = document.createElement("div"); line.className = "up-scope-line";
+      line.textContent = [U.selectedOptions[0] && U.selectedOptions[0].text, C.selectedOptions[0] && C.selectedOptions[0].text, D.selectedOptions[0] && D.selectedOptions[0].text].filter(Boolean).join(" · ");
+      sc.appendChild(line);
+      if (myStage) { var chip = document.createElement("span"); chip.className = "up-chip"; chip.textContent = "المرحلة " + (STAGES[myStage.stage_number - 1] || myStage.stage_number); sc.appendChild(chip); }
+      else {
+        var as2 = $("as"); as2.replaceChildren(); STAGES.forEach(function (n, i) { as2.appendChild(new Option("المرحلة " + n, i + 1)); });
+        $("stageBox").hidden = false;
+      }
+    }
+
+    $("addGo").onclick = function () {
+      var name = $("an").value.trim();
+      if (!name || !D.value) return msg("اكتب اسم المادة.");
+      $("addGo").disabled = true; msg("جارٍ حفظ المادة…", true);
+      var body = { type: "subject", department_id: Number(D.value), name_ar: name, term: TERM };
+      if (myStage) body.stage_id = myStage.node_id; else body.stage = Number($("as").value);
+      fetch("/api/catalog/add", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (d) { return { st: r.status, d: d }; }); })
+        .then(function (x) {
+          $("addGo").disabled = false;
+          if (x.d && x.d.ok) { $("an").value = ""; $("addBox").hidden = true; msg("تمت إضافة المادة.", true); return loadSubjects({ id: x.d.id }); }
+          msg(x.st === 403 ? "لا تملك صلاحية إضافة مادة هنا." : "تعذّر الحفظ، حاول مرة أخرى.");
+        }).catch(function () { $("addGo").disabled = false; msg("تعذّر الاتصال بالخادم."); });
+    };
+
     function post(p, body, raw) {
       return IQApi.request("/api/" + p, { method: "POST", headers: raw ? {} : { "content-type": "application/json" }, body: raw || JSON.stringify(body) })
         .catch(function (error) { return { ok: false, error: error.code || "network" }; });
     }
-    function uuid() { return crypto.randomUUID(); }
     var ERR = { not_pdf: "الملف ليس PDF صالحاً.", too_big: "الملف أكبر من 20 ميغا.", unauthorized: "سجّل الدخول أولاً.", forbidden: "لا تملك صلاحية.", bad_request: "تحقق من الرقم والعنوان." };
     function er(d) { return ERR[d.error] || IQApi.errorText(d.error); }
 
     $("go").onclick = function () {
       var sid = S.value;
-      if (!sid || !subjectPermissions.has(sid)) return msg("اختر مادة مسموحًا لك بالرفع إليها أولاً.");
-      var type = $("t").value, num = Number($("n").value) || 0, title = $("ti").value.trim(), label = $("lb").value.trim();
-      if (type === "lecture" && num < 1) return msg("رقم المحاضرة يبدأ من 1.");
-      if (num > 0 && !title) return msg("اكتب عنوان المحاضرة.");
-      if (!label) return msg("اكتب وصف الملف.");
+      if (!sid || !subjectPermissions.has(sid)) return msg("اختر المادة أولاً.");
+      var type = TYPE, num = type === "lecture" ? (Number($("n").value) || 0) : 0, title = $("ti").value.trim(), label = type === "lecture" ? "ملزمة" : $("lb").value.trim();
+      if (type === "lecture" && num < 1) return msg("اكتب رقم المحاضرة.");
+      if (type === "lecture" && !title) return msg("اكتب عنوان المحاضرة.");
+      if (!label) return msg("اكتب اسم الملف.");
       var cid = "s" + sid, file = $("f").files[0], url = $("lk").value.trim();
-      var selectors = [U, C, D, S], disabled = selectors.map(function (sel) { return sel.disabled; });
-      selectors.forEach(function (sel) { sel.disabled = true; });
+      if (!url && (!file || file.size > MAX)) return msg(file ? ERR.too_big : "اختر ملف PDF أو ضع رابطاً.");
       $("go").disabled = true; msg("");
       var done = function (d) {
-        selectors.forEach(function (sel, i) { sel.disabled = disabled[i]; });
-        publicationNote(); $("bar").hidden = true;
-        if (d.ok) { msg(d.status === "pending" ? "تم الرفع، وسيظهر بعد موافقة المسؤول." : d.status === "approved" ? "تم الرفع والنشر." : "تم حفظ الملف بنجاح.", true); $("f").value = ""; $("lk").value = ""; }
-        else if (d.error === "forbidden" || d.error === "unauthorized") IQApi.showError($("msg"), { code: d.error }, loadOptions);
+        note(); $("bar").hidden = true;
+        if (d.ok) {
+          msg(d.status === "pending" ? "تم الرفع، وسيظهر بعد موافقة الممثل." : "تم الرفع بنجاح ✓", true);
+          $("f").value = ""; $("lk").value = ""; $("fileName").textContent = "اضغط لاختيار ملف PDF"; $("ti").value = "";
+          if (type === "lecture") $("n").value = num + 1; /* المحاضرة التالية */
+        } else if (d.error === "forbidden" || d.error === "unauthorized") IQApi.showError($("msg"), { code: d.error }, loadOptions);
         else msg(er(d));
       };
       if (url) return post("link", { courseId: cid, type: type, number: num, title: num ? title : "", label: label, url: url }).then(done);
-      if (!file || file.size > MAX) {
-        selectors.forEach(function (sel, i) { sel.disabled = disabled[i]; });
-        publicationNote();
-        return msg(file ? ERR.too_big : "اختر ملفاً أو اكتب رابطاً.");
-      }
-      var id = uuid(), total = Math.ceil(file.size / CH), i = 0;
-      $("bar").hidden = false;
+      var id = crypto.randomUUID(), total = Math.ceil(file.size / CH), i = 0;
+      $("bar").hidden = false; $("fill").style.width = "0%";
       (function next() {
-        if (i >= total) {
-          return post("finish", { id: id, chunks: total, courseId: cid, number: num, type: type, title: num ? title : "", label: label, filename: file.name }).then(done);
-        }
+        if (i >= total) return post("finish", { id: id, chunks: total, courseId: cid, number: num, type: type, title: num ? title : "", label: label, filename: file.name }).then(done);
         file.slice(i * CH, (i + 1) * CH).arrayBuffer().then(function (buf) {
           return post("chunk?id=" + id + "&index=" + i + "&courseId=" + encodeURIComponent(cid), null, buf);
         }).then(function (d) {
@@ -177,32 +222,33 @@
 
     function loadOptions() {
       $("form").hidden = true; $("gate").hidden = false;
-      $("gate").textContent = "جارٍ تحميل نطاق الرفع المسموح لحسابك…";
-      return IQApi.request("/api/upload-options" + (stageQuery ? "?" + stageQuery.slice(1) : ""))
-        .then(function (data) {
-          options = data;
-          if (!options.universities.length) {
-            var error = new Error("forbidden"); error.code = "forbidden"; throw error;
-          }
-          if (pre) return IQApi.request("/api/upload-options?subject_id=" + pre + stageQuery)
-            .then(function (data) { return data.items[0]; });
-        }).then(function (preferred) {
-          fill(U, options.universities, "اختر الجامعة", preferred && preferred.university_id);
-          return loadColleges(preferred);
-        }).then(function () {
-          $("gate").hidden = true; $("form").hidden = false;
-        }).catch(function (error) {
-          IQApi.showError($("gate"), error, loadOptions);
-          if (error.code === "unauthorized") {
-            var login = document.createElement("a");
-            login.href = "login.html?next=" + encodeURIComponent("contribute.html" + location.search);
-            login.textContent = "تسجيل الدخول"; $("gate").appendChild(login);
-          }
-        });
+      $("gate").textContent = "جارٍ تحميل صلاحياتك…";
+      return Promise.all([
+        IQApi.request("/api/upload-options" + (stageQuery ? "?" + stageQuery.slice(1) : "")),
+        fetch("/api/auth/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return {}; })
+      ]).then(function (r) {
+        options = r[0];
+        var sc = (r[1] && r[1].user && r[1].user.scopes) || [], adm = r[1] && r[1].user && r[1].user.admin;
+        var reps = sc.filter(function (x) { return x.level === "rep" || x.level === "uploader"; });
+        myStage = !adm && reps.length && reps.every(function (x) { return x.type === "stage"; }) && reps.length === 1 ? reps[0] : null;
+        if (!options.universities.length) { var error = new Error("forbidden"); error.code = "forbidden"; throw error; }
+        if (pre) return IQApi.request("/api/upload-options?subject_id=" + pre + stageQuery).then(function (data) { return data.items[0]; });
+      }).then(function (preferred) {
+        fill(U, options.universities, "اختر الجامعة", preferred && preferred.university_id);
+        return loadColleges(preferred);
+      }).then(function () {
+        simplify(); $("gate").hidden = true; $("form").hidden = false;
+      }).catch(function (error) {
+        IQApi.showError($("gate"), error, loadOptions);
+        if (error.code === "unauthorized") {
+          var login = document.createElement("a");
+          login.href = "login.html?next=" + encodeURIComponent("contribute.html" + location.search);
+          login.textContent = "تسجيل الدخول"; $("gate").appendChild(login);
+        }
+      });
     }
     loadOptions();
   })();
   </script>
-  <script src="js/upload-link.js"></script>
 </body>
 </html>

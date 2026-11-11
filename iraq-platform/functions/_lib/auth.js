@@ -315,6 +315,10 @@ export async function handleAuth(req, env, opts = {}) {
         const q = { university: "SELECT name_ar AS n FROM universities WHERE id=?", college: "SELECT name_ar AS n FROM colleges WHERE id=?",
           department: "SELECT name_ar AS n FROM departments WHERE id=?", stage: "SELECT d.name_ar || ' · المرحلة ' || st.number AS n FROM stages st JOIN departments d ON d.id=st.department_id WHERE st.id=?" }[x.type];
         if (q) x.label = (await env.DB.prepare(q).bind(x.node_id).first())?.n || "";
+        if (x.type === "stage") {
+          const st = await env.DB.prepare("SELECT number, department_id FROM stages WHERE id=?").bind(x.node_id).first();
+          if (st) { x.stage_number = st.number; x.department_id = st.department_id; }
+        }
       } catch (e) { x.label = ""; }
     }
     return json({ ok: true, user: { ...publicUser(user), scopes: sc, admin: await isGlobalAdmin(user, env), owner: isAdminUser(user, env) } });
