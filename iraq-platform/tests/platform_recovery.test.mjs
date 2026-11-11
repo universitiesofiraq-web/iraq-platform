@@ -10,6 +10,68 @@ import { database, seedAcademic, signedRequest } from "./helpers/d1.mjs";
 const script = name => readFileSync(new URL("../site/" + name, import.meta.url), "utf8");
 const quotaError = () => new Error("D1_ERROR: Your account has exceeded D1's free tier daily row read limit. private diagnostic");
 
+async function loginScreen({ next = "", user = null, saved, profile = null, status = 200 } = {}) {
+  class Element {
+    constructor() { this.children = []; this.events = {}; }
+    appendChild(child) { this.children.push(child); }
+    addEventListener(name, fn) { this.events[name] = fn; }
+  }
+  const actions = new Element(), guest = new Element(), calls = [];
+  actions.querySelector = () => guest;
+  const elements = { actions, notice: new Element(), googleBtn: new Element() };
+  const search = next ? "?next=" + encodeURIComponent(next) : "";
+  const location = { search, href: "https://example.test/login" + search };
+  vm.runInNewContext(script("js/login.js"), {
+    URL, URLSearchParams, location, window: {},
+    localStorage: { getItem: () => saved && JSON.stringify({ id: saved }) },
+    document: {
+      getElementById: id => elements[id] || null,
+      createElement: () => new Element(),
+      createTextNode: text => text
+    },
+    MSAuth: {
+      me: async () => user,
+      api: async (_, path) => {
+        calls.push(path);
+        return path === "catalog/me" ? { status, data: { profile } } : { status: 200, data: { ready: false } };
+      }
+    }
+  });
+  await Promise.resolve();
+  return { location, calls, guest, actions };
+}
+
+test("guest continuation avoids the sign-in loop and keeps valid public destinations", async () => {
+  for (const [next, saved, expected] of [
+    ["", null, "index.html"],
+    ["join.html?change=1", 4, "dept.html?id=4"],
+    ["login", null, "index.html"],
+    ["https://foreign.test", null, "index.html"],
+    ["catalog.html", null, "catalog.html"]
+  ]) {
+    const { location, calls, guest } = await loginScreen({ next, saved });
+    guest.events.click();
+    assert.equal(location.href, expected);
+    assert.ok(!calls.includes("catalog/me"));
+  }
+});
+
+test("signed-in continuation prefers the current account's active department", async () => {
+  const user = { name: "طالب", role: "student" };
+  for (const [profile, status, expected] of [
+    [{ department_id: 7, university_state: "active" }, 200, "platform.html?dept=7"],
+    [{ department_id: 7, university_state: "suspended" }, 200, "join.html"],
+    [null, 200, "join.html"],
+    [null, 401, "index.html"]
+  ]) {
+    const { location, calls, actions } = await loginScreen({ user, saved: 3, profile, status });
+    actions.children[1].events.click();
+    await Promise.resolve();
+    assert.equal(location.href, expected);
+    assert.deepEqual(calls, ["catalog/me"]);
+  }
+});
+
 test("database failures return a retryable response without exposing diagnostics", async () => {
   for (const structured of [false, true]) {
     const response = serviceErrorResponse(quotaError(), structured);
