@@ -11,6 +11,10 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* لا شيء */ } }
+  function clearAccountData() {
+    SYNC.concat([TKEY, "iq.dept", "iq.stage"]).forEach(lsDel);
+    user = null;
+  }
   function tmap() { try { return JSON.parse(lsGet(TKEY)) || {}; } catch (e) { return {}; } }
   function localVal(k) { var s = lsGet(k); if (s === null) return undefined; try { return JSON.parse(s); } catch (e) { return undefined; } }
 
@@ -122,14 +126,13 @@
     deleteAccount: function () {
       return api("POST", "auth/delete", { confirm: "DELETE" }).then(function (r) {
         if (r.status !== 200) throw new Error("delete_failed");
-        SYNC.concat([TKEY]).forEach(lsDel);
-        user = null;
+        clearAccountData();
       });
     },
     logout: function () {
-      return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
-        SYNC.concat([TKEY]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
-        user = null;
+      return flush().then(function () { return api("POST", "auth/logout"); }).then(function (r) {
+        if (r.status !== 200 || !r.data.ok) throw new Error("logout_failed");
+        clearAccountData();
       });
     }
   };
