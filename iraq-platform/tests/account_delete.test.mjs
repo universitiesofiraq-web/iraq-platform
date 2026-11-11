@@ -7,7 +7,7 @@ test("account deletion requires confirmation, wipes personal data and anonymizes
   const { DB, sql } = database();
   seedAcademic(sql);
   const env = { DB };
-  const uid = sql.prepare("SELECT id FROM users LIMIT 1").get().id;
+  const uid = sql.prepare("SELECT id FROM users ORDER BY id LIMIT 1").get().id;
   sql.prepare("INSERT INTO user_data(user_id,k,v,t) VALUES(?,?,?,?)").run(uid, "fav", "[1]", 1);
   const api = (body) => handleAuth(signedRequest(sql, "/api/auth/delete", uid, body), env);
   assert.equal((await api({})).status, 400);

@@ -13,18 +13,30 @@ async function importOnce(DB, kv) {
   await DB.prepare("INSERT OR IGNORE INTO import_flags(name, at) VALUES(?,?)").bind(FLAG, Date.now()).run();
 }
 
+// ذاكرة مؤقتة قصيرة داخل العامل: كل فتح لملف أو تحميل uploads.js كان يقرأ كل صفوف القائمة (يستهلك حصة D1 المجانية).
+const CACHE_MS = 30000;
+let cache = { db: null, at: 0, list: null };
+export function resetManifestCache() { cache = { db: null, at: 0, list: null }; }
+
 export function d1Manifest(DB, kv) {
   let ready = null;
   const init = () => (ready ||= importOnce(DB, kv).catch((e) => { ready = null; throw e; }));
-  const read = async () => {
+  const load = async () => {
     await init();
     const rows = (await DB.prepare("SELECT json FROM upload_manifest ORDER BY seq").all()).results || [];
     return rows.map((r) => { try { return JSON.parse(r.json); } catch { return null; } }).filter(Boolean);
   };
+  const read = async () => {
+    if (cache.db === DB && cache.list && Date.now() - cache.at < CACHE_MS) return structuredClone(cache.list);
+    const list = await load();
+    cache = { db: DB, at: Date.now(), list };
+    return structuredClone(list);
+  };
   return {
     read,
     async update(mutate) {
-      const before = await read();
+      resetManifestCache(); // الكتابة تقرأ من D1 مباشرة لتفادي ضياع رفع متزامن
+      const before = await load();
       const next = mutate(before);
       const old = new Map(before.map((e) => [e.id, JSON.stringify(e)]));
       const keep = new Set(next.map((e) => e.id));
@@ -36,6 +48,7 @@ export function d1Manifest(DB, kv) {
       }
       for (const id of old.keys()) if (!keep.has(id)) stmts.push(DB.prepare("DELETE FROM upload_manifest WHERE id = ?").bind(id));
       for (let i = 0; i < stmts.length; i += 50) await DB.batch(stmts.slice(i, i + 50));
+      resetManifestCache();
       return next;
     }
   };
