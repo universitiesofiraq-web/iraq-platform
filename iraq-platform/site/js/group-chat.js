@@ -392,6 +392,22 @@
     clearTimeout(pollTimer);
     if (!document.hidden) poll();
   });
+  /* المجموعة تتبع المرحلة المسجّلة في الحساب (وليس القسم الذي تتصفحه): نوضّح ذلك ونعطي رابط التغيير */
+  async function profileBanner() {
+    try {
+      var d = await fetch("/api/catalog/me").then(function (r) { return r.json(); });
+      var p = d && d.profile, box = $("profileBanner"); box.textContent = ""; box.hidden = false;
+      if (!p) {
+        box.appendChild(node("span", null, "لم تسجّل قسمك ومرحلتك بعد. "));
+      } else {
+        box.appendChild(node("span", null, "مجموعتك تتبع مرحلتك المسجّلة: " + p.department + " · " + p.university + " · المرحلة " + p.stage + ". "));
+        if (p.membership === "pending") box.appendChild(node("span", "muted", "بانتظار تأكيد ممثل مرحلتك لتنضم إلى مجموعتها. "));
+        var browsing = null; try { browsing = JSON.parse(localStorage.getItem("iq.dept") || "null"); } catch (_) {}
+        if (browsing && browsing.id && Number(browsing.id) !== Number(p.department_id)) box.appendChild(node("span", "muted", "(القسم الذي تتصفحه الآن مختلف عن قسمك المسجّل.) "));
+      }
+      var a = node("a", null, p ? "تغيير مرحلتي المسجّلة" : "سجّل قسمك ومرحلتك"); a.href = "join.html"; box.appendChild(a);
+    } catch (_) { /* اختياري */ }
+  }
   async function init() {
     clearTimeout(pollTimer);
     $("authBanner").hidden = true;
@@ -399,6 +415,7 @@
       var res = await fetch("/api/auth/me"); var data = await res.json();
       if (!res.ok || !data.ok || !data.user) throw Error(data.error || (res.status === 401 ? "unauthorized" : "server"));
       me = data.user;
+      profileBanner();
       await refreshRooms();
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
       var first = requestedRoom || (!mobile.matches && rooms[0] && rooms[0].id);

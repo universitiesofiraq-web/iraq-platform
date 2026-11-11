@@ -14,6 +14,7 @@ def route(r):
     def j(o, c=200): r.fulfill(status=c, content_type="application/json", body=json.dumps(o))
     if "/api/platform" in u: return j(PLAT)
     if "/api/auth/me" in u: return j({"ok": True, "user": {"id": 7, "name": "Mohammed Ali", "email": "m@x", "admin": False, "scopes": []}})
+    if "/api/catalog/me" in u: return j({"ok": True, "profile": {"stage": 1, "department_id": 4046, "department": "طب عام", "college": "كلية طب الزهراء", "university": "جامعة البصرة", "membership": "confirmed"}})
     if "/api/profile/public" in u: return j({"ok": True, "display_name": "أبو علي", "has_avatar": False, "updated_at": 0})
     if "/api/group-chat/rooms" in u: return j({"ok": True, "items": [{"id": 1, "name": "مجموعة المرحلة", "stage_id": 11, "stage": 1, "department_id": 4046, "department": "طب عام", "college": "كلية", "university": "جامعة", "unread": 0, "muted": 0}], "requests": []})
     if "/api/group-chat/messages" in u: return j({"ok": True, "items": [
@@ -89,6 +90,7 @@ with sync_playwright() as p:
     c = b.new_context(service_workers="block", viewport={"width": 390, "height": 800}); pg = c.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.route("**/*", lambda r: route(r) if "/api/" in r.request.url else r.continue_())
     pg.goto("http://127.0.0.1:8793/group-chat.html"); pg.wait_for_selector(".room"); pg.click(".room"); pg.wait_for_selector(".message")
+    ck("chat: registered-stage banner", "مرحلتك المسجّلة" in pg.locator("#profileBanner").inner_text())
     ck("chat: deleted message leaves no trace", pg.locator(".message").count() == 2 and "حُذفت" not in pg.locator("#conversation").inner_text())
     ck("chat: attachment card", pg.locator(".att-card").count() == 1)
     ck("chat: reply quote hides raw attachment", "[[att]]" not in pg.locator("#conversation").inner_text())

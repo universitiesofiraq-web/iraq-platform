@@ -136,7 +136,7 @@
   var sheet = el("div", "mv-sheet"); sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true"); sheet.setAttribute("aria-label", "حسابي");
   var scrim = el("div", "mv-sheet-scrim");
   function closeSheet() { body.classList.remove("mv-sheet-open"); }
-  function openSheet() { fill(); body.classList.add("mv-sheet-open"); if (who && who.user) loadPub().then(function () { if (body.classList.contains("mv-sheet-open")) fill(); }); }
+  function openSheet() { fill(); body.classList.add("mv-sheet-open"); if (who && who.user) Promise.all([loadPub(), loadProf()]).then(function () { if (body.classList.contains("mv-sheet-open")) fill(); }); }
   scrim.addEventListener("click", closeSheet);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
   var who = null;
@@ -166,6 +166,11 @@
     return fetch("/api/profile/public", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || "server"); return j; }); });
   }
+  var prof = null;
+  function loadProf() {
+    return fetch("/api/catalog/me", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { prof = j && j.profile ? j.profile : null; }).catch(function () { prof = null; });
+  }
   function loadPub() {
     return fetch("/api/profile/public", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { pub = j && j.ok ? j : null; }).catch(function () { pub = null; });
@@ -191,9 +196,10 @@
     } else acct.appendChild(el("p", "mv-who", "أنت تتصفح كزائر"));
     sheet.appendChild(acct);
     var facts = el("div", "mv-facts");
-    String((window.SITE && SITE.subtitle) || "").split(" · ").filter(Boolean).forEach(function (p) { facts.appendChild(el("span", "", p)); });
-    if (window.IQ_DEPT && IQ_DEPT.name) facts.appendChild(el("span", "", IQ_DEPT.name));
-    if (window.IQ_STAGE) facts.appendChild(el("span", "", "المرحلة " + IQ_STAGE));
+    if (prof) { /* المرحلة المسجّلة في الحساب (تتبعها الدردشة) */
+      [prof.university, prof.college, prof.department, "المرحلة " + prof.stage].forEach(function (p) { if (p) facts.appendChild(el("span", "", p)); });
+      if (prof.membership === "pending") facts.appendChild(el("span", "", "بانتظار تأكيد الممثل"));
+    } else if (u) facts.appendChild(el("span", "", "لم تسجّل قسمك ومرحلتك بعد"));
     if (u && u.admin) facts.appendChild(el("span", "", "مشرف"));
     else if (u && (u.scopes || []).some(function (x) { return x.level === "rep"; })) facts.appendChild(el("span", "", "ممثل"));
     if (facts.childNodes.length) sheet.appendChild(facts);
@@ -238,7 +244,8 @@
     sheet.appendChild(row("الرسائل الخاصة", "dm.html"));
     sheet.appendChild(row("المرشد الذكي", null, function () { closeSheet(); var g = document.querySelector("[data-open-guide]"); if (g) g.click(); }));
     sheet.appendChild(row("المفضلة", BASE + "#favorites", closeSheet));
-    sheet.appendChild(row("تغيير القسم", "catalog.html"));
+    if (u) sheet.appendChild(row(prof ? "تغيير مرحلتي المسجّلة (تتبعها الدردشة)" : "تسجيل قسمي ومرحلتي", "join.html"));
+    sheet.appendChild(row("تصفّح قسم آخر", "catalog.html"));
     if (u) {
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("لوحة الإدارة", "admin.html"));
       sheet.appendChild(row("تسجيل الخروج", null, function () {

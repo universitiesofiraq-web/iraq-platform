@@ -104,3 +104,4 @@
 .dm-pane .thread-head{position:sticky;top:0;padding-top:calc(11px + env(safe-area-inset-top));background:var(--panel);z-index:2}
 .dm-pane .composer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
 .dm-pane .muted{margin:8px 4px 2px;font-size:.78rem}
+.profile-banner{font-size:.8rem}.profile-banner a{color:var(--accent);font-weight:700;margin-inline-start:4px}
