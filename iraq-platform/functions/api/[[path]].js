@@ -8,6 +8,7 @@ import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
 import { handleOnboarding } from "../_lib/onboarding.js";
 import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
+import { handleUploadOptions } from "../_lib/upload-options.js";
 import { handleCatalog } from "../_lib/catalog.js";
 import { handleInvites } from "../_lib/invites.js";
 import { handleGroupChat } from "../_lib/group_chat.js";
@@ -21,6 +22,8 @@ export async function onRequest({ request, env }) {
   if (workspaceRes) return workspaceRes;
   const inviteRes = await handleInvites(request, env);
   if (inviteRes) return inviteRes;
+  const uploadOptions = await handleUploadOptions(request, env);
+  if (uploadOptions) return uploadOptions;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
   const chatRes = await handleGroupChat(request, env, { currentUser });
