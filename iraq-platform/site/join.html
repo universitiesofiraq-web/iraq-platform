@@ -77,12 +77,22 @@
       if (lv === 3) {
         list.innerHTML = "";
         var g = document.createElement("div"); g.className = "jn-stages";
-        STAGE_NAMES.forEach(function (n, i) {
-          var b = document.createElement("button"); b.type = "button"; b.textContent = n;
-          b.onclick = function () { submit(i + 1); };
-          g.appendChild(b);
-        });
         list.appendChild(g);
+        var draw = function (nums) {
+          g.innerHTML = "";
+          STAGE_NAMES.forEach(function (n, i) {
+            if (nums && nums.length && nums.indexOf(i + 1) < 0) return;
+            var b = document.createElement("button"); b.type = "button"; b.textContent = n;
+            b.onclick = function () { submit(i + 1); };
+            g.appendChild(b);
+          });
+        };
+        draw();
+        get("stages?view=join&department_id=" + stack[2].id).then(function (d) {
+          if (request !== loadVersion) return;
+          var nums = ((d && d.items) || []).map(function (x) { return x.number; });
+          if (nums.length) draw(nums);
+        }).catch(function () { /* نبقي القائمة الكاملة */ });
         return;
       }
       var path = ["universities?view=join", "colleges?view=join&university_id=", "departments?view=join&college_id="][lv] + (lv ? stack[lv - 1].id : "");
@@ -98,7 +108,12 @@
           var name = document.createElement("span"); name.textContent = it.name_ar; row.appendChild(name);
           if (it.city) { var s = document.createElement("small"); s.textContent = it.city; row.appendChild(s); }
           row.dataset.t = norm(it.name_ar + " " + (it.name_en || "") + " " + (it.city || ""));
-          row.onclick = function () { stack.push({ id: it.id, name: it.name_ar }); load(); };
+          row.onclick = function () {
+            var m = /^\s*المرحلة\s+(\S+)\s*$/.exec(it.name_ar || ""), k = m ? STAGE_NAMES.indexOf(m[1]) : -1;
+            stack.push({ id: it.id, name: it.name_ar });
+            if (k >= 0) { stack.length = 3; submit(k + 1); return; } /* اسم القسم هو المرحلة نفسها: لا سؤال ثانٍ */
+            load();
+          };
           list.appendChild(row);
         });
       }).catch(function (error) {
