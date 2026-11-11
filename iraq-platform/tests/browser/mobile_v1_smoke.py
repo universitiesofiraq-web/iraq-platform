@@ -31,9 +31,11 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     for w in (320, 360, 390, 430):
         c = b.new_context(service_workers="block", viewport={"width": w, "height": 800}, locale="ar")
+        c.add_init_script("localStorage.setItem('ms.last', JSON.stringify('anat')); localStorage.setItem('ms.read', JSON.stringify({anat:[1,2]}))")
         pg = c.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
         pg.route("**/*", lambda r: route(r) if ("/api/" in r.request.url or r.request.url.endswith("uploads.js")) else r.continue_())
         pg.goto("http://127.0.0.1:8793/platform.html?dept=4046&stage=1"); pg.wait_for_selector(".mv-nav")
+        ck("%d continue card with real progress" % w, pg.locator(".mv-continue").is_visible() and "2 من 5" in pg.locator(".mv-continue").inner_text())
         ck("%d nav 5 items" % w, pg.locator(".mv-nav > *").count() == 5)
         ck("%d chat in bottom nav" % w, pg.locator('.mv-nav a[href="group-chat.html"]').count() == 1)
         ck("%d no horizontal scroll" % w, pg.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"))
@@ -46,7 +48,9 @@ with sync_playwright() as p:
         ck("%d grid tiles 8" % w, pg.locator(".mv-tile").count() == 8)
         ck("%d dark by default" % w, pg.evaluate("document.documentElement.getAttribute('data-theme')") == "dark")
         ck("%d header title is dept" % w, pg.locator(".mv-title").inner_text() == "طب عام")
-        ck("%d latest limited to 3" % w, pg.locator("#latestList .latest-item:visible").count() <= 3)
+        ck("%d latest shows 3 real files" % w, pg.locator("#latestList .latest-item:visible").count() == 3)
+        ck("%d latest has 'show all' in header" % w, pg.locator("#latest .section-head .mv-more").is_visible())
+        ck("%d no trailing separator in lecture sub" % w, not any(t.strip().endswith("·") for t in pg.locator("#latestList .latest-sub").all_inner_texts()))
         ck("%d original quick section hidden" % w, not pg.locator('section[aria-label="الوصول السريع"]').is_visible())
         nav_box = pg.locator(".mv-nav").bounding_box(); ck("%d nav at bottom" % w, abs(nav_box["y"] + nav_box["height"] - 800) < 2)
         if w == 390:

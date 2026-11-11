@@ -93,25 +93,42 @@
   grid.appendChild(tile("التقويم", "المواعيد", "calendar", 1, { soon: true }));
   grid.appendChild(tile("بنك الأسئلة", "تدرّب واختبر", "help", 2, { soon: true }));
 
+  /* «تابع دراستك»: آخر مادة فتحها الطالب + تقدّمه المحفوظ في هذا المتصفح (لا بيانات وهمية) */
   var cont = el("a", "mv-continue"); cont.hidden = true;
   var last = null;
   try { last = MS.course(MS.getLast()); } catch (e) { last = null; }
   if (last) {
-    cont.href = "course.html?id=" + encodeURIComponent(last.id) + (window.IQ_STAGE ? "" : "");
-    cont.appendChild(MS.icon("book", 22));
-    var ct = el("span"); ct.appendChild(el("small", "", "متابعة آخر مادة")); ct.appendChild(el("strong", "", last.name || ""));
-    cont.appendChild(ct); cont.hidden = false;
+    cont.href = "course.html?id=" + encodeURIComponent(last.id);
+    var ci = el("span", "mv-ic hue-1"); ci.setAttribute("aria-hidden", "true"); ci.appendChild(MS.icon("book", 22)); cont.appendChild(ci);
+    var ct = el("span", "mv-ctx"); ct.appendChild(el("small", "", "تابع دراستك")); ct.appendChild(el("strong", "", last.name || ""));
+    var total = (last.lectures || []).length, done = 0;
+    try { done = MS.progress.done(last); } catch (e) { done = 0; }
+    if (total) {
+      var bar = el("span", "mv-bar"); bar.setAttribute("role", "progressbar"); bar.setAttribute("aria-valuemin", "0"); bar.setAttribute("aria-valuemax", String(total)); bar.setAttribute("aria-valuenow", String(done));
+      bar.setAttribute("aria-label", "التقدّم في المادة");
+      var fillBar = el("span"); fillBar.style.width = Math.round(done / total * 100) + "%"; bar.appendChild(fillBar);
+      ct.appendChild(bar); ct.appendChild(el("small", "", done + " من " + total + " محاضرة مقروءة"));
+    }
+    cont.appendChild(ct);
+    var go = el("span", "mv-go"); go.setAttribute("aria-hidden", "true"); go.appendChild(MS.icon("chevron", 18)); cont.appendChild(go);
+    cont.hidden = false;
   }
   host.appendChild(welcome); host.appendChild(search); host.appendChild(grid); host.appendChild(cont);
   var hero = $("home");
   hero.parentNode.insertBefore(host, hero.nextSibling);
 
-  /* «عرض الكل» لأحدث المحاضرات (في الرئيسية يظهر ثلاث فقط) */
+  /* «أحدث المحاضرات»: الملفات الحقيقية نفسها (في الرئيسية ثلاثة فقط) و«عرض الكل» بجانب العنوان */
   var latest = $("latest");
   if (latest) {
-    var more = el("a", "btn btn-secondary btn-sm mv-more", "عرض كل المحاضرات"); more.href = "#latest";
-    latest.querySelector(".container").appendChild(more);
+    var lh = latest.querySelector(".section-head");
+    var more = el("a", "mv-more", "عرض الكل"); more.href = "#latest";
+    if (lh) lh.appendChild(more);
+    [].forEach.call(latest.querySelectorAll(".latest-sub"), function (n) {
+      if (n.firstChild && n.firstChild.nodeType === 3) n.firstChild.nodeValue = n.firstChild.nodeValue.replace(/\s*·\s*$/, "");
+    });
+    if (!latest.querySelector(".latest-item")) latest.classList.add("mv-empty");
   }
+
 
   }
 
