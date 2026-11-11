@@ -89,7 +89,13 @@
       box.appendChild(adm);
     }
     var out = row("خروج", ICON.out);
-    out.addEventListener("click", function () { MSAuth.logout().then(function () { location.href = "login.html"; }); });
+    out.addEventListener("click", function () {
+      out.disabled = true;
+      MSAuth.logout().then(function () { location.href = "login.html"; }, function () {
+        out.disabled = false;
+        say("تعذّر تسجيل الخروج. تحقق من الاتصال وحاول مرة أخرى.");
+      });
+    });
     box.appendChild(out);
     var del = row("حذف حسابي وبياناتي", ICON.out);
     del.addEventListener("click", function () {
