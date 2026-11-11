@@ -105,7 +105,8 @@
       sel.replaceChildren(new Option(placeholder, ""));
       items.forEach(function (item) { sel.appendChild(new Option(item.name_ar, item.id)); });
       var selected = items.find(function (item) { return item.id === Number(preferred); });
-      sel.value = selected ? String(selected.id) : (items.length === 1 ? String(items[0].id) : "");
+      sel.value = selected ? String(selected.id) : (!options.admin && items.length === 1 ? String(items[0].id) : "");
+      sel.disabled = !items.length || (!options.admin && items.length === 1);
     }
     function note() {
       var ok = S.value && subjectPermissions.has(S.value);
@@ -225,7 +226,7 @@
       $("gate").textContent = "جارٍ تحميل صلاحياتك…";
       return Promise.all([
         IQApi.request("/api/upload-options" + (stageQuery ? "?" + stageQuery.slice(1) : "")),
-        fetch("/api/auth/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).catch(function () { return {}; })
+        (typeof fetch === "function" ? fetch("/api/auth/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }) : Promise.resolve({})).catch(function () { return {}; })
       ]).then(function (r) {
         options = r[0];
         var sc = (r[1] && r[1].user && r[1].user.scopes) || [], adm = r[1] && r[1].user && r[1].user.admin;
