@@ -11,9 +11,6 @@ import { ACTIVE_UNIVERSITY } from "./onboarding.js";
 import { resolveInvite } from "./invites.js";
 import { serviceErrorResponse } from "./service-errors.js";
 
-const NOT_SUSPENDED =
-  "NOT EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='suspended')";
-
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -108,10 +105,10 @@ async function handleCatalogRaw(req, env) {
   try {
     if (req.method === "GET") {
       const directory = q.get("view") === "directory";
-      const joining = q.get("view") === "join"; // التسجيل: كل جامعات الدليل عدا المعلّقة، للمستخدم المسجّل دخوله
+      const joining = q.get("view") === "join";
       if (directory && !(await isGlobalAdmin(await currentUser(req, env), env))) return fail("forbidden", 403);
       if (joining && !(await currentUser(req, env))) return fail("unauthorized", 401);
-      const visible = directory ? "1=1" : joining ? NOT_SUSPENDED : ACTIVE_UNIVERSITY;
+      const visible = directory ? "1=1" : ACTIVE_UNIVERSITY;
       if (part === "me") return await myProfile(req, env);
       if (part === "stages") {
         const id = num(q.get("department_id"));
@@ -335,7 +332,7 @@ async function myProfile(req, env) {
   return json({ ok: true, profile: row || null });
 }
 
-// تسجيل الطالب في قسمه ومرحلته: يُحفظ اختياره فقط. لا يفعّل الجامعة ولا يمنح أي صلاحية؛ الجامعة المعلّقة مرفوضة.
+// تسجيل الطالب في قسم ومرحلة تابعين لجامعة مفعّلة.
 async function join(req, env, url) {
   const origin = req.headers.get("origin");
   if (origin && origin !== url.origin) return fail("forbidden", 403);
@@ -344,27 +341,32 @@ async function join(req, env, url) {
   if (!me) return fail("unauthorized", 401);
   let b;
   try { b = await req.json(); } catch { return fail("bad_request", 400); }
-  const did = num(b.department_id), stage = num(b.stage);
+  const did = num(b?.department_id), stage = num(b?.stage);
   if (!did || !stage || stage > 8) return fail("bad_request", 400);
   const dep = await env.DB.prepare(
-    `SELECT d.id, c.id AS college_id, c.university_id, o.state FROM departments d JOIN colleges c ON c.id=d.college_id
+    `SELECT o.state FROM departments d JOIN colleges c ON c.id=d.college_id
      LEFT JOIN university_onboarding o ON o.university_id=c.university_id WHERE d.id=?`).bind(did).first();
   if (!dep) return fail("not_found", 404);
   if (dep.state === "suspended") return fail("suspended", 403);
-  const now = Date.now();
-  await env.DB.prepare("INSERT OR IGNORE INTO stages (department_id,number) VALUES (?,?)").bind(did, stage).run();
-  const st = await env.DB.prepare("SELECT id FROM stages WHERE department_id=? AND number=?").bind(did, stage).first();
+  if (dep.state !== "active") return fail("university_inactive", 403);
   // مصدر التسجيل: رابط دعوة صالح لنفس القسم (ولنفس المرحلة إن كان رابط مرحلة)، وإلا تسجيل مباشر
   let inviteCode = null;
   if (typeof b.invite === "string") {
     const inv = await resolveInvite(env, b.invite.toUpperCase());
     if (inv && inv.department_id === did && (inv.type === "department" || inv.stage === stage)) inviteCode = b.invite.toUpperCase();
   }
-  await env.DB.batch([
-    env.DB.prepare(`INSERT INTO user_profile (user_id,college_id,stage_id) VALUES (?,?,?)
-      ON CONFLICT(user_id) DO UPDATE SET college_id=excluded.college_id, stage_id=excluded.stage_id`).bind(me.id, dep.college_id, st.id),
-    env.DB.prepare("INSERT OR IGNORE INTO signup_events (user_id,stage_id,invite_code,created_at) VALUES (?,?,?,?)").bind(me.id, st.id, inviteCode, now)
+  // التحقق داخل الدفعة يمنع الكتابة إذا عُلّقت الجامعة بعد قراءة حالتها.
+  const activeDepartment = `FROM departments d JOIN colleges c ON c.id=d.college_id
+    JOIN universities u ON u.id=c.university_id WHERE d.id=? AND ${ACTIVE_UNIVERSITY}`;
+  const [, profile] = await env.DB.batch([
+    env.DB.prepare(`INSERT OR IGNORE INTO stages (department_id,number) SELECT d.id,? ${activeDepartment}`).bind(stage, did),
+    env.DB.prepare(`INSERT INTO user_profile (user_id,college_id,stage_id)
+      SELECT ?,c.id,(SELECT id FROM stages WHERE department_id=d.id AND number=?) ${activeDepartment}
+      ON CONFLICT(user_id) DO UPDATE SET college_id=excluded.college_id, stage_id=excluded.stage_id`).bind(me.id, stage, did),
+    env.DB.prepare(`INSERT OR IGNORE INTO signup_events (user_id,stage_id,invite_code,created_at)
+      SELECT ?,(SELECT id FROM stages WHERE department_id=d.id AND number=?),?,? ${activeDepartment}`).bind(me.id, stage, inviteCode, Date.now(), did)
   ]);
+  if (!profile.meta.changes) return fail("university_inactive", 403);
   // التسجيل لا يغيّر حالة الجامعة: التفعيل والتعليق للإدارة المخوّلة فقط (onboarding.js)
-  return json({ ok: true, department_id: did, university_state: dep.state === "active" ? "active" : "pending", university_activated: false });
+  return json({ ok: true, department_id: did, university_state: "active", university_activated: false });
 }

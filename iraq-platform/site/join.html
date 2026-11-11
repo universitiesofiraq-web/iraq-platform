@@ -92,7 +92,10 @@
         if (d && d.error === "unauthorized") { location.href = loginUrl(); return; }
         list.innerHTML = "";
         var items = (d && d.items) || [];
-        if (!items.length) list.innerHTML = '<div class="cg-empty">لا توجد عناصر. تواصل معنا لإضافتها.</div>';
+        if (!items.length) {
+          list.innerHTML = '<div class="cg-empty"></div>';
+          list.firstElementChild.textContent = lv === 0 ? "لا توجد جامعات مفعّلة للتسجيل حالياً." : "لا توجد عناصر متاحة في هذا الاختيار.";
+        }
         items.forEach(function (it) {
           var row = document.createElement("div"); row.className = "cg-item";
           var name = document.createElement("span"); name.textContent = it.name_ar; row.appendChild(name);
@@ -116,13 +119,8 @@
         body: JSON.stringify({ department_id: dep.id, stage: stage, invite: INFO ? INV : undefined })
       }).then(function (r) { return r.json(); }).then(function (r) {
         if (!r.ok) {
-          $("msg").textContent = r.error === "suspended" ? "هذه الجامعة موقوفة مؤقتاً. تواصل مع إدارة المنصة." :
+          $("msg").textContent = r.error === "suspended" || r.error === "university_inactive" ? "التسجيل في هذه الجامعة غير متاح حالياً." :
             r.error === "unauthorized" ? "سجّل دخولك أولاً." : "تعذّر التسجيل، حاول مرة أخرى.";
-          return;
-        }
-        if (r.university_state !== "active") { // الجامعة في الدليل لكنها غير مفعّلة بعد: نحفظ التسجيل ونوضّح الحالة
-          $("list").innerHTML = '<div class="jn-done"><b>تم حفظ تسجيلك</b>جامعتك لم تُفعَّل في المنصة بعد. ستفتح صفحة قسمك تلقائياً عند تفعيلها من إدارة المنصة.</div>';
-          $("msg").textContent = "";
           return;
         }
         try { localStorage.setItem("iq.dept", JSON.stringify({ id: dep.id, name: dep.name + " — " + stack[1].name })); } catch (e) { /* لا شيء */ }
@@ -154,7 +152,7 @@
       if (INV) {
         return fetch("/api/invite?code=" + encodeURIComponent(INV), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (i) {
           if (i && i.ok) fromInvite(i);
-          else { $("msg").textContent = "رابط الدعوة غير صالح أو أُوقف. اختر جامعتك يدوياً."; INV = ""; load(); }
+          else { INV = ""; load(); $("msg").textContent = "رابط الدعوة غير متاح. اختر جامعتك يدوياً."; }
         });
       }
       if (d && d.profile && !change) {
