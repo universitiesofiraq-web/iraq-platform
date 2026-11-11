@@ -3,6 +3,7 @@
 import { currentUser } from "./auth.js";
 import { policy } from "./scope.js";
 import { manageGroupChat } from "./group_chat_moderation.js";
+import { serviceErrorResponse } from "./service-errors.js";
 
 const MAX_BODY = 2000;
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -302,7 +303,6 @@ export async function handleGroupChat(req, env, opts = {}) {
     return fail("not_found", 404);
   } catch (err) {
     if (/unique constraint|SQLITE_CONSTRAINT_UNIQUE|UNIQUE constraint failed/i.test(String(err))) return fail("conflict", 409);
-    console.error("group-chat error", err);
-    return fail("server", 500);
+    return serviceErrorResponse(err);
   }
 }

@@ -24,6 +24,7 @@
     <div id="pendBox" hidden><h2>بانتظار الموافقة</h2><div id="pend"></div></div>
     <div id="files"></div>
   </main>
+  <script src="js/api-client.js"></script>
   <script>
   (function () {
     var $ = function (i) { return document.getElementById(i); };
@@ -100,7 +101,7 @@
       });
     }
 
-    fetch("/api/catalog/subject?id=" + id).then(function (r) { return r.json(); }).then(function (d) {
+    IQApi.request("/api/catalog/subject?id=" + id).then(function (d) {
       if (!d.ok) { $("title").textContent = "المادة غير موجودة"; return; }
       var s = d.item;
       $("title").textContent = s.name_ar;
@@ -110,7 +111,7 @@
       $("up").href = "contribute.html?subject=" + id;
       canReview = !!d.can; // الإدارة حسب نطاق المستخدم (ممثل هذا القسم/الكلية/الجامعة أو المشرف العام)
       load();
-    }).catch(function () { $("title").textContent = "تعذّر تحميل المادة"; $("meta").textContent = "تحقق من اتصالك ثم أعد فتح الصفحة."; load(); });
+    }).catch(function (error) { $("title").textContent = "تعذّر تحميل المادة"; IQApi.showError($("meta"), error); });
   })();
   </script>
   <script src="js/upload-link.js"></script>

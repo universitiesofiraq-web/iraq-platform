@@ -8,6 +8,9 @@ const labels = {
   not_onboarded: "غير مفعّلة"
 };
 const errors = {
+  database_quota_exceeded: "بلغت الخدمة حد الاستخدام اليومي. حاول لاحقًا.",
+  service_unavailable: "خدمة البيانات غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
+  server: "تعذّر تحميل البيانات حاليًا. أعد المحاولة بعد قليل.",
   unauthorized: "انتهت الجلسة. سجّل الدخول مرة أخرى.",
   forbidden: "لا يسمح نطاقك بهذا الإجراء.",
   onboarding_transition_conflict: "تغيّرت حالة الجامعة. حدّث الصفحة وحاول مرة أخرى.",
@@ -52,7 +55,9 @@ async function api(path, body) {
   const data = await response.json().catch(() => null);
   if (!response.ok || !data?.ok) {
     const code = data?.error;
-    throw new Error(errors[code] || "تعذّر الاتصال بالخادم. حاول مرة أخرى.");
+    const error = new Error(errors[code] || "تعذّر الاتصال بالخادم. حاول مرة أخرى.");
+    error.code = code;
+    throw error;
   }
   return data;
 }
@@ -813,7 +818,9 @@ async function boot() {
     }
   } catch (error) {
     showNotice(error.message, true);
-    $("notice").append(" ", link("تسجيل الدخول", "login.html?next=admin.html"));
+    $("notice").append(" ", error.code === "unauthorized"
+      ? link("تسجيل الدخول", "login.html?next=admin.html")
+      : button("إعادة المحاولة", () => location.reload()));
   }
 }
 

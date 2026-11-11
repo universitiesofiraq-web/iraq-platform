@@ -9,6 +9,7 @@ import { readUploads } from "./d1manifest.js";
 // جدول الحصص والامتحانات ونظام السعي غير موجودة كجداول في المنصة بعد؛ يضيفها ممثل القسم كملاحظات قسم (category).
 import { currentUser } from "./auth.js";
 import { policy } from "./scope.js";
+import { serviceErrorResponse } from "./service-errors.js";
 import { searchDept, indexDeptFile, deptFiles, TOOL_HELP, parseToolCall, runTool } from "./study_dept.js";
 
 export const TASKS = ["ask", "advisor", "summarize", "explain", "translate", "quiz", "mindmap"];
@@ -555,8 +556,7 @@ export async function handleStudyAssistant(req, env, opts = {}) {
     }
     return fail("NOT_FOUND", 404, "المسار غير موجود.");
   } catch (e) {
-    if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "نفّذ ملف migrations/0008_ai_study_assistant.sql و0012_ai_dept_index.sql على قاعدة البيانات.");
-    console.error("study-assistant", sub, e && e.name, e && e.message);
-    return json({ ok: false, error: { code: "SERVER_ERROR", message: "حدث خطأ في الخادم." } }, 500);
+    if (notMigrated(e)) return fail("NOT_MIGRATED", 503, "خدمة المساعد قيد التجهيز. أعد المحاولة لاحقًا.");
+    return serviceErrorResponse(e, true);
   }
 }

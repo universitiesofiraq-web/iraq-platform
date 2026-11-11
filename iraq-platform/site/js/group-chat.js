@@ -3,6 +3,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var active = null, rooms = [], messages = new Map(), more = false, loading = false;
   var replyTo = null, editing = null, me = null, polling = false;
+  var pollTimer = null, pollDelay = 15000, roomsUpdatedAt = 0;
   var removedCount = null, historyEpoch = 0, roomSignature, requestSignature;
   var stamp = new Intl.DateTimeFormat("ar-IQ", { hour: "2-digit", minute: "2-digit" });
 
@@ -33,6 +34,7 @@
   function errorText(err) {
     var errors = { unauthorized: "يرجى تسجيل الدخول بحسابك أولاً.", forbidden: "ليس لديك صلاحية لهذه العملية أو لا تنتمي لهذه المجموعة.",
       invalid_invite: "رمز الدعوة غير صحيح أو تغيّر.", conflict: "اسم المجموعة مستخدم لهذه المرحلة بالفعل.", slow_down: "أرسل الرسائل بوتيرة أبطأ قليلاً.",
+      database_quota_exceeded: "بلغت الخدمة حد الاستخدام اليومي. حاول لاحقًا.", service_unavailable: "خدمة الدردشة غير متاحة مؤقتًا.", server: "تعذّر تحميل الدردشة حاليًا. أعد المحاولة بعد قليل.",
       feature_disabled: "لم تُفعّل إدارة المنصة الدردشة بعد.", not_configured: "خدمة الدردشة غير مهيأة.", bad_request: "تحقق من البيانات المدخلة.", network_error: "تعذر الاتصال بالخادم." };
     return errors[err && err.message] || "تعذرت العملية. حاول مرة أخرى.";
   }
@@ -59,6 +61,7 @@
   }
   async function refreshRooms() {
     var d = await api("rooms");
+    roomsUpdatedAt = Date.now();
     var next = d.items || [];
     var nextSignature = JSON.stringify(next);
     if (nextSignature !== roomSignature) {
@@ -184,8 +187,13 @@
     } catch (e) { status(errorText(e)); }
     finally { loading = false; $("olderBtn").disabled = false; }
   }
+  function schedulePoll() {
+    clearTimeout(pollTimer);
+    if (me && !document.hidden) pollTimer = setTimeout(poll, pollDelay);
+  }
   async function poll() {
     if (polling || document.hidden || !me) return;
+    clearTimeout(pollTimer);
     polling = true;
     var roomId = active, epoch = historyEpoch;
     try {
@@ -206,15 +214,19 @@
           if (changed) { drawMessages(true); await markRead(); }
         }
       }
-      await refreshRooms();
+      if (Date.now() - roomsUpdatedAt >= 30000) await refreshRooms();
+      pollDelay = 15000;
     } catch (err) {
+      pollDelay = Math.min(60000, pollDelay * 2);
+      status(errorText(err));
+      if (["unauthorized", "feature_disabled"].includes(err.message)) me = null;
       if (roomId && roomId === active && ["forbidden", "unauthorized", "feature_disabled"].includes(err.message)) {
         rooms = rooms.filter(function (r) { return r.id !== roomId; });
         roomSignature = JSON.stringify(rooms);
         resetThread();
         $("joinStatus").textContent = errorText(err);
       }
-    } finally { polling = false; }
+    } finally { polling = false; schedulePoll(); }
   }
   async function mutate(op, data) {
     var roomId = active;
@@ -273,11 +285,16 @@
   $("messageInput").addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (this.value.trim()) $("sendForm").requestSubmit(); }
   });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
-  (async function init() {
+  document.addEventListener("visibilitychange", function () {
+    clearTimeout(pollTimer);
+    if (!document.hidden) poll();
+  });
+  async function init() {
+    clearTimeout(pollTimer);
+    $("authBanner").hidden = true;
     try {
       var res = await fetch("/api/auth/me"); var data = await res.json();
-      if (!data.ok || !data.user) throw Error("unauthorized");
+      if (!res.ok || !data.ok || !data.user) throw Error(data.error || (res.status === 401 ? "unauthorized" : "server"));
       me = data.user;
       await refreshRooms();
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
@@ -285,7 +302,8 @@
       if (requestedRoom && !rooms.some(function (r) { return r.id === requestedRoom; })) {
         $("joinStatus").textContent = "هذه المجموعة تظهر للأعضاء المقبولين.";
       } else if (first) await openRoom(first);
-      setInterval(function () { if (!document.hidden) poll(); }, 15000);
+      pollDelay = 15000;
+      schedulePoll();
     } catch (err) {
       $("roomList").textContent = "";
       $("authBanner").hidden = false;
@@ -295,7 +313,10 @@
         $("authBanner").appendChild(a);
       }
       $("joinPanel").hidden = true;
+      var retry = node("button", null, "إعادة المحاولة"); retry.type = "button";
+      retry.onclick = init; $("authBanner").appendChild(retry);
       status(errorText(err));
     }
-  })();
+  }
+  init();
 })();

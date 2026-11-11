@@ -7,9 +7,10 @@
   let scopeController;
 
   class ApiError extends Error {
-    constructor(status) {
+    constructor(status, code) {
       super("Representative API request failed");
       this.status = status;
+      this.code = code;
     }
   }
 
@@ -21,9 +22,8 @@
       options.body = JSON.stringify(body);
     }
     const response = await fetch("/api/" + path, options);
-    if (!response.ok) throw new ApiError(response.status);
-    const data = await response.json();
-    if (!data || data.ok !== true) throw new ApiError(response.status);
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data || data.ok !== true) throw new ApiError(response.status, data?.error);
     return data;
   }
 
@@ -464,7 +464,9 @@
       } else if (error.status === 403) {
         sessionStatus.textContent = "حسابك غير مخوّل للوصول إلى هذه الصفحة.";
       } else {
-        sessionStatus.textContent = "تعذّر التحقق من الجلسة.";
+        sessionStatus.textContent = error.code === "database_quota_exceeded"
+          ? "بلغت الخدمة حد الاستخدام اليومي. حاول لاحقًا."
+          : "خدمة الحسابات غير متاحة مؤقتًا.";
         showError($("session-actions"), "تحقّق من الاتصال ثم أعد المحاولة.", loadSession);
       }
       return;
