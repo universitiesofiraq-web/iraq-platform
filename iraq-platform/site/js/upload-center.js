@@ -4,7 +4,7 @@
   var $ = function (i) { return document.getElementById(i); };
   var CH = 2 * 1024 * 1024, MAX = 20 * 1024 * 1024, CONC = 3, RETRY = [2000, 5000, 10000];
   var params = new URLSearchParams(location.search);
-  var options = null, canLogo = false, TYPE = "lecture", items = [], uid = 0, existing = [], batchStart = Date.now();
+  var uploaded = [], options = null, canLogo = false, TYPE = "lecture", items = [], uid = 0, existing = [], batchStart = Date.now();
   var C = $("c"), D = $("d"), S = $("s");
 
   var P = { upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>',
@@ -251,8 +251,30 @@
     if (keep && document.activeElement.tagName === "INPUT") { fabUpdate(stats()); return; } /* لا نقاطع الكتابة */
     $("list").innerHTML = items.slice().sort(function (a, b) { return (order[a.status] - order[b.status]) || 0; }).map(row).join("");
     $("target").innerHTML = P.spark + "<span>" + (TYPE === "lecture" ? "تُطابَق الملفات مع المحاضرات تلقائياً من اسم الملف (رقم المحاضرة أو عنوانها)، وتقدر تغيّر الربط لكل ملف." : "تُرفع كملفات للمادة كلها، واسم الملف قابل للتعديل.") + "</span>";
-    fabUpdate(stats());
+    renderUploaded(); fabUpdate(stats());
   }
+  function renderUploaded() {
+    var box = $("uploaded");
+    if (!box) { box = document.createElement("section"); box.id = "uploaded"; box.className = "uc2-uploaded"; $("list").parentNode.insertBefore(box, $("list").nextSibling); }
+    var mine = {}; items.forEach(function (i) { if (i.eid) mine[i.eid] = 1; });
+    var rows = uploaded.filter(function (u) { return !mine[u.id]; });
+    box.hidden = !rows.length;
+    if (!rows.length) { box.innerHTML = ""; return; }
+    var TL = { lecture: "محاضرة", quiz: "اختبار", exam: "أسئلة سنوات" };
+    box.innerHTML = "<h3 style=\"margin:16px 0 8px;font-size:15px\">الملفات المرفوعة سابقاً (" + rows.length + ")</h3><ul class=\"uc2-list\" style=\"list-style:none;padding:0;margin:0\">" + rows.map(function (u) {
+      var name = (u.type === "lecture" && u.number ? "المحاضرة " + u.number + " — " : (TL[u.type] || "") + " — ") + (u.title || u.label || "");
+      return '<li class="uc2-row" data-eid="' + esc(u.id) + '"><span class="uc2-tile ' + (u.kind === "link" ? "lnk" : "pdf") + '">' + (u.kind === "link" ? "رابط" : "PDF") + '</span><div class="uc2-main"><div class="uc2-name" dir="auto">' + esc(name) + '</div><div class="uc2-meta"><span>' + esc(u.label || "") + (u.size ? " · " + fmt(u.size) : "") + '</span></div></div><div class="uc2-acts"><button data-a="delup" aria-label="حذف" title="حذف من المنصة">' + P.trash + "</button></div></li>";
+    }).join("") + "</ul>";
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#uploaded [data-a=delup]"); if (!b) return;
+    var id = b.closest("[data-eid]").dataset.eid;
+    if (!window.confirm("حذف هذا الملف من المنصة نهائياً؟")) return;
+    jpost("delete", { id: id }).then(function (d) {
+      if (d.ok) { uploaded = uploaded.filter(function (u) { return u.id !== id; }); render(); msg("تم حذف الملف.", true); }
+      else msg(d.error === "forbidden" ? "لا تملك صلاحية حذف هذا الملف." : "تعذّر الحذف.");
+    });
+  });
   function fabUpdate(s) {
     var f = $("fab"), show = s.active > 0 && window.scrollY > 380;
     f.hidden = !show; if (show) f.textContent = "جارٍ رفع " + s.active + " · " + s.pct + "٪";
@@ -320,11 +342,12 @@
     $("sub").textContent = p.join(" · ");
   }
   function loadExisting() {
-    existing = [];
+    existing = []; uploaded = [];
     if (!S.value) return Promise.resolve();
     var cid = "s" + S.value;
     return jpost("admin", {}).then(function (d) { return d && d.items ? d : fetch("/api/uploads").then(function (r) { return r.json(); }).catch(function () { return {}; }); }).then(function (d) {
       var seen = {};
+      uploaded = ((d && d.items) || []).filter(function (i) { return i.courseId === cid; });
       ((d && d.items) || []).filter(function (i) { return i.courseId === cid && i.type === "lecture" && i.number; }).forEach(function (i) { if (!seen[i.number]) { seen[i.number] = 1; existing.push({ number: i.number, title: i.title || "" }); } });
     }).catch(function () { /* القائمة اختيارية: نبقى بلا مطابقة */ });
   }
