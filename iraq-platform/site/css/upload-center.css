@@ -1,0 +1,83 @@
+/* مركز الرفع — بتصميم مركز رفع AXON، بألوان المنصة */
+.uc2{--uc-brand:var(--accent);--uc-brand2:var(--tile);--uc-soft:color-mix(in srgb,var(--accent) 10%,transparent);--uc-ring:color-mix(in srgb,var(--ink) 9%,transparent);
+  max-width:860px;margin:18px auto 90px;padding:0 14px}
+.uc2 *{box-sizing:border-box}
+.uc2-back{display:inline-block;margin:6px 0 10px;color:var(--lapis);font-weight:700;text-decoration:none}
+.uc2-panel{border:1px solid var(--line);border-radius:28px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.uc2-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:14px 18px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.uc2-orb{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:16px;color:#fff;background:conic-gradient(from 210deg,var(--lapis-d),var(--uc-brand2),var(--uc-brand),var(--lapis-d));box-shadow:0 8px 22px -8px var(--uc-brand2)}
+.uc2-orb svg{width:22px;height:22px}
+.uc2-ttl{flex:1;min-width:0}.uc2-ttl h1{margin:0;font-size:1.15rem;font-weight:800;line-height:1.3}
+.uc2-sub{margin:0;font-size:.82rem;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc2-pill{display:inline-flex;align-items:center;gap:8px;min-height:38px;border-radius:999px;padding:0 14px;font-size:.8rem;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap}
+.uc2-pill i{width:8px;height:8px;border-radius:99px;background:var(--ink2)}.uc2-pill.on i{background:#10b981;box-shadow:0 0 0 4px #10b98128}
+.uc2-ib{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.uc2-ib svg{width:18px;height:18px}
+.uc2-body{display:grid;gap:18px;padding:18px}
+.uc2-gate{margin:0;padding:18px;color:var(--ink2)}
+/* السياق: الكلية والمادة */
+.uc2-ctx{display:grid;gap:12px;padding:16px;border:1px solid var(--line);border-radius:22px}
+.uc2-college{display:flex;align-items:center;gap:12px}
+.uc2-logo{display:grid;place-items:center;flex:none;width:60px;height:60px;border-radius:18px;background:#fff;border:1px solid var(--line);overflow:hidden}
+.uc2-logo img{width:100%;height:100%;object-fit:contain}.uc2-logo span{font-size:1.7rem}
+.uc2-college b{display:block;font-size:1.05rem}.uc2-college small{color:var(--ink2)}
+.uc2-logobtn{margin-inline-start:auto;font-size:.8rem;font-weight:700;color:var(--lapis);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
+.uc2-fields{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:640px){.uc2-fields{grid-template-columns:1fr 1fr}.uc2-fields .wide{grid-column:1/-1}}
+.uc2 label{display:block;font-weight:700;font-size:.85rem;margin-bottom:4px}
+.uc2 select,.uc2 input[type=text],.uc2 input[type=number],.uc2 textarea{width:100%;min-height:46px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.uc2 select:focus,.uc2 input:focus,.uc2 textarea:focus{outline:3px solid color-mix(in srgb,var(--uc-brand) 35%,transparent);border-color:transparent}
+.uc2-seg{display:inline-flex;gap:4px;padding:4px;border-radius:16px;background:var(--bg);border:1px solid var(--line);width:100%}
+.uc2-seg button{flex:1;min-height:42px;border:0;border-radius:12px;background:transparent;color:var(--ink2);font:inherit;font-weight:700;cursor:pointer}
+.uc2-seg button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+/* منطقة الإفلات */
+.uc2-drop{position:relative;border-radius:28px;padding:2px;background:linear-gradient(120deg,var(--uc-brand),var(--uc-brand2),var(--gold),var(--uc-brand));background-size:300% 300%;cursor:pointer;transition:transform .25s ease,box-shadow .25s ease;outline:none}
+.uc2-drop-in{border-radius:26px;padding:34px 18px;text-align:center;background:radial-gradient(120% 120% at 50% 0,var(--uc-soft) 0,var(--surface) 62%)}
+.uc2-drop:hover,.uc2-drop:focus-visible{box-shadow:0 18px 40px -22px var(--uc-brand2)}
+.uc2-drop.drag{transform:scale(1.012);animation:ucBorder 2.4s linear infinite}
+.uc2-dicon{display:inline-grid;place-items:center;width:76px;height:76px;border-radius:999px;color:#fff;background:linear-gradient(135deg,var(--uc-brand2),var(--uc-brand));box-shadow:0 14px 30px -10px var(--uc-brand2),inset 0 1px 0 #ffffff59;transition:transform .3s cubic-bezier(.2,.9,.3,1.4)}
+.uc2-dicon svg{width:34px;height:34px}.uc2-drop.drag .uc2-dicon{transform:translateY(-6px) scale(1.06)}
+.uc2-drop h2{margin:14px 0 4px;font-size:1.25rem;font-weight:800}.uc2-drop p{margin:0;font-size:.88rem;color:var(--ink2)}
+.uc2-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px}
+.uc2-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.uc2-btn svg{width:16px;height:16px}.uc2-btn.p{background:var(--uc-brand);border-color:var(--uc-brand);color:var(--on-accent)}
+.uc2-btn.sm{min-height:38px;padding:0 12px;font-size:.82rem}.uc2-btn:disabled{opacity:.5}
+.uc2-links{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:22px}
+.uc2-links textarea{font-family:ui-monospace,Menlo,monospace;font-size:.85rem;direction:ltr}
+.uc2-note{display:flex;align-items:center;gap:8px;margin:0;font-size:.85rem;color:var(--ink2)}.uc2-note svg{width:16px;height:16px;color:var(--uc-brand);flex:none}
+/* الملخص */
+.uc2-sum{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px;border-radius:22px;background:linear-gradient(270deg,var(--uc-soft),transparent)}
+.uc2-ring{position:relative;display:grid;place-items:center}.uc2-ring svg{transform:rotate(-90deg)}.uc2-ring b{position:absolute;font-size:.75rem;font-weight:800}
+.uc2-sum .t{flex:1;min-width:140px}.uc2-sum .t b{display:block;font-weight:800}.uc2-sum .t small{color:var(--ink2)}
+.uc2-sum .acts{display:flex;flex-wrap:wrap;gap:6px}
+.uc2-warn{padding:12px 16px;border-radius:16px;background:#f59e0b1f;color:var(--ink);font-weight:700;font-size:.88rem}
+/* القائمة */
+.uc2-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.uc2-row{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;padding:12px;border-radius:20px;border:1px solid var(--line);background:var(--surface);animation:ucIn .35s cubic-bezier(.2,.8,.2,1) both}
+.uc2-row.is-done{border-color:#10b98155;background:linear-gradient(270deg,#10b9810d,transparent 60%)}
+.uc2-row.is-error{border-color:#ef444466;background:linear-gradient(270deg,#ef44440f,transparent 60%)}
+.uc2-row.is-dup{opacity:.75;border-style:dashed}
+.uc2-tile{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:.68rem;letter-spacing:.02em}
+.uc2-tile.pdf{background:#ef44441c;color:#ef6b6b}.uc2-tile.yt{background:#f43f5e1c;color:#f43f5e}.uc2-tile.lnk{background:var(--uc-soft);color:var(--uc-brand)}
+.uc2-main{min-width:0;display:grid;gap:4px}
+.uc2-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uc2-meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.78rem;color:var(--ink2)}
+.uc2-chip{display:inline-block;padding:1px 9px;border-radius:99px;font-size:.72rem;font-weight:700}
+.uc2-chip.sure{background:#10b9811f;color:#10b981}.uc2-chip.maybe{background:#f59e0b24;color:#d97706}
+.uc2-acts{display:flex;gap:4px}.uc2-acts button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--ink2);cursor:pointer}
+.uc2-acts button:hover{background:var(--uc-soft);color:var(--ink)}.uc2-acts svg{width:16px;height:16px}
+.uc2-bar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--uc-ring);overflow:hidden}
+.uc2-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--uc-brand2),var(--uc-brand));transition:width .35s ease}
+.uc2-row.is-done .uc2-bar i{background:#10b981}.uc2-row.is-error .uc2-bar i{background:#ef4444}
+.uc2-edit{grid-column:1/-1;display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:560px){.uc2-edit{grid-template-columns:minmax(0,15rem) 76px 1fr}.uc2-edit.one{grid-template-columns:1fr}}
+.uc2-edit select,.uc2-edit input{min-height:40px;padding:6px 12px;font-size:.88rem}
+/* الشارة العائمة والتراكب */
+.uc2-fab{position:fixed;z-index:45;inset-inline-start:16px;bottom:24px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:999px;background:var(--lapis-d);color:#fff;font-weight:700;font-size:.88rem;border:0;box-shadow:0 16px 40px -14px #000a;cursor:pointer}
+.uc2-fab[hidden]{display:none}
+.uc2-ovl{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:#0a1c4e8c;backdrop-filter:blur(6px);color:#fff;pointer-events:none}
+.uc2-ovl[hidden]{display:none}.uc2-ovl div{text-align:center;padding:44px 52px;border-radius:36px;border:2px dashed #ffffff8c;background:#ffffff14;font-size:1.5rem;font-weight:800}
+.uc2-msg{margin:0;min-height:1.2em;font-weight:700}.uc2-msg.ok{color:#10b981}.uc2-msg.bad{color:#ef6b6b}
+@keyframes ucBorder{0%{background-position:0 50%}100%{background-position:300% 50%}}
+@keyframes ucIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.uc2-row,.uc2-drop.drag{animation:none}}

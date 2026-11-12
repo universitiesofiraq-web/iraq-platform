@@ -4,54 +4,74 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#13294B">
   <title>مركز الرفع | المنصة العراقية</title>
-  <link rel="stylesheet" href="css/iq.css?v=4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=5">
+  <link rel="stylesheet" href="css/upload-center.css?v=1">
 </head>
 <body>
-  <main class="ct up uc">
-    <a class="back" href="platform.html">← المنصة</a>
-    <header class="uc-head">
-      <span class="uc-logo" id="logoBox"><img id="logo" alt="" hidden><i id="logoFallback">🎓</i></span>
-      <div class="uc-title"><h1>مركز الرفع</h1><p id="collegeName" class="ct-note"></p></div>
-      <label class="uc-logo-btn" id="logoBtn" hidden>شعار الكلية<input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
-    </header>
-    <p class="ct-note" id="gate">جارٍ التحقق من صلاحياتك…</p>
+  <main class="uc2">
+    <a class="uc2-back" href="platform.html">← المنصة</a>
+    <div class="uc2-panel">
+      <div class="uc2-head">
+        <span class="uc2-orb" id="orb"></span>
+        <div class="uc2-ttl"><h1>رفع الملفات</h1><p class="uc2-sub" id="sub"></p></div>
+        <span class="uc2-pill" id="pill"><i></i><span id="pillT">جارٍ التحقق</span></span>
+      </div>
+      <p class="uc2-gate" id="gate">جارٍ التحقق من صلاحياتك…</p>
+      <div class="uc2-body" id="main" hidden>
+        <section class="uc2-ctx">
+          <div class="uc2-college">
+            <span class="uc2-logo"><img id="logo" alt="" hidden><span id="logoFb">🎓</span></span>
+            <div><b id="cName"></b><small id="cPath"></small></div>
+            <label class="uc2-logobtn" id="logoBtn" hidden>شعار الكلية<input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+          </div>
+          <div class="uc2-fields">
+            <div id="collegeRow"><label for="c">الكلية</label><select id="c"></select></div>
+            <div id="deptRow"><label for="d">القسم</label><select id="d"></select></div>
+            <div class="wide"><label for="s">المادة</label><select id="s"></select></div>
+            <div class="wide"><div class="uc2-seg" id="typeSeg" role="tablist">
+              <button type="button" role="tab" data-v="lecture" aria-selected="true">محاضرات</button>
+              <button type="button" role="tab" data-v="exam" aria-selected="false">أسئلة سابقة</button>
+              <button type="button" role="tab" data-v="quiz" aria-selected="false">اختبارات</button>
+            </div></div>
+          </div>
+        </section>
 
-    <div id="form" hidden>
-      <section class="up-card">
-        <h2><b>1</b> الكلية والمادة</h2>
-        <div id="collegeRow"><label for="c">الكلية</label><select id="c"></select></div>
-        <div id="deptRow"><label for="d">القسم</label><select id="d"></select></div>
-        <label for="s">المادة</label><select id="s"></select>
-        <p class="ct-note" id="subjNote"></p>
-        <div class="up-seg" id="typeSeg" role="group" aria-label="نوع الملفات">
-          <button type="button" data-v="lecture" class="on">محاضرات</button><button type="button" data-v="exam">أسئلة سابقة</button><button type="button" data-v="quiz">اختبارات</button>
+        <div class="uc2-drop" id="drop" tabindex="0" role="button" aria-label="اسحب الملفات وأفلتها هنا">
+          <div class="uc2-drop-in">
+            <span class="uc2-dicon" id="dicon"></span>
+            <h2>اسحب الملفات وأفلتها هنا</h2>
+            <p>ملفات PDF (حتى 20 ميغا للملف) · تقدر تختار عشرات الملفات مرة وحدة، وغير PDF ضعه رابطاً</p>
+            <div class="uc2-btns">
+              <button class="uc2-btn p" id="pickFiles" type="button"><span class="i-file"></span>اختر ملفات</button>
+              <button class="uc2-btn" id="pickFolder" type="button"><span class="i-folder"></span>اختر مجلد</button>
+              <button class="uc2-btn" id="linksBtn" type="button"><span class="i-link"></span>لصق روابط</button>
+            </div>
+          </div>
+          <input id="fileInput" type="file" multiple accept="application/pdf,.pdf" hidden>
+          <input id="folderInput" type="file" multiple webkitdirectory hidden>
         </div>
-      </section>
 
-      <section class="up-card">
-        <h2><b>2</b> الملفات</h2>
-        <input id="f" type="file" accept="application/pdf,.pdf" multiple hidden>
-        <button class="up-drop" id="drop" type="button"><span class="up-ico">📚</span><strong>اسحب عدة ملفات PDF هنا أو اضغط للاختيار</strong><small>يُستخرج رقم المحاضرة وعنوانها من اسم الملف تلقائياً · حتى 20 ميغا للملف</small></button>
-        <details class="up-more"><summary>أو الصق روابط (رابط في كل سطر)</summary>
-          <textarea id="links" rows="3" dir="ltr" placeholder="https://…"></textarea>
-          <button class="btn btn-secondary" id="addLinks" type="button">إضافة الروابط</button>
-        </details>
-      </section>
-
-      <section class="up-card" id="queueCard" hidden>
-        <h2><b>3</b> الطابور <span class="uc-count" id="count"></span></h2>
-        <div class="uc-sum" id="sum"></div>
-        <ul class="uc-list" id="list"></ul>
-        <div class="uc-actions">
-          <button class="btn btn-primary" id="start" type="button">ابدأ الرفع</button>
-          <button class="btn btn-secondary" id="clear" type="button">مسح المنتهي</button>
+        <div class="uc2-links" id="linksPanel" hidden>
+          <label for="linksText">الصق الروابط (كل رابط بسطر، وتكدر تكتب اسماً قبله)</label>
+          <textarea id="linksText" rows="4" dir="ltr" placeholder="Growth — https://drive.google.com/file/d/...&#10;https://t.me/channel/123&#10;https://youtu.be/xxxx"></textarea>
+          <div><button class="uc2-btn p sm" id="linksAdd" type="button">إضافة الروابط</button></div>
         </div>
-      </section>
-      <p class="ct-msg" id="msg" role="alert"></p>
+
+        <p class="uc2-note" id="target"></p>
+        <div id="summary" hidden></div>
+        <ul class="uc2-list" id="list"></ul>
+        <p class="uc2-msg" id="msg" role="alert"></p>
+      </div>
     </div>
   </main>
+  <button class="uc2-fab" id="fab" type="button" hidden aria-live="polite"></button>
+  <div class="uc2-ovl" id="ovl" hidden aria-hidden="true"><div>أفلت الملفات حتى تنرفع</div></div>
   <script src="js/api-client.js"></script>
-  <script src="js/upload-center.js?v=1"></script>
+  <script src="js/upload-center.js?v=2"></script>
 </body>
 </html>
