@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>مركز الرفع | المنصة العراقية</title>
+  <link rel="stylesheet" href="css/iq.css?v=4">
+</head>
+<body>
+  <main class="ct up uc">
+    <a class="back" href="platform.html">← المنصة</a>
+    <header class="uc-head">
+      <span class="uc-logo" id="logoBox"><img id="logo" alt="" hidden><i id="logoFallback">🎓</i></span>
+      <div class="uc-title"><h1>مركز الرفع</h1><p id="collegeName" class="ct-note"></p></div>
+      <label class="uc-logo-btn" id="logoBtn" hidden>شعار الكلية<input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+    </header>
+    <p class="ct-note" id="gate">جارٍ التحقق من صلاحياتك…</p>
+
+    <div id="form" hidden>
+      <section class="up-card">
+        <h2><b>1</b> الكلية والمادة</h2>
+        <div id="collegeRow"><label for="c">الكلية</label><select id="c"></select></div>
+        <div id="deptRow"><label for="d">القسم</label><select id="d"></select></div>
+        <label for="s">المادة</label><select id="s"></select>
+        <p class="ct-note" id="subjNote"></p>
+        <div class="up-seg" id="typeSeg" role="group" aria-label="نوع الملفات">
+          <button type="button" data-v="lecture" class="on">محاضرات</button><button type="button" data-v="exam">أسئلة سابقة</button><button type="button" data-v="quiz">اختبارات</button>
+        </div>
+      </section>
+
+      <section class="up-card">
+        <h2><b>2</b> الملفات</h2>
+        <input id="f" type="file" accept="application/pdf,.pdf" multiple hidden>
+        <button class="up-drop" id="drop" type="button"><span class="up-ico">📚</span><strong>اسحب عدة ملفات PDF هنا أو اضغط للاختيار</strong><small>يُستخرج رقم المحاضرة وعنوانها من اسم الملف تلقائياً · حتى 20 ميغا للملف</small></button>
+        <details class="up-more"><summary>أو الصق روابط (رابط في كل سطر)</summary>
+          <textarea id="links" rows="3" dir="ltr" placeholder="https://…"></textarea>
+          <button class="btn btn-secondary" id="addLinks" type="button">إضافة الروابط</button>
+        </details>
+      </section>
+
+      <section class="up-card" id="queueCard" hidden>
+        <h2><b>3</b> الطابور <span class="uc-count" id="count"></span></h2>
+        <div class="uc-sum" id="sum"></div>
+        <ul class="uc-list" id="list"></ul>
+        <div class="uc-actions">
+          <button class="btn btn-primary" id="start" type="button">ابدأ الرفع</button>
+          <button class="btn btn-secondary" id="clear" type="button">مسح المنتهي</button>
+        </div>
+      </section>
+      <p class="ct-msg" id="msg" role="alert"></p>
+    </div>
+  </main>
+  <script src="js/api-client.js"></script>
+  <script src="js/upload-center.js?v=1"></script>
+</body>
+</html>

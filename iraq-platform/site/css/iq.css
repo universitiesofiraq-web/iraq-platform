@@ -128,3 +128,23 @@ button,input,select{font:inherit}
 .up-more summary{cursor:pointer;color:var(--ink2);margin-bottom:8px}
 .ct-msg.ok{color:#2f855a}.ct-msg.bad{color:#e5736d}
 .up-go{min-height:54px;font-size:1.05rem;position:sticky;bottom:12px}
+
+/* مركز الرفع */
+.uc-head{display:flex;align-items:center;gap:12px}.uc-title{flex:1;min-width:0}.uc-title h1{margin:0}
+.uc-logo{display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#fff;border:1px solid var(--line);overflow:hidden;flex:none}
+.uc-logo img{width:100%;height:100%;object-fit:contain}.uc-logo i{font-style:normal;font-size:1.6rem}
+.uc-logo-btn{padding:8px 12px;border:1px dashed var(--line);border-radius:10px;font-size:.85rem;cursor:pointer;color:var(--accent);font-weight:700}
+.uc .up-card textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg,var(--surface));color:var(--ink);margin-bottom:8px}
+.uc-count{margin-inline-start:auto;font-weight:400;font-size:.85rem;color:var(--ink2)}
+.uc-sum{display:flex;flex-wrap:wrap;gap:6px;font-size:.82rem}.uc-sum span{padding:2px 10px;border-radius:50px;background:var(--line)}
+.uc-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.uc-item{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px}
+.uc-kind{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:#e5534b22;color:#e5736d;font-weight:800;font-size:.72rem}
+.uc-item.done .uc-kind{background:#2f855a22;color:#48bb78}.uc-item.error .uc-kind{background:#e5534b33}
+.uc-fields{display:grid;grid-template-columns:72px 1fr;gap:6px;min-width:0}
+.uc .uc-fields input{min-height:40px;padding:6px 10px}
+.uc-name{grid-column:1/-1;font-size:.78rem;color:var(--ink2);overflow-wrap:anywhere}
+.uc-state{font-size:.8rem;text-align:center;min-width:64px}.uc-state button{background:none;border:0;color:var(--accent);font-weight:700}
+.uc-prog{grid-column:1/-1;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.uc-prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.uc-actions{display:flex;gap:8px;flex-wrap:wrap}.uc-actions .btn{flex:1;min-height:48px}
+.up-drop.on{border-color:var(--accent);background:#2dd4bf14}.uc-logo-img{width:28px;height:28px;border-radius:8px;object-fit:contain;background:#fff;vertical-align:middle;margin-inline-end:8px}

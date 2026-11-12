@@ -13,6 +13,7 @@ import { handleCatalog } from "../_lib/catalog.js";
 import { handleInvites } from "../_lib/invites.js";
 import { handleGroupChat } from "../_lib/group_chat.js";
 import { handleAvatar } from "../_lib/avatar.js";
+import { handleCollegeLogo } from "../_lib/college_logo.js";
 import { handleDm } from "../_lib/dm.js";
 
 export async function onRequest({ request, env }) {
@@ -28,6 +29,8 @@ export async function onRequest({ request, env }) {
   if (uploadOptions) return uploadOptions;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
+  const logoRes = await handleCollegeLogo(request, env, { currentUser }); // شعار الكلية
+  if (logoRes) return logoRes;
   const avRes = await handleAvatar(request, env, { currentUser }); // صورة الطالب واسمه الظاهر (منقول من ميدكسا)
   if (avRes) return avRes;
   const dmRes = await handleDm(request, env, { currentUser }); // الرسائل الخاصة

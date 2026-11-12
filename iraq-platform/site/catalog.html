@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=3">
+  <link rel="stylesheet" href="css/iq.css?v=4">
 </head>
 <body>
   <header class="iq-top">
@@ -102,6 +102,7 @@
           }
           var row = document.createElement("div"); row.className = "cg-item";
           var name = document.createElement("span"); name.textContent = it.name_ar;
+          if (type === "college") { var lg = document.createElement("img"); lg.className = "uc-logo-img"; lg.alt = ""; lg.loading = "lazy"; lg.src = "/api/college-logo/" + it.id; lg.onerror = function () { lg.remove(); }; row.appendChild(lg); }
           row.appendChild(name);
           var sub = it.professor || it.city || it.name_en;
           if (sub) { var s = document.createElement("small"); s.textContent = sub; row.appendChild(s); }
