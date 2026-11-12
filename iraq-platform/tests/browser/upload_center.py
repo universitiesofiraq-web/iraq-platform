@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "site")
 H = functools.partial(http.server.SimpleHTTPRequestHandler, directory=ROOT); H.log_message = lambda *a, **k: None
 srv = http.server.ThreadingHTTPServer(("127.0.0.1", 8795), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
-finishes, logos = [], []
+finishes, logos, deleted = [], [], []
 def route(r):
     u = r.request.url
     def j(o, c=200): r.fulfill(status=c, content_type="application/json", body=json.dumps(o))
@@ -15,7 +15,8 @@ def route(r):
     if "/api/upload-options" in u and "department_id" in u: return j({"ok": True, "items": [{"id": 5, "name_ar": "التشريح", "stage": 1, "term": 1, "can_publish": True}, {"id": 6, "name_ar": "x", "stage": 1, "term": 1, "can_publish": False}]})
     if "/api/upload-options" in u: return j({"ok": True, "admin": True, "universities": [{"id": 1, "name_ar": "جامعة البصرة"}], "colleges": [{"id": 2, "university_id": 1, "name_ar": "كلية الطب"}, {"id": 3, "university_id": 1, "name_ar": "كلية العلوم"}], "departments": [{"id": 8, "college_id": 2, "name_ar": "الطب العام"}]})
     if u.endswith("/api/admin"): return j({"ok": True, "items": [{"id": "x", "courseId": "s5", "type": "lecture", "number": 3, "title": "Heart anatomy"}]})
-    if "/api/finish" in u: finishes.append(json.loads(r.request.post_data)); return j({"ok": True})
+    if "/api/delete" in u: deleted.append(json.loads(r.request.post_data)); return j({"ok": True})
+    if "/api/finish" in u: finishes.append(json.loads(r.request.post_data)); return j({"ok": True, "entry": {"id": "e%d" % len(finishes)}})
     if "/api/chunk" in u: return j({"ok": True})
     r.continue_()
 res = []
@@ -38,6 +39,9 @@ with sync_playwright() as p:
     pg.locator(".uc2-row:not(.is-done):not(.is-dup) select[data-f=lec]").select_option("3")
     pg.wait_for_function("document.querySelectorAll('.uc2-row.is-done').length === 3", timeout=5000)
     ck("all 3 done", len(finishes) == 3)
+    pg.once("dialog", lambda d: d.accept())
+    pg.locator(".uc2-row.is-done [data-a=delete]").first.click(); pg.wait_for_timeout(500)
+    ck("delete removes file via API", len(deleted) == 1 and pg.locator(".uc2-row.is-done").count() == 2)
     pg.click("#linksBtn"); pg.fill("#linksText", "المحاضرة https://youtu.be/abc123"); pg.click("#linksAdd")
     pg.wait_for_selector(".uc2-row .uc2-tile.yt")
     ck("link row detected as youtube", pg.locator(".uc2-tile.yt").count() == 1)

@@ -16,6 +16,7 @@
     retry: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/></svg>',
     spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/></svg>' };
   $("orb").innerHTML = P.upload; $("dicon").innerHTML = P.upload;
   [["i-file", P.file], ["i-folder", P.folder], ["i-link", P.link]].forEach(function (x) { document.querySelector("." + x[0]).innerHTML = x[1]; });
@@ -145,7 +146,7 @@
     var req = it.src === "link" ? jpost("link", Object.assign({ url: it.url }, body)) : jpost("finish", Object.assign({ id: it.uid, chunks: it.total, filename: it.file.name }, body));
     req.then(function (d) {
       it.attaching = false;
-      if (d.ok) { it.linked = true; it.status = "done"; it.doneAt = Date.now(); it.tNum = t.num; it.tTitle = t.title; if (t.num && !existing.some(function (l) { return l.number === t.num; })) existing.push({ number: t.num, title: t.title }); afterOne(); }
+      if (d.ok) { it.linked = true; it.eid = d.entry && d.entry.id; it.status = "done"; it.doneAt = Date.now(); it.tNum = t.num; it.tTitle = t.title; if (t.num && !existing.some(function (l) { return l.number === t.num; })) existing.push({ number: t.num, title: t.title }); afterOne(); }
       else { it.status = "error"; it.err = d.error || "server"; }
       render(); pump();
     });
@@ -166,6 +167,14 @@
     var it = items.find(function (i) { return i.id === id; }); if (!it) return;
     if (act === "pause") { if (it.ctrl) it.ctrl.abort(); it.ctrl = null; if (["uploading", "queued", "waiting"].indexOf(it.status) >= 0) it.status = "paused"; }
     else if (act === "resume" || act === "retry") { it.status = it.uploaded ? "ready" : "queued"; it.attempts = 0; it.err = ""; if (it.uploaded) tryAttach(it); }
+    else if (act === "delete") {
+      if (!it.eid || !window.confirm("حذف هذا الملف من المنصة نهائياً؟")) return;
+      jpost("delete", { id: it.eid }).then(function (d) {
+        if (d.ok) { items = items.filter(function (i) { return i !== it; }); render(); msg("تم حذف الملف.", true); }
+        else msg(d.error === "forbidden" ? "لا تملك صلاحية حذف هذا الملف." : "تعذّر الحذف.");
+      });
+      return;
+    }
     else if (act === "remove") { if (it.ctrl) it.ctrl.abort(); items = items.filter(function (i) { return i !== it; }); }
     pump();
   }
@@ -229,7 +238,8 @@
     if (it.status === "uploading" || it.status === "queued" || it.status === "waiting") acts += '<button data-a="pause" aria-label="إيقاف">' + P.pause + "</button>";
     if (it.status === "paused") acts += '<button data-a="resume" aria-label="استئناف">' + P.play + "</button>";
     if (it.status === "error") acts += '<button data-a="retry" aria-label="إعادة">' + P.retry + "</button>";
-    if (it.status !== "uploading") acts += '<button data-a="remove" aria-label="حذف">' + P.x + "</button>";
+    if (it.status === "done" && it.eid) acts += '<button data-a="delete" aria-label="حذف الملف من المنصة" title="حذف الملف من المنصة">' + P.trash + "</button>";
+    else if (it.status !== "uploading") acts += '<button data-a="remove" aria-label="حذف">' + P.x + "</button>";
     var pct = it.src === "link" ? 100 : it.size ? Math.round((it.status === "done" ? it.size : it.loaded) / it.size * 100) : 0;
     return '<li class="uc2-row ' + cls + '" data-id="' + it.id + '"><span class="uc2-tile ' + kind + '">' + lab + '</span><div class="uc2-main"><div class="uc2-name" dir="auto">' + esc(it.orig) + '</div><div class="uc2-meta"><span class="st" style="display:contents">' + stateLine(it) + "</span>" + chip + '</div></div><div class="uc2-acts">' + acts + "</div>" +
       (it.src === "file" && it.status !== "dup" ? '<div class="uc2-bar"><i style="width:' + pct + '%"></i></div>' : "") + edit + "</li>";
