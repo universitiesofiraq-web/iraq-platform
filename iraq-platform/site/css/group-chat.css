@@ -109,3 +109,4 @@
 .msg-text a{color:inherit;text-decoration:underline;overflow-wrap:anywhere;word-break:break-word}
 #activeTitle:focus{outline:none}
 .thread-head .ghost,.dm-back,.pane-title .ghost{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+.top-back{display:inline-flex;align-items:center;min-height:44px}

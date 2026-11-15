@@ -397,9 +397,10 @@ function showGlobal() {
   $("scope-label").textContent = "جميع الجامعات";
   $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
-  const nav = [["الرئيسية", "admin.html"], ["تحليل النمو", "#growth"], ["الجامعات", "#universities"], ["طلبات التفعيل", "#joins"],
-    ["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["الملفات والبلاغات", "admin-tools.html#files"],
-    ["الإعلانات", "admin-tools.html#ann"]];
+  const nav = [["الرئيسية", "admin.html"], ["الجامعات", "#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"],
+    ["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"],
+    ["تعيين الممثلين", "manage.html"], ["روابط الدعوة", "invites.html"], ["المستخدمون", "admin-tools.html#users"],
+    ["تحليل النمو", "#growth"], ["التسجيلات الأخيرة", "#joins"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]];
   navigation(nav);
   $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"));
   if (me.owner) $("page-actions").append(button("الإدارة العامة", globalTeam));
@@ -703,10 +704,13 @@ function renderScope(data, reload) {
   $("role").textContent = me.admin ? (me.owner ? "مالك المنصة" : "مدير عام") : roles[type];
   $("scope-label").textContent = stageOnly ? "مرحلة واحدة" : name;
   const nav = [["نظرة عامة", workspaceLink(type, id)]];
+  if (stageOnly) nav.push(["رفع ملف", "contribute.html"]);
   if (!stageOnly) {
     nav.push(["المراحل الدراسية", "#stage-list"], ["الفرق والتعيينات", "manage.html"],
       ["المحاضرات والملفات", "admin-tools.html#files"], ["البلاغات", "admin-tools.html#reports"]);
+    if (type === "college" || type === "university") nav.push(["مركز الرفع", "upload-center.html"]);
   }
+  nav.push(["روابط الدعوة", "invites.html"]);
   if (me.admin) nav.push(["الإدارة العامة", "admin.html"]);
   navigation(nav);
   const controls = [];

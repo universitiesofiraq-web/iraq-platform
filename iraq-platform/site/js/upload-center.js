@@ -146,7 +146,7 @@
     var req = it.src === "link" ? jpost("link", Object.assign({ url: it.url }, body)) : jpost("finish", Object.assign({ id: it.uid, chunks: it.total, filename: it.file.name }, body));
     req.then(function (d) {
       it.attaching = false;
-      if (d.ok) { it.linked = true; it.eid = d.entry && d.entry.id; it.status = "done"; it.doneAt = Date.now(); it.tNum = t.num; it.tTitle = t.title; if (t.num && !existing.some(function (l) { return l.number === t.num; })) existing.push({ number: t.num, title: t.title }); afterOne(); }
+      if (d.ok) { it.linked = true; it.eid = d.entry && d.entry.id; it.review = d.status === "pending"; it.status = "done"; it.doneAt = Date.now(); it.tNum = t.num; it.tTitle = t.title; if (t.num && !existing.some(function (l) { return l.number === t.num; })) existing.push({ number: t.num, title: t.title }); afterOne(); }
       else { it.status = "error"; it.err = d.error || "server"; }
       render(); pump();
     });
@@ -168,7 +168,7 @@
     if (act === "pause") { if (it.ctrl) it.ctrl.abort(); it.ctrl = null; if (["uploading", "queued", "waiting"].indexOf(it.status) >= 0) it.status = "paused"; }
     else if (act === "resume" || act === "retry") { it.status = it.uploaded ? "ready" : "queued"; it.attempts = 0; it.err = ""; if (it.uploaded) tryAttach(it); }
     else if (act === "delete") {
-      if (!it.eid || !window.confirm("حذف هذا الملف من المنصة نهائياً؟")) return;
+      if (!it.eid || !window.confirm("حذف «" + (it.tNum ? "المحاضرة " + it.tNum + " — " : "") + (it.tTitle || it.orig) + "» من المنصة نهائياً؟\nلن يراه الطلاب بعد الآن، ولا يمكن التراجع.")) return;
       jpost("delete", { id: it.eid }).then(function (d) {
         if (d.ok) { items = items.filter(function (i) { return i !== it; }); render(); msg("تم حذف الملف.", true); }
         else msg(d.error === "forbidden" ? "لا تملك صلاحية حذف هذا الملف." : "تعذّر الحذف.");
@@ -219,7 +219,7 @@
     if (it.status === "paused") return "<b>متوقف</b><span>" + pct + "٪ · " + fmt(it.size) + "</span>";
     if (it.status === "error") return '<b style="color:#ef6b6b">' + esc(ERRS[it.err] || "تعذّر الرفع") + "</b><span>" + pct + "٪</span>";
     if (it.status === "dup") return '<b style="color:#d97706">مكرر، تم تجاهله</b>';
-    if (it.status === "done") return '<b style="color:#10b981">تم ✓ ' + esc(it.tNum ? "المحاضرة " + it.tNum : "") + "</b><span>" + esc(it.tTitle || "") + "</span>";
+    if (it.status === "done") return (it.review ? '<b style="color:#d97706">رُفع، بانتظار المراجعة ' : '<b style="color:#10b981">نُشر ✓ ') + esc(it.tNum ? "المحاضرة " + it.tNum : "") + "</b><span>" + esc(it.tTitle || "") + "</span>";
     if (it.uploaded && !it.linked) return '<b style="color:#d97706">' + (it.src === "link" ? "حُفظ الرابط، اختر المحاضرة" : "تم الرفع، اختر المحاضرة") + "</b>";
     return "";
   }
@@ -253,26 +253,40 @@
     $("target").innerHTML = P.spark + "<span>" + (TYPE === "lecture" ? "تُطابَق الملفات مع المحاضرات تلقائياً من اسم الملف (رقم المحاضرة أو عنوانها)، وتقدر تغيّر الربط لكل ملف." : "تُرفع كملفات للمادة كلها، واسم الملف قابل للتعديل.") + "</span>";
     renderUploaded(); fabUpdate(stats());
   }
+  var upQuery = "";
+  function upName(u) {
+    var TL = { lecture: "محاضرة", quiz: "اختبار", exam: "أسئلة سنوات" };
+    return (u.type === "lecture" && u.number ? "المحاضرة " + u.number + " — " : (TL[u.type] || "ملف") + " — ") + (u.title || u.label || "");
+  }
   function renderUploaded() {
     var box = $("uploaded");
-    if (!box) { box = document.createElement("section"); box.id = "uploaded"; box.className = "uc2-uploaded"; $("list").parentNode.insertBefore(box, $("list").nextSibling); }
+    if (!box) {
+      box = document.createElement("section"); box.id = "uploaded"; box.className = "uc2-uploaded";
+      box.innerHTML = '<div class="uc2-up-head"><h3 id="upTitle"></h3><input id="upSearch" type="search" placeholder="ابحث في ملفات المادة" aria-label="ابحث في الملفات المرفوعة سابقاً"></div><ul class="uc2-list" id="upList"></ul><p class="uc2-up-empty" id="upEmpty" hidden>لا نتائج لهذا البحث.</p>';
+      $("list").parentNode.insertBefore(box, $("list").nextSibling);
+      $("upSearch").addEventListener("input", function () { upQuery = this.value.trim().toLowerCase(); renderUploaded(); });
+    }
     var mine = {}; items.forEach(function (i) { if (i.eid) mine[i.eid] = 1; });
-    var rows = uploaded.filter(function (u) { return !mine[u.id]; });
-    box.hidden = !rows.length;
-    if (!rows.length) { box.innerHTML = ""; return; }
-    var TL = { lecture: "محاضرة", quiz: "اختبار", exam: "أسئلة سنوات" };
-    box.innerHTML = "<h3 style=\"margin:16px 0 8px;font-size:15px\">الملفات المرفوعة سابقاً (" + rows.length + ")</h3><ul class=\"uc2-list\" style=\"list-style:none;padding:0;margin:0\">" + rows.map(function (u) {
-      var name = (u.type === "lecture" && u.number ? "المحاضرة " + u.number + " — " : (TL[u.type] || "") + " — ") + (u.title || u.label || "");
-      return '<li class="uc2-row" data-eid="' + esc(u.id) + '"><span class="uc2-tile ' + (u.kind === "link" ? "lnk" : "pdf") + '">' + (u.kind === "link" ? "رابط" : "PDF") + '</span><div class="uc2-main"><div class="uc2-name" dir="auto">' + esc(name) + '</div><div class="uc2-meta"><span>' + esc(u.label || "") + (u.size ? " · " + fmt(u.size) : "") + '</span></div></div><div class="uc2-acts"><button data-a="delup" aria-label="حذف" title="حذف من المنصة">' + P.trash + "</button></div></li>";
-    }).join("") + "</ul>";
+    var all = uploaded.filter(function (u) { return !mine[u.id]; }).sort(function (a, b) { return (a.number || 999) - (b.number || 999); });
+    box.hidden = !all.length;
+    if (!all.length) { $("upList").innerHTML = ""; return; }
+    $("upTitle").textContent = "الملفات المرفوعة سابقاً (" + all.length + ")";
+    $("upSearch").parentNode.querySelector("input").hidden = all.length < 6;
+    var rows = upQuery ? all.filter(function (u) { return (upName(u) + " " + (u.label || "")).toLowerCase().indexOf(upQuery) >= 0; }) : all;
+    $("upEmpty").hidden = !!rows.length;
+    $("upList").innerHTML = rows.map(function (u) {
+      var st = u.status === "pending" ? '<span class="uc2-chip maybe">بانتظار المراجعة</span>' : u.status === "rejected" ? '<span class="uc2-chip bad">مرفوض</span>' : "";
+      return '<li class="uc2-row" data-eid="' + esc(u.id) + '"><span class="uc2-tile ' + (u.kind === "link" ? "lnk" : "pdf") + '">' + (u.kind === "link" ? "رابط" : "PDF") + '</span><div class="uc2-main"><div class="uc2-name" dir="auto">' + esc(upName(u)) + '</div><div class="uc2-meta"><span>' + esc([u.label, u.added, u.size ? fmt(u.size) : ""].filter(Boolean).join(" · ")) + "</span>" + st + '</div></div><div class="uc2-acts"><button data-a="delup" aria-label="حذف ' + esc(upName(u)) + '" title="حذف من المنصة">' + P.trash + "</button></div></li>";
+    }).join("");
   }
   document.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("#uploaded [data-a=delup]"); if (!b) return;
-    var id = b.closest("[data-eid]").dataset.eid;
-    if (!window.confirm("حذف هذا الملف من المنصة نهائياً؟")) return;
+    var b = e.target.closest && e.target.closest("#uploaded [data-a=delup]"); if (!b || b.disabled) return;
+    var id = b.closest("[data-eid]").dataset.eid, u = uploaded.find(function (x) { return x.id === id; });
+    if (!window.confirm("حذف «" + (u ? upName(u) : "هذا الملف") + "» من المنصة نهائياً؟\nلن يراه الطلاب بعد الآن، ولا يمكن التراجع.")) return;
+    b.disabled = true;
     jpost("delete", { id: id }).then(function (d) {
-      if (d.ok) { uploaded = uploaded.filter(function (u) { return u.id !== id; }); render(); msg("تم حذف الملف.", true); }
-      else msg(d.error === "forbidden" ? "لا تملك صلاحية حذف هذا الملف." : "تعذّر الحذف.");
+      if (d.ok) { uploaded = uploaded.filter(function (x) { return x.id !== id; }); render(); msg("تم حذف الملف.", true); }
+      else { b.disabled = false; msg(d.error === "forbidden" ? "لا تملك صلاحية حذف هذا الملف." : "تعذّر الحذف، حاول مرة أخرى."); }
     });
   });
   function fabUpdate(s) {

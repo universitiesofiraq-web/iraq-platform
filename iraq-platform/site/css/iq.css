@@ -155,7 +155,7 @@ button,input,select{font:inherit}
 .inv-link{display:grid;gap:8px}
 .inv-link input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg,var(--surface));color:var(--ink);direction:ltr;text-align:left}
 .inv-acts{display:flex;flex-wrap:wrap;gap:8px}
-.inv-acts button,.inv-acts a{padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-decoration:none;cursor:pointer}
+.inv-acts button,.inv-acts a{min-height:44px;display:inline-flex;align-items:center;padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-decoration:none;cursor:pointer}
 .inv-acts .pri{background:var(--accent);color:var(--on-accent);border-color:transparent}
 
 /* مشترك (تحسين الواجهات 2026-11-15) */
@@ -165,3 +165,4 @@ button,input,select{font:inherit}
 .sj-main{display:grid;gap:2px;min-width:0;flex:1 1 220px}.sj-name{font-weight:700;color:var(--lapis);text-decoration:none;overflow-wrap:anywhere}.sj-meta{color:var(--ink2)}.sj-err{color:var(--bad);margin:0;width:100%;font-size:.9rem}
 .sj-act a{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
 .sj-main .sj-tag{justify-self:start;margin:4px 0 0}
+.inv-row button{min-height:44px;padding:9px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;justify-self:start}.inv-row button.pri{background:var(--accent);color:var(--on-accent);border-color:transparent}.inv-row button:disabled{opacity:.6}

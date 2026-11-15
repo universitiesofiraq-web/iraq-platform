@@ -246,6 +246,7 @@ button { cursor: pointer; }
 .btn-secondary { background: var(--color-surface); border-color: var(--color-border-strong); color: var(--color-text); }
 .btn-secondary:hover { border-color: var(--color-secondary); color: var(--color-secondary-ink); }
 .btn-sm { min-height: 38px; padding: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+@media (pointer: coarse) { .btn-sm { min-height: 44px; } }
 
 .icon-btn {
   display: grid;

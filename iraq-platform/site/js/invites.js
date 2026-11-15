@@ -30,7 +30,7 @@
     live(n.type, n.id).then(function (items) {
       box.replaceChildren();
       if (!items.length) {
-        box.appendChild(btn("إنشاء رابط الدعوة", "pri", function () { post({ action: "create", type: n.type, id: n.id }).then(function (d) { d.ok ? load(box, n) : msg(d.error === "forbidden" ? "لا تملك صلاحية لهذا القسم." : "تعذّر الإنشاء."); }); }));
+        box.appendChild(btn("إنشاء رابط الدعوة", "pri", function () { var b = this; b.disabled = true; post({ action: "create", type: n.type, id: n.id }).then(function (d) { if (d.ok) return load(box, n); b.disabled = false; msg(d.error === "forbidden" ? "لا تملك صلاحية لهذا القسم." : d.error === "too_many_invites" ? "وصلت للحد الأقصى من الروابط الفعّالة. أوقف رابطاً قديماً أولاً." : "تعذّر الإنشاء، حاول مرة أخرى."); }); }));
       } else box.appendChild(showLink(box, n, items[0]));
     });
   }
