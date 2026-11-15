@@ -486,7 +486,7 @@ function invitePanel(type, id, title) {
           button("نسخ", async () => {
             try { await navigator.clipboard.writeText(url); showNotice("نُسخ الرابط."); } catch { text.select(); showNotice("حدّد الرابط وانسخه.", true); }
           }, "primary"),
-          link("نشر في تيليغرام", "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent("سجّل في المنصة العراقية واحصل على ملازم قسمك"), "button"),
+          link("نشر في تيليغرام", "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent("سجّل في دفعتنا واحصل على ملازم قسمك"), "button"),
           button("إيقاف الرابط", () => confirmAction("إيقاف الرابط", "لن يعمل الرابط بعد الآن، ويبقى من سجّلوا عبره.", [], async () => {
             await api(root, { action: "revoke", code: row.code });
             await load();

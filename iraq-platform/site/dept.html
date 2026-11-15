@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>القسم | المنصة العراقية</title>
+  <title>القسم | دفعتنا</title>
   <script src="js/api-client.js"></script>
   <script>if(!/[?&]manage=1/.test(location.search)){var m=/[?&]id=(\d+)/.exec(location.search);if(m)location.replace("platform.html?dept="+m[1]);}</script>
   <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <meta name="theme-color" content="#13294B">
+  <meta name="theme-color" content="#0A1C4E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=11">
+  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=2">
   <style>
     .dp-tools{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
     .dp-tools a,.dp-tools button{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line,#2a3a6a);background:transparent;color:inherit;font:inherit;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
@@ -29,7 +29,7 @@
 </head>
 <body>
   <header class="iq-top">
-    <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <a class="iq-brand" href="/"><img class="dfa-mark" src="assets/brand.svg" width="32" height="32" alt=""><span>دفعتنا</span></a>
     <nav><a href="catalog.html">الجامعات</a><a class="iq-login" href="login.html">دخول</a></nav>
   </header>
   <main class="sj">
@@ -108,7 +108,7 @@
       info = d.item; can = !!d.can;
       $("title").textContent = info.name_ar;
       $("crumb").textContent = info.university + " / " + info.college;
-      document.title = info.name_ar + " | المنصة العراقية";
+      document.title = info.name_ar + " | دفعتنا";
       try { localStorage.setItem("iq.dept", JSON.stringify({ id: id, name: info.name_ar + " — " + info.college })); } catch (e) { /* لا شيء */ }
       fetch("/api/sync", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: { "iq.dept": { t: Date.now(), v: { id: id, name: info.name_ar + " — " + info.college } } } }) }).catch(function () {}); // حفظ في الحساب إن كان مسجّلاً
       $("back").href = "catalog.html?u=" + info.university_id + "&n=" + encodeURIComponent(info.university) + "&c=" + info.college_id + "&cn=" + encodeURIComponent(info.college);

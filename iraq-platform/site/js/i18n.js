@@ -400,7 +400,7 @@
     [/^الدرجة ([\d.]+)$/, function (m) { return W.grade + " " + m[1]; }],
     [/^النتائج: (.+)$/, function (m) { return W.results + m[1].split("، ").map(tr).join(W.sep); }],
     [/^النطق: (.+)$/, function (m) { return (lang === "fa" ? "تلفظ: " + faLetters(m[1]) : "Pronunciation: " + m[1]); }],
-    [/^(.+) \| المنصة العراقية$/, function (m) { return tr(m[1]) + " | المنصة العراقية"; }]
+    [/^(.+) \| دفعتنا$/, function (m) { return tr(m[1]) + " | دفعتنا"; }]
   ];
 
   function tr(str) {

@@ -40,7 +40,7 @@
   var inner = document.querySelector(".header-inner");
   if (inner && !inner.querySelector(".mv-title")) {
     var tt = el("span", "mv-title");
-    tt.textContent = (window.IQ_DEPT && IQ_DEPT.name) || "المنصة العراقية";
+    tt.textContent = (window.IQ_DEPT && IQ_DEPT.name) || "دفعتنا";
     var sb = $("searchBtn");
     inner.insertBefore(tt, sb || null);
   }
