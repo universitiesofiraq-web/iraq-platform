@@ -61,3 +61,7 @@
 ## عوائق / احتياجات الخادم (لـChatGPT)
 - **تبليغات المرحلة**: `functions/_lib/admin-workspace.js` (`GET /api/stage-announcements`) ما زال يُخفي التبليغات عن الطالب غير المؤكَّد (`membership: pending`)، بينما صار دخول الدردشة مباشراً بقرار محمد (2026-11-15). المطلوب توحيد القرار في الخادم.
 - **التبليغات العامة**: الخادم يقصرها على المشرف العام؛ إن أراد محمد أن ينشرها الممثلون فهذا تغيير صلاحيات في `functions/_lib/auth.js`.
+
+## التسليم
+- طلب الدمج: https://github.com/universitiesofiraq-web/iraq-platform/pull/17
+- آخر Commit قبل هذا السطر: cedb57b
