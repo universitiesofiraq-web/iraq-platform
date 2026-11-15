@@ -139,6 +139,7 @@
         if (!items.length) list.innerHTML = '<div class="cg-empty">لا توجد عناصر. تواصل معنا لإضافتها.</div>';
         items.forEach(function (it) {
           var row = document.createElement("div"); row.className = "cg-item";
+          if (lv === 0) { var lg = document.createElement("img"); lg.className = "uc-logo-img"; lg.alt = ""; lg.loading = "lazy"; lg.src = "/api/university-logo/" + it.id; lg.onerror = function () { lg.remove(); }; row.appendChild(lg); }
           var name = document.createElement("span"); name.textContent = it.name_ar; row.appendChild(name);
           if (it.city) { var s = document.createElement("small"); s.textContent = it.city; row.appendChild(s); }
           row.dataset.t = norm(it.name_ar + " " + (it.name_en || "") + " " + (it.city || ""));

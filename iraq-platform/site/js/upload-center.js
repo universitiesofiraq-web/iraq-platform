@@ -346,9 +346,15 @@
     var col = options.colleges.find(function (c) { return c.id === id; }), uni = col && (options.universities.find(function (u) { return u.id === col.university_id; }) || {});
     $("cName").textContent = name; $("cPath").textContent = uni ? uni.name_ar : "";
     $("logoBtn").hidden = !(canLogo && id);
+    $("uniLogoBtn").hidden = !(canLogo && id && col);
     if (!id) { img.hidden = true; $("logoFb").hidden = false; return; }
     img.onload = function () { img.hidden = false; $("logoFb").hidden = true; };
-    img.onerror = function () { img.hidden = true; $("logoFb").hidden = false; };
+    /* لا شعار للكلية: نعرض شعار الجامعة إن وُجد */
+    img.onerror = function () {
+      if (col && !img.dataset.uni) { img.dataset.uni = "1"; img.src = "/api/university-logo/" + col.university_id + "?v=" + Date.now(); return; }
+      img.hidden = true; $("logoFb").hidden = false;
+    };
+    delete img.dataset.uni;
     img.src = "/api/college-logo/" + id + "?v=" + Date.now();
   }
   function subLine() {
@@ -384,21 +390,25 @@
   D.addEventListener("change", function () { loadSubjects(); });
   S.addEventListener("change", function () { subLine(); loadExisting().then(function () { render(); }); });
 
-  $("logoFile").onchange = function () {
-    var f = $("logoFile").files[0]; $("logoFile").value = "";
-    if (!f || !Number(C.value)) return;
-    var img = new Image(), url = URL.createObjectURL(f);
-    img.onload = function () {
-      var k = Math.min(1, 256 / Math.max(img.width, img.height)), cv = document.createElement("canvas");
-      cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
-      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
-      var data = cv.toDataURL("image/png"); if (data.length > 130000) data = cv.toDataURL("image/jpeg", 0.88);
-      msg("جارٍ حفظ الشعار…", true);
-      jpost("college-logo/" + C.value, { image: data }).then(function (d) { d.ok ? (msg("تم حفظ الشعار ✓", true), setCollege()) : msg(d.error === "forbidden" ? "لا تملك صلاحية تغيير شعار هذه الكلية." : "تعذّر حفظ الشعار."); });
+  function bindLogo(inputId, pathFn, forbiddenMsg) {
+    $(inputId).onchange = function () {
+      var f = $(inputId).files[0]; $(inputId).value = "";
+      var target = pathFn(); if (!f || !target) return;
+      var img = new Image(), url = URL.createObjectURL(f);
+      img.onload = function () {
+        var k = Math.min(1, 256 / Math.max(img.width, img.height)), cv = document.createElement("canvas");
+        cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+        var data = cv.toDataURL("image/png"); if (data.length > 130000) data = cv.toDataURL("image/jpeg", 0.88);
+        msg("جارٍ حفظ الشعار…", true);
+        jpost(target, { image: data }).then(function (d) { d.ok ? (msg("تم حفظ الشعار ✓", true), setCollege()) : msg(d.error === "forbidden" ? forbiddenMsg : "تعذّر حفظ الشعار."); });
+      };
+      img.onerror = function () { msg("تعذّر قراءة الصورة."); };
+      img.src = url;
     };
-    img.onerror = function () { msg("تعذّر قراءة الصورة."); };
-    img.src = url;
-  };
+  }
+  bindLogo("logoFile", function () { return Number(C.value) ? "college-logo/" + C.value : ""; }, "لا تملك صلاحية تغيير شعار هذه الكلية.");
+  bindLogo("uniLogoFile", function () { var c = options.colleges.find(function (x) { return x.id === Number(C.value); }); return c ? "university-logo/" + c.university_id : ""; }, "شعار الجامعة يغيّره مشرف المنصة أو ممثل الجامعة.");
 
   function start() {
     Promise.all([
