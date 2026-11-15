@@ -7,9 +7,10 @@
   <meta name="description" content="دردشة خاصة وآمنة بمجموعتك الدراسية في دفعتنا">
   <title>دردشة مجموعتي | دفعتنا</title>
   <link rel="icon" href="assets/icon-192.png">
-  <link rel="stylesheet" href="css/group-chat.css?v=7"><link rel="stylesheet" href="css/dfa.css?v=3">
+  <link rel="stylesheet" href="css/group-chat.css?v=8"><link rel="stylesheet" href="css/dfa.css?v=4">
 </head>
 <body>
+  <div class="dfa-splash" id="chatSplash" role="status" aria-label="جارٍ التحميل"><div class="dfa-load"><span class="dfa-ring"><img src="assets/brand.svg" alt=""></span><span>دفعتنا</span></div></div>
   <div class="chat-app">
     <header class="chat-top">
       <a class="brand" href="platform.html" aria-label="العودة إلى المنصة"><img class="dfa-mark" src="assets/brand.svg" width="32" height="32" alt=""><span>دفعتنا</span></a>
@@ -21,7 +22,7 @@
         <a class="dm-link" href="dm.html">✉ الرسائل الخاصة <small>تواصل مع زميل أو ممثلك</small></a>
         <div id="authBanner" class="notice" hidden></div>
         <div id="profileBanner" class="notice profile-banner" hidden></div>
-        <div id="roomList" class="rooms-list" role="group" aria-label="غرف الدردشة"><p class="muted">جارٍ تحميل مجموعاتك...</p></div>
+        <div id="roomList" class="rooms-list" role="group" aria-label="غرف الدردشة"><div class="dfa-load" role="status"><span class="dfa-ring"><img src="assets/brand.svg" alt=""></span><span>جارٍ تحميل مجموعاتك…</span></div></div>
         <details class="group-panel" id="joinPanel" hidden>
           <summary>+ اطلب الانضمام برمز الدعوة</summary>
           <form id="joinForm" class="form-stack">
@@ -63,6 +64,6 @@
       <div id="sheetList" class="sheet-list"></div>
     </div>
   </div>
-  <script src="js/group-chat.js?v=9" defer></script>
+  <script src="js/group-chat.js?v=10" defer></script>
 </body>
 </html>

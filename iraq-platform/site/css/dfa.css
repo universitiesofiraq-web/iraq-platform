@@ -121,3 +121,14 @@ input[type=number], input[type=date], select, textarea, .field {
 
 /* اسم المنصة قصير: يبقى ظاهراً على الهاتف أيضاً */
 @media (max-width: 520px) { .iq-brand span { display: inline; font-size: 1rem; } }
+
+/* ---- شاشة/مؤشر التحميل الموحد: الشعار + دائرة دوّارة ---- */
+.dfa-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 16px; color: var(--dfa-muted); font-size: .95rem; text-align: center; }
+.dfa-load .dfa-ring { position: relative; width: 64px; height: 64px; display: grid; place-items: center; }
+.dfa-load .dfa-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(91,139,255,.25); border-top-color: var(--dfa-gold); animation: dfa-spin .9s linear infinite; }
+.dfa-load .dfa-ring img { width: 36px; height: 36px; border-radius: 10px; animation: dfa-pulse 1.6s ease-in-out infinite; }
+.dfa-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #08112B; color: #C7D8FF; transition: opacity .25s; }
+.dfa-splash.dfa-out { opacity: 0; pointer-events: none; }
+@keyframes dfa-spin { to { transform: rotate(360deg); } }
+@keyframes dfa-pulse { 50% { transform: scale(.88); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .dfa-load .dfa-ring::before, .dfa-load .dfa-ring img { animation: none; } }

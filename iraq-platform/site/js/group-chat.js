@@ -227,7 +227,9 @@
       $("activeTitle").focus({ preventScroll: true });
     }
     $("conversation").textContent = "";
-    $("conversation").appendChild(node("p", "muted", "جارٍ تحميل المحادثة..."));
+    var ld = node("div", "dfa-load"); ld.setAttribute("role", "status");
+    var ring = node("span", "dfa-ring"); var lg = document.createElement("img"); lg.src = "assets/brand.svg"; lg.alt = ""; ring.appendChild(lg);
+    ld.appendChild(ring); ld.appendChild(node("span", null, "جارٍ تحميل المحادثة…")); $("conversation").appendChild(ld);
     renderRooms();
     var epoch = historyEpoch;
     try {
@@ -461,7 +463,12 @@
       var retry = node("button", null, "إعادة المحاولة"); retry.type = "button";
       retry.onclick = init; $("authBanner").appendChild(retry);
       status(errorText(err));
-    }
+    } finally { hideSplash(); }
   }
+  function hideSplash() {
+    var sp = $("chatSplash"); if (!sp) return;
+    sp.classList.add("dfa-out"); setTimeout(function () { sp.remove(); }, 300);
+  }
+  setTimeout(hideSplash, 8000); /* أمان: لا تبقى الشاشة إن تعطّل الطلب */
   init();
 })();
