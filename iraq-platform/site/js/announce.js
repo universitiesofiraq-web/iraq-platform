@@ -14,14 +14,18 @@
       var main = el("div", "up-item-main");
       main.appendChild(el("div", "up-item-name", a.title));
       if (a.body) main.appendChild(el("div", "up-item-sub", a.body));
-      main.appendChild(el("div", "up-item-sub", a.by + " · " + new Date(a.at).toLocaleDateString("ar-u-nu-latn")));
+      var when = a.at ? new Date(a.at) : null;
+      var meta = [a.by || "", when && !isNaN(when) ? when.toLocaleDateString("ar-u-nu-latn") : ""].filter(Boolean).join(" · ");
+      if (meta) main.appendChild(el("div", "up-item-sub", meta));
       row.appendChild(main);
       var acts = el("div", "up-actions");
       var del = el("button", "btn btn-secondary btn-sm", "حذف");
       del.type = "button";
       del.addEventListener("click", function () {
+        if (!confirm("حذف التبليغ «" + a.title + "»؟ سيختفي من الصفحة الرئيسية لكل الطلاب.")) return;
+        del.disabled = true;
         MSAuth.api("POST", "announcements/delete", { id: a.id }).then(function (r) {
-          if (r.status === 200) { msg("تم الحذف.", true); load(); } else msg("تعذّر الحذف.");
+          if (r.status === 200) { msg("تم الحذف.", true); load(); } else { del.disabled = false; msg(r.status === 403 ? "الحذف للمشرف العام فقط." : "تعذّر الحذف، حاول مرة أخرى."); }
         });
       });
       acts.appendChild(del);

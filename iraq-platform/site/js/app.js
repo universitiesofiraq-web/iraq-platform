@@ -301,7 +301,7 @@
           var on = MS.favs.has(c.id);
           b.classList.toggle("is-fav", on);
           b.setAttribute("aria-pressed", String(on));
-          b.setAttribute("aria-label", (on ? "إزالة من المفضلة: " : "إضافة إلى المفضلة: ") + c.nameAr);
+          b.setAttribute("aria-label", (on ? "إزالة من المفضلة: " : "إضافة إلى المفضلة: ") + (c.nameAr || c.name));
         }
         paint();
         b.addEventListener("click", function () {

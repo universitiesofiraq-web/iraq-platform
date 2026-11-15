@@ -25,7 +25,7 @@ button,input,select{font:inherit}
 .iq-top nav a{color:#DCE6FF;text-decoration:none;font-size:.92rem;padding:10px 12px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center}
 .iq-top nav a:hover{background:rgba(255,255,255,.1)}
 .iq-top nav a.iq-login{background:var(--gold);color:#2A1D00;font-weight:600}
-@media(max-width:520px){.iq-brand span{display:none}.iq-top{padding-inline:12px}.iq-top nav a{padding:10px 10px;font-size:.88rem}}
+@media(max-width:520px){.iq-brand span{display:none}.iq-top{padding-inline:12px}.iq-top nav{min-width:0;overflow-x:auto;scrollbar-width:none}.iq-top nav::-webkit-scrollbar{display:none}.iq-top nav a{flex:none;padding:10px 10px;font-size:.88rem}.iq-brand{flex:none;min-width:44px;justify-content:center}.iq-top nav a.iq-login{order:-1}}
 
 /* الواجهة الرئيسية */
 .iq-hero{position:relative;background:var(--lapis-d);color:#fff;padding:44px 16px 72px;
