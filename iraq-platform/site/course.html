@@ -281,11 +281,12 @@
       frame.addEventListener("load", function () { $("viewerLoading").hidden = true; });
       // حالة الخطأ: نتأكد أن الملف موجود قبل فتحه (على الخادم فقط؛ بلا اتصال يُفتح مباشرة)
       function openViewer(url, title) {
-        if (!/^https?:/.test(location.protocol) || !window.fetch) { showViewer(url, title); return; }
+        var study = function () { location.href = "pdf-notes.html?file=" + encodeURIComponent(url); }; /* يفتح مباشرة في وضع الدراسة */
+        if (!/^https?:/.test(location.protocol) || !window.fetch) { study(); return; }
         fetch(url, { method: "HEAD" }).then(function (r) {
-          if (r.ok) showViewer(url, title);
+          if (r.ok) study();
           else MS.toast(I18N.t("الملف غير متاح حالياً"));
-        }).catch(function () { showViewer(url, title); });
+        }).catch(function () { study(); });
       }
       $("viewerClose").addEventListener("click", function () { dlg.close(); });
       dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });

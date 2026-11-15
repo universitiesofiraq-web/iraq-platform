@@ -55,14 +55,16 @@
       var r = el("div", null, "sj-item" + (pending ? " sj-pend" : ""));
       var left = el("div", null, "sj-main");
       var a = el("a", nameOf(it), "sj-name");
-      a.href = href(it); a.target = "_blank"; a.rel = "noopener"; a.dir = "auto";
+      a.dir = "auto";
+      if (it.kind === "link") { a.href = href(it); a.target = "_blank"; a.rel = "noopener"; }
+      else a.href = "pdf-notes.html?file=" + encodeURIComponent(href(it)); /* يفتح مباشرة في وضع الدراسة */
       left.appendChild(a);
       var meta = [it.number ? it.label : "", it.added || "", size(it.size)].filter(Boolean).join(" · ");
       if (meta) left.appendChild(el("small", meta, "sj-meta"));
       if (pending) left.appendChild(el("span", "بانتظار الموافقة", "sj-tag"));
       r.appendChild(left);
       var acts = el("div", null, "sj-act");
-      if (it.kind !== "link") { var an = el("a", "✎ اكتب وظلّل"); an.href = "pdf-notes.html?file=" + encodeURIComponent(href(it)); acts.appendChild(an); }
+      if (it.kind !== "link") { var an = el("a", "الملف الأصلي"); an.href = href(it); an.target = "_blank"; an.rel = "noopener"; acts.appendChild(an); }
       if (pending && canReview) {
         var ok = el("button", "قبول"), no = el("button", "رفض");
         ok.onclick = function () { act(ok, r, "review", { id: it.id, action: "approve" }); };

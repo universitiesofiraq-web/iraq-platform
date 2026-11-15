@@ -246,7 +246,7 @@
     const manifest = !isNotebook && window.medixaRasterManifest && window.medixaRasterManifest[rasterKey];
     const rasterOnly = !isNotebook && !window.pdfjsLib && !!(manifest && manifest.length);
     if (!isNotebook && !window.pdfjsLib && !rasterOnly) { failView('تعذر تحميل مكتبة عرض PDF (قد تكون الشبكة تحجبها). افتح الملف مباشرة أو أعد المحاولة لاحقاً.'); return null; }
-    if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdfjs/pdf.worker.min.js', location.href).href;
     try {
       R.sizes = []; R.proxies = [];
       if (isNotebook) { R.notebook = { id: src.slice(9) }; }
