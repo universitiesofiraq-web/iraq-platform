@@ -121,21 +121,12 @@
         list.innerHTML = "";
         var g = document.createElement("div"); g.className = "jn-stages";
         list.appendChild(g);
-        var draw = function (nums) {
-          g.innerHTML = "";
-          STAGE_NAMES.forEach(function (n, i) {
-            if (nums && nums.length && nums.indexOf(i + 1) < 0) return;
-            var b = document.createElement("button"); b.type = "button"; b.textContent = n;
-            b.onclick = function () { submit(i + 1); };
-            g.appendChild(b);
-          });
-        };
-        draw();
-        get("stages?view=join&department_id=" + stack[2].id).then(function (d) {
-          if (request !== loadVersion) return;
-          var nums = ((d && d.items) || []).map(function (x) { return x.number; });
-          if (nums.length) draw(nums);
-        }).catch(function () { /* نبقي القائمة الكاملة */ });
+        /* كل المراحل الثماني متاحة دائماً: الخادم ينشئ المرحلة عند التسجيل إن لم تكن موجودة */
+        STAGE_NAMES.forEach(function (n, i) {
+          var b = document.createElement("button"); b.type = "button"; b.textContent = n;
+          b.onclick = function () { submit(i + 1); };
+          g.appendChild(b);
+        });
         return;
       }
       var path = ["universities?view=join", "colleges?view=join&university_id=", "departments?view=join&college_id="][lv] + (lv ? stack[lv - 1].id : "");
