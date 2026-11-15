@@ -230,7 +230,7 @@ test("stage managers can review reports without membership but only in scope", a
 test("auto groups: every stage gets a default group and students join without a code", async () => {
   const { env, call, q } = fixture();
   env.GROUP_CHAT_AUTO = "1";
-  assert.equal((await call(2, "rooms")).data.items.length, 0, "unverified student does not auto-join");
+  assert.equal((await call(2, "rooms")).data.items.length, 1, "student joins without verification");
   q("INSERT INTO student_verification(user_id,stage_id,verified_by,verified_at) VALUES(2,11,1,1),(3,11,1,1),(4,21,1,1)");
   const r2 = await call(2, "rooms");
   assert.equal(r2.data.items.length, 1);

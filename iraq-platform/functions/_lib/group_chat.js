@@ -77,10 +77,7 @@ async function autoJoin(env, userId, now, canManageStage) {
   const p = await env.DB.prepare("SELECT stage_id FROM user_profile WHERE user_id=?").bind(userId).first();
   if (!p || !p.stage_id) return;
   const stage = p.stage_id;
-  /* لا انضمام تلقائي إلا بعد أن يؤكّد ممثل المرحلة الطالب (student_verification)، فاختيار المرحلة وحده لا يكفي.
-     استثناء: من يدير هذه المرحلة (ممثلها أو المشرف) لا يحتاج تأكيداً. */
-  const ok = await env.DB.prepare("SELECT 1 AS x FROM student_verification WHERE user_id=? AND stage_id=?").bind(userId, stage).first();
-  if (!ok && !(canManageStage && await canManageStage(stage))) return;
+  /* بقرار محمد (2026-11-15): الطالب يدخل دردشة مرحلته مباشرة بلا انتظار تأكيد الممثل؛ المرفوض أو الملغاة عضويته يبقى خارجها. */
   const has = await env.DB.prepare("SELECT 1 AS x FROM chat_groups WHERE stage_id=? AND active=1 LIMIT 1").bind(stage).first();
   if (!has) {
     if (!(await env.DB.prepare("SELECT id FROM stages WHERE id=?").bind(stage).first())) return;
