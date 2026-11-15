@@ -52,7 +52,7 @@
 
   MSAuth.me().then(function (u) {
     if (!u) { location.href = "login.html?next=announce.html"; return; }
-    if (u.role !== "rep" && u.role !== "admin") { msg("هذه الصفحة لممثل الدفعة والمشرفين فقط."); return; }
+    if (!u.admin) { msg("نشر التبليغات العامة للمشرف العام فقط. ممثل المرحلة ينشر تبليغات مرحلته من لوحة الإدارة."); return; } /* يطابق شرط الخادم (isGlobalAdmin) */
     $("formCard").hidden = false;
     $("listCard").hidden = false;
     load();

@@ -8,6 +8,18 @@
   var removedCount = null, historyEpoch = 0, roomSignature, requestSignature;
   var stamp = new Intl.DateTimeFormat("ar-IQ", { hour: "2-digit", minute: "2-digit" });
 
+  function linkify(span, text) { /* الروابط http/https فقط تصبح قابلة للضغط؛ بقية النص كما هو (textContent، بلا HTML) */
+    var re = /https?:\/\/[^\s<>"]+/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      var url = m[0].replace(/[).,!?؛،]+$/, "");
+      if (m.index > last) span.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var a = document.createElement("a"); a.href = url; a.textContent = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "ltr";
+      span.appendChild(a); last = m.index + url.length; re.lastIndex = last;
+    }
+    if (last < text.length) span.appendChild(document.createTextNode(text.slice(last)));
+    return span;
+  }
+
   var mobile = matchMedia("(max-width: 850px)");
   var viewport = window.visualViewport;
   if (viewport) {
@@ -169,7 +181,7 @@
       if (m.reply_to) bubble.appendChild(node("span", "msg-reply", (m.reply_sender || "عضو") + ": " + (m.reply_body ? plain(m.reply_body).slice(0, 120) : "رسالة محذوفة")));
       var parsed = parseAtt(m.body);
       if (parsed.att) bubble.appendChild(attCard(parsed.att));
-      if (parsed.text) { var tx = node("span", "msg-text", parsed.text); tx.dir = "auto"; bubble.appendChild(tx); }
+      if (parsed.text) { var tx = linkify(node("span", "msg-text"), parsed.text); tx.dir = "auto"; bubble.appendChild(tx); }
       bubble.appendChild(node("span", "msg-time", stamp.format(new Date(m.created_at)) + (m.edited_at ? " · معدلة" : "") + (m.pinned_at ? " · 📌" : "")));
       bubble.appendChild(actionsFor(m, r));
       bubble.addEventListener("click", function (e) { if (e.target.closest("a,button")) return; bubble.classList.toggle("show-actions"); });

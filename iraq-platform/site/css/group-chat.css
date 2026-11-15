@@ -105,3 +105,7 @@
 .dm-pane .composer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
 .dm-pane .muted{margin:8px 4px 2px;font-size:.78rem}
 .profile-banner{font-size:.8rem}.profile-banner a{color:var(--accent);font-weight:700;margin-inline-start:4px}
+/* تحسين الواجهات 2026-11-15: روابط قابلة للضغط، أهداف لمس 44px، لا إطار عند التركيز البرمجي للعنوان */
+.msg-text a{color:inherit;text-decoration:underline;overflow-wrap:anywhere;word-break:break-word}
+#activeTitle:focus{outline:none}
+.thread-head .ghost,.dm-back,.pane-title .ghost{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
