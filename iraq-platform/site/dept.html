@@ -45,6 +45,18 @@
       <input aria-label="اسم التدريسي (اختياري)" class="wide" id="pf" maxlength="120" placeholder="اسم التدريسي (اختياري)">
       <button class="btn btn-primary" type="submit">إضافة المادة</button>
     </form>
+    <section id="exm" hidden>
+      <h2>الامتحانات</h2>
+      <form class="dp-add on" id="exf">
+        <input aria-label="اسم الامتحان" class="wide" id="et" maxlength="120" placeholder="اسم الامتحان (مثال: تشريح — نصف الكورس)" required>
+        <input aria-label="تاريخ الامتحان" id="ed" type="date" required>
+        <input aria-label="وقت الامتحان (اختياري)" id="eh" type="time">
+        <select id="es" aria-label="المرحلة"></select>
+        <input aria-label="المكان (اختياري)" id="ep" maxlength="80" placeholder="القاعة (اختياري)">
+        <button class="btn btn-primary" type="submit">إضافة امتحان</button>
+      </form>
+      <div id="exl"></div>
+    </section>
     <p class="ct-msg" id="msg" role="alert"></p>
     <div id="subs"><div class="sj-empty">جارٍ التحميل…</div></div>
   </main>
@@ -57,6 +69,40 @@
 
     function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
     function msg(t, ok) { var m = $("msg"); m.textContent = t; m.style.color = ok ? "#2f855a" : "#c53030"; }
+
+    /* ===== الامتحانات (لمن يدير القسم) ===== */
+    function loadExams() {
+      fetch("/api/exams?department_id=" + id).then(function (r) { return r.json(); }).then(function (d) {
+        var box = $("exl"); box.innerHTML = "";
+        ((d && d.items) || []).forEach(function (x) {
+          var r = el("div", null, "sj-item"), m = el("div", null, "sj-main");
+          m.appendChild(el("span", x.title, "sj-name"));
+          m.appendChild(el("small", [x.exam_date, x.exam_time, x.place, x.stage ? "المرحلة " + x.stage : "كل المراحل"].filter(Boolean).join(" · "), "sj-meta"));
+          r.appendChild(m);
+          var del = el("button", "حذف");
+          del.onclick = function () {
+            if (!confirm("حذف «" + x.title + "»؟")) return;
+            del.disabled = true;
+            fetch("/api/exams/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: x.id }) }).then(loadExams);
+          };
+          r.appendChild(del); box.appendChild(r);
+        });
+      }).catch(function () {});
+    }
+    function initExams() {
+      $("exm").hidden = false;
+      var es = $("es"); es.appendChild(new Option("كل المراحل", ""));
+      for (var i = 1; i <= IQStages.max(info.college); i++) es.appendChild(new Option("المرحلة " + i, i));
+      $("exf").onsubmit = function (e) {
+        e.preventDefault();
+        fetch("/api/exams", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ department_id: id, stage: es.value, title: $("et").value, exam_date: $("ed").value, exam_time: $("eh").value, place: $("ep").value }) })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            if (d.ok) { $("et").value = ""; $("ep").value = ""; msg("تمت إضافة الامتحان.", true); loadExams(); }
+            else msg(d.error === "bad_date" ? "التاريخ غير صالح (لا يقبل تاريخاً قديماً)." : d.error === "forbidden" ? "لا تملك صلاحية." : "تعذّر الحفظ.");
+          }).catch(function () { msg("تعذّر الاتصال بالخادم."); });
+      };
+      loadExams();
+    }
     function stageOfName(n) { var m = /المرحلة\s+(\S+)/.exec(n || ""); return m && ORD[m[1]] ? ORD[m[1]] : 0; }
 
     function render(items) {
@@ -122,6 +168,7 @@
       if (can) {
         var add = el("button", "إضافة مادة"); add.type = "button"; add.onclick = function () { $("addf").classList.toggle("on"); }; tools.appendChild(add);
         var tm = el("a", "إدارة الفريق"); tm.href = "team.html"; tools.appendChild(tm);
+        initExams();
         var fixed = stageOfName(info.name_ar), st = $("st");
         for (var i = 1; i <= IQStages.max(info.college); i++) if (!fixed || i === fixed) st.appendChild(new Option("المرحلة " + i, i));
       }
