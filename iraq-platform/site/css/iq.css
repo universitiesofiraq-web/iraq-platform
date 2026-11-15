@@ -148,3 +148,12 @@ button,input,select{font:inherit}
 .uc-prog{grid-column:1/-1;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.uc-prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .uc-actions{display:flex;gap:8px;flex-wrap:wrap}.uc-actions .btn{flex:1;min-height:48px}
 .up-drop.on{border-color:var(--accent);background:#2dd4bf14}.uc-logo-img{width:28px;height:28px;border-radius:8px;object-fit:contain;background:#fff;vertical-align:middle;margin-inline-end:8px}
+.inv-rows{display:grid;gap:10px}
+.inv-row{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.inv-row h2{margin:0;font-size:1rem}
+.inv-row small{color:var(--ink2)}
+.inv-link{display:grid;gap:8px}
+.inv-link input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg,var(--surface));color:var(--ink);direction:ltr;text-align:left}
+.inv-acts{display:flex;flex-wrap:wrap;gap:8px}
+.inv-acts button,.inv-acts a{padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-decoration:none;cursor:pointer}
+.inv-acts .pri{background:var(--accent);color:var(--on-accent);border-color:transparent}
