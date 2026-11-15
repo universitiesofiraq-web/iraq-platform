@@ -5,6 +5,7 @@
 //   university {name_ar,name_en?,city?}  college {university_id,name_ar}  department {college_id,name_ar}
 //   subject {department_id,stage,term,name_ar,name_en?,professor?}
 // حذف (للمشرف): POST /api/catalog/delete { type, id }  (university|college|department|subject)
+import { maxStages } from "./stages.js";
 import { currentUser } from "./auth.js";
 import { policy, isGlobalAdmin } from "./scope.js";
 import { ACTIVE_UNIVERSITY } from "./onboarding.js";
@@ -358,9 +359,10 @@ async function join(req, env, url) {
   const did = num(b.department_id), stage = num(b.stage);
   if (!did || !stage || stage > 8) return fail("bad_request", 400);
   const dep = await env.DB.prepare(
-    `SELECT d.id, c.id AS college_id, c.university_id, o.state FROM departments d JOIN colleges c ON c.id=d.college_id
+    `SELECT d.id, c.name_ar AS college_name, c.id AS college_id, c.university_id, o.state FROM departments d JOIN colleges c ON c.id=d.college_id
      LEFT JOIN university_onboarding o ON o.university_id=c.university_id WHERE d.id=?`).bind(did).first();
   if (!dep) return fail("not_found", 404);
+  if (stage > maxStages(dep.college_name)) return fail("bad_request", 400);
   if (dep.state === "suspended") return fail("suspended", 403);
   const now = Date.now();
   await env.DB.prepare("INSERT OR IGNORE INTO stages (department_id,number) VALUES (?,?)").bind(did, stage).run();
