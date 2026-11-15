@@ -302,16 +302,24 @@ function renderUniversities() {
   const history = element("div");
   auditItems(listing.audit || [], history);
   log.card.append(history);
-  const growth = panel("تحليل النمو", "الطلاب النشطون والجامعات الأكثر استخداماً ومصادر التسجيل");
-  growth.card.id = "growth";
-  const growthBody = element("div");
-  growth.card.append(growthBody);
   const content = $("content");
-  content.replaceChildren(choices, totals, growth.card, layout, log.card);
+  content.replaceChildren(choices, totals, layout, log.card);
   content.hidden = false;
-  if (listing.analytics) growthBody.replaceChildren(growthPanel(listing.analytics));
-  else growthBody.append(empty("جارٍ تحميل التحليل…"));
-  listing.growthBody = growthBody;
+}
+
+async function showGrowth() {
+  $("title").textContent = "تحليل النمو";
+  $("description").textContent = "الطلاب النشطون والجامعات الأكثر استخداماً ومصادر التسجيل.";
+  $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
+  $("scope-label").textContent = "جميع الجامعات";
+  navigation(globalNav, "تحليل النمو");
+  const body = element("div");
+  body.append(empty("جارٍ تحميل التحليل…"));
+  const content = $("content");
+  content.replaceChildren(body);
+  content.hidden = false;
+  try { body.replaceChildren(growthPanel(await api(adminRoot + "/analytics"))); }
+  catch { body.replaceChildren(empty("تعذّر تحميل التحليل.")); }
 }
 
 async function loadUniversities() {
@@ -323,15 +331,10 @@ async function loadUniversities() {
     if (request !== listVersion) return;
     const overviewData = await api(adminRoot + "/overview").catch(() => null);
     if (request !== listVersion) return;
-    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview, analytics: listing?.analytics };
+    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview };
     renderUniversities();
     showNotice();
     const log = $("audit").lastElementChild;
-    api(adminRoot + "/analytics").then(analytics => {
-      if (request !== listVersion) return;
-      listing.analytics = analytics;
-      listing.growthBody?.replaceChildren(growthPanel(analytics));
-    }).catch(() => { if (request === listVersion) listing.growthBody?.replaceChildren(empty("تعذّر تحميل التحليل.")); });
     try {
       const audit = await api(adminRoot + "/audit");
       if (request !== listVersion) return;
@@ -384,23 +387,27 @@ async function globalTeam() {
   } catch (error) { showNotice(error.message, true); }
 }
 
-function navigation(entries) {
+function navigation(entries, current) {
   $("sidebar-nav").replaceChildren(...entries.map(([title, href]) => link(title, href)));
-  $("sidebar-nav").firstElementChild?.setAttribute("aria-current", "page");
+  const cur = current ? [...$("sidebar-nav").children].find(a => a.textContent === current) : $("sidebar-nav").firstElementChild;
+  cur?.setAttribute("aria-current", "page");
   $("sidebar-nav").hidden = false;
 }
 
+const globalNav = [["الرئيسية", "admin.html"], ["الجامعات", "admin.html#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"],
+  ["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"],
+  ["تعيين الممثلين", "manage.html"], ["روابط الدعوة", "invites.html"], ["المستخدمون", "admin-tools.html#users"],
+  ["تحليل النمو", "admin.html?view=growth"], ["التسجيلات الأخيرة", "admin.html#joins"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]];
+
 function showGlobal() {
+  if (new URLSearchParams(location.search).get("view") === "growth") return showGrowth();
   $("title").textContent = "لوحة الإدارة العامة";
   $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
   $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
   $("scope-label").textContent = "جميع الجامعات";
   $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
-  const nav = [["الرئيسية", "admin.html"], ["الجامعات", "#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"],
-    ["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"],
-    ["تعيين الممثلين", "manage.html"], ["روابط الدعوة", "invites.html"], ["المستخدمون", "admin-tools.html#users"],
-    ["تحليل النمو", "#growth"], ["التسجيلات الأخيرة", "#joins"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]];
+  const nav = globalNav;
   navigation(nav);
   $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"));
   if (me.owner) $("page-actions").append(button("الإدارة العامة", globalTeam));
