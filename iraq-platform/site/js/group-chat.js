@@ -425,7 +425,6 @@
         box.appendChild(node("span", null, "لم تسجّل قسمك ومرحلتك بعد. "));
       } else {
         box.appendChild(node("span", null, "مجموعتك تتبع مرحلتك المسجّلة: " + p.department + " · " + p.university + " · المرحلة " + p.stage + ". "));
-        if (p.membership === "pending") box.appendChild(node("span", "muted", "بانتظار تأكيد ممثل مرحلتك لتنضم إلى مجموعتها. "));
         var browsing = null; try { browsing = JSON.parse(localStorage.getItem("iq.dept") || "null"); } catch (_) {}
         if (browsing && browsing.id && Number(browsing.id) !== Number(p.department_id)) box.appendChild(node("span", "muted", "(القسم الذي تتصفحه الآن مختلف عن قسمك المسجّل.) "));
       }
@@ -439,7 +438,7 @@
       var res = await fetch("/api/auth/me"); var data = await res.json();
       if (!res.ok || !data.ok || !data.user) throw Error(data.error || (res.status === 401 ? "unauthorized" : "server"));
       me = data.user;
-      await profileBanner();
+      profileBanner(); /* بالتوازي: لا ننتظرها قبل فتح المجموعة */
       await refreshRooms();
       var requestedRoom = Number(new URLSearchParams(location.search).get("room"));
       var first = requestedRoom || (rooms[0] && rooms[0].id); /* تفتح المجموعة مباشرة، على الهاتف أيضاً */
