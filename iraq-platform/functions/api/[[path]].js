@@ -11,6 +11,7 @@ import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
 import { handleUploadOptions } from "../_lib/upload-options.js";
 import { handleCatalog } from "../_lib/catalog.js";
 import { handleInvites } from "../_lib/invites.js";
+import { handleActivation } from "../_lib/activation.js";
 import { handleGroupChat } from "../_lib/group_chat.js";
 import { handleAvatar } from "../_lib/avatar.js";
 import { handleCollegeLogo } from "../_lib/college_logo.js";
@@ -23,6 +24,8 @@ export async function onRequest({ request, env }) {
   if (onboardingRes) return onboardingRes;
   const workspaceRes = await handleAdminWorkspace(request, env);
   if (workspaceRes) return workspaceRes;
+  const activationRes = await handleActivation(request, env);
+  if (activationRes) return activationRes;
   const inviteRes = await handleInvites(request, env);
   if (inviteRes) return inviteRes;
   const uploadOptions = await handleUploadOptions(request, env);

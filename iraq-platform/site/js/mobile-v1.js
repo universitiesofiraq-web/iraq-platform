@@ -271,6 +271,7 @@
     sheet.appendChild(row("تصفّح قسم آخر", "catalog.html"));
     if (u) {
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("لوحة الإدارة", "admin.html"));
+      if (u.admin) sheet.appendChild(row("طلبات التفعيل", "activation-requests.html"));
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("روابط الدعوة", "invites.html"));
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep" && (x.type === "college" || x.type === "university"); })) sheet.appendChild(row("مركز الرفع", "upload-center.html"));
       sheet.appendChild(row("تسجيل الخروج", null, function () {
