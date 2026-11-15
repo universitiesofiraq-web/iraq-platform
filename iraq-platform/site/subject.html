@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>المادة | دفعتنا</title>
-  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="icon" type="image/png" href="assets/favicon-48.png">
   <meta name="theme-color" content="#0A1C4E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=3">
+  <link rel="stylesheet" href="css/iq.css?v=11">
+  <script src="js/iq-theme.js?v=1"></script><link rel="stylesheet" href="css/dfa.css?v=3">
 </head>
 <body>
   <header class="iq-top">
@@ -37,6 +38,21 @@
       return fetch("/api/" + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json(); });
     }
     function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+    var CF = "ms-files", canSave = !!(window.caches && window.fetch);
+    function isSaved(path) { return canSave ? caches.open(CF).then(function (c) { return c.match(path); }).then(Boolean).catch(function () { return false; }) : Promise.resolve(false); }
+    function savePath(path) { return caches.open(CF).then(function (c) { return fetch(path).then(function (r) { if (!r.ok) throw new Error("x"); return c.put(path, r); }); }); }
+    function unsavePath(path) { return caches.open(CF).then(function (c) { return c.delete(path); }); }
+    function offlineBtn(it) {
+      var path = "/api/file/" + it.id, b = el("button", "حفظ بلا إنترنت");
+      function mark(on) { b.textContent = on ? "محفوظ ✓" : "حفظ بلا إنترنت"; b.dataset.on = on ? "1" : ""; }
+      isSaved(path).then(mark);
+      b.onclick = function () {
+        b.disabled = true;
+        (b.dataset.on ? unsavePath(path).then(function () { mark(false); }) : (b.textContent = "جارٍ الحفظ…", savePath(path).then(function () { mark(true); })))
+          .catch(function () { b.textContent = "تعذّر الحفظ"; }).then(function () { b.disabled = false; });
+      };
+      return b;
+    }
     function href(it) { return it.kind === "link" ? it.url : "/api/file/" + it.id; }
 
     function size(b) { b = Number(b); return b > 0 ? (b >= 1048576 ? (b / 1048576).toFixed(1) + " ميغا" : Math.max(1, Math.round(b / 1024)) + " كيلوبايت") : ""; }
@@ -64,6 +80,7 @@
       if (pending) left.appendChild(el("span", "بانتظار الموافقة", "sj-tag"));
       r.appendChild(left);
       var acts = el("div", null, "sj-act");
+      if (it.kind !== "link" && canSave && !pending) acts.appendChild(offlineBtn(it));
       if (it.kind !== "link") { var an = el("a", "الملف الأصلي"); an.href = href(it); an.target = "_blank"; an.rel = "noopener"; acts.appendChild(an); }
       if (pending && canReview) {
         var ok = el("button", "قبول"), no = el("button", "رفض");
@@ -99,6 +116,17 @@
       var ok = items.filter(function (i) { return !i.status || i.status === "approved"; });
       var pend = items.filter(function (i) { return i.status === "pending"; });
       if (!ok.length) box.appendChild(el("div", "لا توجد ملفات معتمدة بعد.", "sj-empty"));
+      var pdfs = ok.filter(function (i) { return i.kind !== "link"; });
+      if (canSave && pdfs.length > 1) {
+        var all = el("button", "حفظ كل ملفات المادة بلا إنترنت (" + pdfs.length + ")", "btn");
+        all.onclick = function () {
+          all.disabled = true; var n = 0;
+          pdfs.reduce(function (p, it) {
+            return p.then(function () { return savePath("/api/file/" + it.id).catch(function () {}); }).then(function () { all.textContent = "جارٍ الحفظ… " + (++n) + "/" + pdfs.length; });
+          }, Promise.resolve()).then(function () { all.textContent = "تم حفظ الملفات على جهازك ✓"; box.querySelectorAll(".sj-act button").forEach(function (x) { if (x.textContent === "حفظ بلا إنترنت") { x.textContent = "محفوظ ✓"; x.dataset.on = "1"; } }); });
+        };
+        box.appendChild(all);
+      }
       ["lecture", "quiz", "exam"].forEach(function (t) {
         var list = ok.filter(function (i) { return i.type === t; }).sort(function (a, b) { return a.number - b.number; });
         if (!list.length) return;
@@ -131,5 +159,6 @@
   })();
   </script>
   <script src="js/upload-link.js?v=2"></script>
+  <script>if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
 </body>
 </html>
