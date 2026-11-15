@@ -16,7 +16,7 @@
     .jn-steps span.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
     .jn-steps span.done{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
     .jn-steps span.done::before{content:"\2713\00a0"}
-    .jn-stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+    .jn-stages{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(min-width:640px){.jn-stages{grid-template-columns:repeat(4,1fr)}}
     .jn-stages button{min-height:56px;padding:14px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
     .jn-stages button:hover{border-color:var(--accent)}
     .jn-lead{color:var(--ink2);margin:-4px 0 12px}
@@ -123,7 +123,7 @@
         list.appendChild(g);
         /* كل المراحل الثماني متاحة دائماً: الخادم ينشئ المرحلة عند التسجيل إن لم تكن موجودة */
         STAGE_NAMES.forEach(function (n, i) {
-          var b = document.createElement("button"); b.type = "button"; b.textContent = n;
+          var b = document.createElement("button"); b.type = "button"; b.textContent = "المرحلة " + n;
           b.onclick = function () { submit(i + 1); };
           g.appendChild(b);
         });
