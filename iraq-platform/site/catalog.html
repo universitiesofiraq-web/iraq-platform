@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=2">
+  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=3">
 </head>
 <body>
   <header class="iq-top">
@@ -19,7 +19,7 @@
   <main class="cg">
     <h1 id="title">اختر جامعتك</h1>
     <nav class="cg-path" id="path" aria-label="المسار"></nav>
-    <input id="qf" type="search" class="cg-q" placeholder="ابحث في هذه القائمة…" aria-label="بحث في القائمة" autocomplete="off">
+    <input id="qf" type="search" class="cg-q" placeholder="ابحث عن جامعة أو كلية أو قسم…" aria-label="بحث في القائمة" autocomplete="off">
     <div class="cg-list" id="list"></div>
     <p class="cg-empty" id="joinHint" hidden>جامعتك غير موجودة في القائمة؟ <a href="join.html">سجّل جامعتك من كل جامعات العراق</a></p>
     <form class="cg-add" id="add" hidden>
@@ -58,9 +58,41 @@
     }
     function level() { return stack.length; }
     function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
+    var INDEX = null, indexReq = null, searchVersion = 0;
+    function loadIndex() {
+      if (INDEX) return Promise.resolve(INDEX);
+      return indexReq || (indexReq = api("index").then(function (d) { return (INDEX = d); }).catch(function () { indexReq = null; return null; }));
+    }
+    function clearHits() { var h = $("hits"); if (h) h.remove(); }
+    function showHits(q, version) {
+      loadIndex().then(function (d) {
+        if (!d || version !== searchVersion || level() !== 0) return;
+        var U = {}, C = {}, out = [];
+        (d.u || []).forEach(function (r) { U[r[0]] = r; });
+        (d.c || []).forEach(function (r) { C[r[0]] = r; });
+        (d.d || []).forEach(function (r) {
+          var c = C[r[1]], u = c && U[c[1]];
+          if (u && norm(r[2] + " " + c[2]).indexOf(q) >= 0) out.push({ u: u, c: c, d: r });
+        });
+        clearHits();
+        if (!out.length) return;
+        var box = document.createElement("div"); box.id = "hits";
+        var h = document.createElement("h3"); h.textContent = "أقسام مطابقة"; box.appendChild(h);
+        out.slice(0, 20).forEach(function (o) {
+          var row = document.createElement("div"); row.className = "cg-item";
+          var n = document.createElement("span"); n.textContent = o.d[2]; row.appendChild(n);
+          var sm = document.createElement("small"); sm.textContent = o.u[1] + " · " + o.c[2]; row.appendChild(sm);
+          row.onclick = function () { location.href = "dept.html?id=" + o.d[0]; };
+          box.appendChild(row);
+        });
+        $("list").after(box);
+      });
+    }
     $("qf").addEventListener("input", function () {
       var q = norm(this.value.trim());
       document.querySelectorAll("#list .cg-item").forEach(function (r) { r.style.display = !q || (r.dataset.t || "").indexOf(q) >= 0 ? "" : "none"; });
+      var v = ++searchVersion; clearHits();
+      if (q.length >= 2 && level() === 0) showHits(q, v);
     });
     var P = new URLSearchParams(location.search);
     if (Number(P.get("u"))) {
@@ -83,7 +115,7 @@
       var request = ++loadVersion;
       $("add").hidden = true;
       var lv = level();
-      $("title").textContent = TITLES[lv]; $("qf").value = "";
+      $("title").textContent = TITLES[lv]; $("qf").value = ""; searchVersion++; clearHits();
       renderPath();
       $("joinHint").hidden = lv !== 0;
       var type = LV[lv];

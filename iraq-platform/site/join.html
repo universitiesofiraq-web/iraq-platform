@@ -9,23 +9,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=2">
+  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=3">
   <style>
     .jn-steps{display:flex;gap:6px;margin:4px 0 14px;flex-wrap:wrap}
-    .jn-steps span{flex:1;min-width:64px;text-align:center;padding:6px 4px;border-radius:999px;background:rgba(19,41,75,.08);font-size:.8rem;color:#5b6475}
-    .jn-steps span.on{background:#13294B;color:#fff}
-    .jn-steps span.done{background:#E0A93B;color:#13294B}
-    .jn-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .jn-stages button{padding:14px 0;border-radius:12px;border:1px solid rgba(19,41,75,.18);background:#fff;font:inherit;font-weight:600;cursor:pointer}
-    .jn-stages button:hover{border-color:#13294B}
-    .jn-lead{color:#5b6475;margin:-4px 0 12px}
+    .jn-steps span{flex:1;min-width:64px;text-align:center;padding:8px 6px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;color:var(--ink2)}
+    .jn-steps span.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+    .jn-steps span.done{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
+    .jn-steps span.done::before{content:"\2713\00a0"}
+    .jn-stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+    .jn-stages button{min-height:56px;padding:14px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+    .jn-stages button:hover{border-color:var(--accent)}
+    .jn-lead{color:var(--ink2);margin:-4px 0 12px}
+    .jn-hit small{display:block;color:var(--ink2);font-size:.82rem}
+    .jn-sep{margin:14px 0 6px;font-size:.85rem;color:var(--ink2);font-weight:600}
     .jn-done{text-align:center;padding:28px 8px}
     .jn-done b{display:block;font-size:1.2rem;margin-bottom:8px}
   </style>
 </head>
 <body>
   <header class="iq-top">
-    <a class="iq-brand" href="/"><span>دفعتنا</span></a>
+    <a class="iq-brand" href="/"><img class="dfa-mark" src="assets/brand.svg" width="32" height="32" alt=""><span>دفعتنا</span></a>
     <nav><a href="catalog.html">الجامعات</a><a class="iq-login" href="login.html">دخول</a></nav>
   </header>
   <main class="cg">
@@ -33,7 +36,7 @@
     <p class="jn-lead" id="lead">اختر جامعتك ثم كليتك وقسمك ومرحلتك، وتدخل مباشرة إلى مواد قسمك.</p>
     <div class="jn-steps" id="steps"><span>الجامعة</span><span>الكلية</span><span>القسم</span><span>المرحلة</span></div>
     <nav class="cg-path" id="path" aria-label="المسار"></nav>
-    <input id="qf" type="search" class="cg-q" placeholder="ابحث…" aria-label="بحث" autocomplete="off">
+    <input id="qf" type="search" class="cg-q" placeholder="ابحث عن جامعتك أو قسمك…" aria-label="بحث" autocomplete="off">
     <div class="cg-list" id="list"></div>
     <div class="cg-msg" id="msg" role="alert"></div>
   </main>
@@ -51,9 +54,49 @@
     function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
     function get(p) { return IQApi.request("/api/catalog/" + p, { credentials: "same-origin" }); }
 
+    var INDEX = null, indexReq = null;
+    function loadIndex() {
+      if (INDEX) return Promise.resolve(INDEX);
+      return indexReq || (indexReq = get("index?view=join").then(function (d) { return (INDEX = d); }).catch(function () { indexReq = null; return null; }));
+    }
+    function clearHits() { var h = $("hits"); if (h) h.remove(); }
+    function showHits(q, version) {
+      loadIndex().then(function (d) {
+        if (!d || version !== searchVersion || stack.length !== 0) return;
+        var U = {}, C = {}, out = [];
+        (d.u || []).forEach(function (r) { U[r[0]] = r; });
+        (d.c || []).forEach(function (r) { C[r[0]] = r; });
+        (d.d || []).forEach(function (r) {
+          var c = C[r[1]], u = c && U[c[1]]; if (!u) return;
+          if (norm(r[2] + " " + c[2]).indexOf(q) < 0) return;
+          out.push({ u: u, c: c, d: r });
+        });
+        clearHits();
+        if (!out.length) return;
+        var box = document.createElement("div"); box.id = "hits";
+        var h = document.createElement("div"); h.className = "jn-sep"; h.textContent = "أقسام مطابقة";
+        box.appendChild(h);
+        out.slice(0, 20).forEach(function (o) {
+          var row = document.createElement("div"); row.className = "cg-item jn-hit";
+          var n = document.createElement("span"); n.textContent = o.d[2]; row.appendChild(n);
+          var s = document.createElement("small"); s.textContent = o.u[1] + " · " + o.c[2]; row.appendChild(s);
+          row.onclick = function () {
+            stack = [{ id: o.u[0], name: o.u[1] }, { id: o.c[0], name: o.c[2] }, { id: o.d[0], name: o.d[2] }];
+            var m = /^\s*المرحلة\s+(\S+)\s*$/.exec(o.d[2] || ""), k = m ? STAGE_NAMES.indexOf(m[1]) : -1;
+            if (k >= 0) { submit(k + 1); return; }
+            load();
+          };
+          box.appendChild(row);
+        });
+        $("list").after(box);
+      });
+    }
+    var searchVersion = 0;
     $("qf").addEventListener("input", function () {
       var q = norm(this.value.trim());
       document.querySelectorAll("#list .cg-item").forEach(function (r) { r.style.display = !q || (r.dataset.t || "").indexOf(q) >= 0 ? "" : "none"; });
+      var v = ++searchVersion; clearHits();
+      if (q.length >= 2 && stack.length === 0) showHits(q, v);
     });
 
     function renderSteps() {
@@ -70,7 +113,7 @@
     function load() {
       var request = ++loadVersion;
       var lv = stack.length;
-      $("title").textContent = TITLES[lv]; $("qf").value = ""; $("msg").textContent = "";
+      $("title").textContent = TITLES[lv]; $("qf").value = ""; $("msg").textContent = ""; searchVersion++; clearHits();
       $("qf").hidden = lv === 3;
       renderSteps();
       var list = $("list");
