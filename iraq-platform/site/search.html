@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>بحث | دفعتنا</title>
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <meta name="theme-color" content="#0A1C4E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=4">
+</head>
+<body>
+  <header class="iq-top">
+    <a class="iq-brand" href="/"><img class="dfa-mark" src="assets/brand.svg" width="32" height="32" alt=""><span>دفعتنا</span></a>
+    <nav><a href="catalog.html">الجامعات</a><a class="iq-login" href="login.html">دخول</a></nav>
+  </header>
+  <main class="cg">
+    <h1>بحث في دفعتنا</h1>
+    <p class="crumb">ابحث عن مادة أو أستاذ أو قسم أو كلية أو جامعة.</p>
+    <input class="cg-q" id="q" type="search" placeholder="مثال: تشريح، الدكتور أحمد، هندسة…" autocomplete="off" aria-label="بحث" autofocus>
+    <div id="out" aria-live="polite"></div>
+  </main>
+  <script src="js/api-client.js"></script>
+  <script>
+  (function () {
+    var $ = function (i) { return document.getElementById(i); };
+    function norm(s) { return String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
+    function el(t, text, cls) { var e = document.createElement(t); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+    var INDEX = null, indexReq = null, version = 0, timer = 0;
+    function loadIndex() {
+      if (INDEX) return Promise.resolve(INDEX);
+      return indexReq || (indexReq = fetch("/api/catalog/index").then(function (r) { return r.json(); }).then(function (d) { return (INDEX = d); }).catch(function () { indexReq = null; return null; }));
+    }
+    function item(href, title, sub) {
+      var a = el("a", null, "cg-item"); a.href = href; a.style.textDecoration = "none"; a.style.color = "inherit";
+      a.appendChild(el("span", title)); if (sub) a.appendChild(el("small", sub));
+      return a;
+    }
+    function section(box, title, rows) { if (!rows.length) return; box.appendChild(el("h3", title)); rows.forEach(function (r) { box.appendChild(r); }); }
+    function run() {
+      var raw = $("q").value.trim(), q = norm(raw), my = ++version, box = $("out");
+      if (q.length < 2) { box.innerHTML = ""; return; }
+      Promise.all([loadIndex(), fetch("/api/catalog/search?q=" + encodeURIComponent(raw)).then(function (r) { return r.json(); }).catch(function () { return { items: [] }; })]).then(function (r) {
+        if (my !== version) return;
+        var idx = r[0] || { u: [], c: [], d: [] }, subjects = (r[1] && r[1].items) || [];
+        var U = {}, C = {}; idx.u.forEach(function (x) { U[x[0]] = x; }); idx.c.forEach(function (x) { C[x[0]] = x; });
+        var unis = idx.u.filter(function (x) { return norm(x[1] + " " + (x[2] || "") + " " + (x[3] || "")).indexOf(q) >= 0; }).slice(0, 8)
+          .map(function (x) { return item("catalog.html?u=" + x[0] + "&n=" + encodeURIComponent(x[1]), x[1], x[3] || ""); });
+        var cols = idx.c.filter(function (x) { return norm(x[2] + " " + (x[3] || "")).indexOf(q) >= 0 && U[x[1]]; }).slice(0, 8)
+          .map(function (x) { return item("catalog.html?u=" + x[1] + "&n=" + encodeURIComponent(U[x[1]][1]) + "&c=" + x[0] + "&cn=" + encodeURIComponent(x[2]), x[2], U[x[1]][1]); });
+        var deps = idx.d.filter(function (x) { var c = C[x[1]]; return c && U[c[1]] && norm(x[2] + " " + c[2]).indexOf(q) >= 0; }).slice(0, 12)
+          .map(function (x) { var c = C[x[1]]; return item("dept.html?id=" + x[0], x[2], U[c[1]][1] + " · " + c[2]); });
+        var subs = subjects.map(function (s) {
+          return item("subject.html?id=" + s.id, s.name_ar, [s.professor, "المرحلة " + s.stage, s.department, s.university].filter(Boolean).join(" · "));
+        });
+        box.innerHTML = "";
+        section(box, "المواد", subs); section(box, "الأقسام", deps); section(box, "الكليات", cols); section(box, "الجامعات", unis);
+        if (!box.firstChild) box.appendChild(el("div", "لا نتائج مطابقة. جرّب كلمة أقصر.", "cg-empty"));
+      });
+    }
+    $("q").addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 220); });
+    var init = new URLSearchParams(location.search).get("q"); if (init) { $("q").value = init; run(); }
+  })();
+  </script>
+</body>
+</html>
