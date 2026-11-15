@@ -144,6 +144,19 @@
     </div>
   </section>
 
+  <!-- ===== الامتحانات القادمة (تظهر فقط إن أضاف الممثل امتحاناً) ===== -->
+  <section class="section" id="exams" hidden>
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>الامتحانات القادمة</h2>
+          <p>ما أضافه ممثل قسمك من مواعيد امتحانات.</p>
+        </div>
+      </div>
+      <div class="ann-list" id="examList"></div>
+    </div>
+  </section>
+
   <!-- ===== 3. أحدث المحاضرات ===== -->
   <section class="section" id="latest">
     <div class="container">
@@ -839,5 +852,26 @@
 }catch(e){}})();
 </script>
 <script src="js/mobile-v1.js?v=m12"></script>
+<script>
+(function(){try{
+  if(!window.IQ_DEPT)return;
+  var box=document.getElementById("exams"),list=document.getElementById("examList");if(!box||!list)return;
+  fetch("/api/exams?department_id="+IQ_DEPT.id+"&stage="+(window.IQ_STAGE||0)).then(function(r){return r.json()}).then(function(d){
+    var items=(d&&d.items)||[];if(!items.length)return;
+    var today=new Date((d.today||"")+"T00:00:00Z").getTime();
+    items.forEach(function(x){
+      var days=Math.round((new Date(x.exam_date+"T00:00:00Z").getTime()-today)/86400000);
+      var c=document.createElement("article");c.className="card ann";
+      var h=document.createElement("h3");h.textContent=x.title;c.appendChild(h);
+      var when=new Date(x.exam_date+"T00:00:00Z").toLocaleDateString("ar-IQ",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"});
+      var meta=document.createElement("p");meta.className="ann-meta";
+      meta.textContent=[when,x.exam_time,x.place,x.stage?"المرحلة "+x.stage:""].filter(Boolean).join(" · ");c.appendChild(meta);
+      var b=document.createElement("span");b.className="badge";b.textContent=days<=0?"اليوم":days===1?"غداً":"بعد "+days+" يوماً";c.appendChild(b);
+      list.appendChild(c);
+    });
+    box.hidden=false;
+  }).catch(function(){});
+}catch(e){}})();
+</script>
 </body>
 </html>
