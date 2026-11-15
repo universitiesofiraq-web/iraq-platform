@@ -40,6 +40,7 @@
     <div class="cg-list" id="list"></div>
     <div class="cg-msg" id="msg" role="alert"></div>
   </main>
+  <script src="js/stages.js?v=1"></script>
   <script src="js/api-client.js"></script>
   <script>
   (function () {
@@ -121,8 +122,8 @@
         list.innerHTML = "";
         var g = document.createElement("div"); g.className = "jn-stages";
         list.appendChild(g);
-        /* كل المراحل الثماني متاحة دائماً: الخادم ينشئ المرحلة عند التسجيل إن لم تكن موجودة */
-        STAGE_NAMES.forEach(function (n, i) {
+        /* عدد المراحل حسب نوع الكلية (IQStages)؛ الخادم ينشئ المرحلة عند التسجيل */
+        STAGE_NAMES.slice(0, IQStages.max(stack[1] && stack[1].name)).forEach(function (n, i) {
           var b = document.createElement("button"); b.type = "button"; b.textContent = "المرحلة " + n;
           b.onclick = function () { submit(i + 1); };
           g.appendChild(b);
