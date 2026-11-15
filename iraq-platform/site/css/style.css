@@ -475,6 +475,7 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 }
 .sb-avatar { display: grid; place-items: center; flex: none; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-pill); background: var(--nav-active-bg); color: var(--nav-accent); }
 .sb-avatar .ico { display: grid; }
+.sb-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .sb-user-text { display: grid; min-width: 0; line-height: var(--leading-tight); }
 .sb-user-text strong { font-size: var(--nav-font); color: var(--nav-text); }
 .sb-user-text small { color: var(--nav-muted); font-size: var(--text-xs); }
