@@ -233,7 +233,7 @@
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; }
 
   /* ---------- فهرسة ملفات القسم (لممثل القسم/المشرف): تُستخرج النصوص في متصفحه وتُرسل للخادم ---------- */
-  var PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  var PDFJS = new URL("vendor/pdfjs/pdf.min.js", location.href).href, PDFJS_W = new URL("vendor/pdfjs/pdf.worker.min.js", location.href).href;
   function loadPdfJs() {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     return new Promise(function (ok, no) {
