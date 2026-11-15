@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v49";
+var V = "ms-v50";
 var FILES = "ms-files"; /* ملفات يحفظها الطالب صراحةً: لا تُمسح مع تحديث الإصدار */
 var SHELL = ["platform.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {

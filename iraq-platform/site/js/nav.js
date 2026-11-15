@@ -171,6 +171,7 @@
     ut.appendChild(el("small", "", semObj ? semName(semObj) : "تقدّمك محفوظ على هذا الجهاز"));
     user.appendChild(ut);
     side.appendChild(user);
+    hydrateUser(ut.firstChild, ut.lastChild, av);
 
     scroll = el("div", "sb-scroll");
     var nav = el("nav", "nav"); nav.id = "nav"; nav.setAttribute("aria-label", T("التنقل الرئيسي"));
@@ -194,6 +195,32 @@
       side.appendChild(foot);
     }
     return true;
+  }
+
+  /* اسم الحساب وصورته: من الجلسة الحقيقية. بلا جلسة يبقى «زائر». */
+  function hydrateUser(nameEl, subEl, av) {
+    var KEY = "iq.nav.user";
+    function paint(u) {
+      if (!u || !u.name) return;
+      nameEl.textContent = u.name;
+      var dep = ""; try { dep = String((JSON.parse(localStorage.getItem("iq.dept")) || {}).name || "").split(" — ")[0]; } catch (e) { /* لا شيء */ }
+      subEl.textContent = dep || u.email || "";
+      if (u.img) { av.textContent = ""; var im = document.createElement("img"); im.alt = ""; im.src = u.img; av.appendChild(im); }
+    }
+    try { paint(JSON.parse(sessionStorage.getItem(KEY))); } catch (e) { /* لا شيء */ }
+    if (typeof fetch !== "function") return;
+    fetch("/api/auth/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (m) {
+      var a = m && m.user;
+      if (!a) { try { sessionStorage.removeItem(KEY); } catch (e) { /* لا شيء */ } return; }
+      var u = { name: a.name || a.email || "", email: a.email || "", img: "" };
+      paint(u);
+      return fetch("/api/profile/public", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (p) {
+        if (p && p.ok) { if (p.display_name) u.name = p.display_name; if (p.has_avatar) u.img = "/api/avatar/" + a.id + "?v=" + (p.updated_at || 0); }
+      }).catch(function () { /* الاسم من الجلسة يكفي */ }).then(function () {
+        paint(u);
+        try { sessionStorage.setItem(KEY, JSON.stringify(u)); } catch (e) { /* لا شيء */ }
+      });
+    }).catch(function () { /* بلا اتصال: نبقي ما رُسم */ });
   }
 
   /* ---------- الحالة النشطة ---------- */
