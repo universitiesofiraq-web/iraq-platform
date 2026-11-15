@@ -78,14 +78,14 @@ button:disabled { opacity: .6; cursor: wait; }
   color: var(--sidebar-text);
   background: var(--sidebar);
 }
-.brand { display: flex; align-items: center; gap: .65rem; padding-block: .4rem 1rem; color: #fff; text-decoration: none; border-block-end: 1px solid #315165; }
-.brand svg { inline-size: 2.6rem; flex: 0 0 2.6rem; padding: .35rem; background: #087a79; border-radius: .8rem; }
+.brand { display: flex; align-items: center; gap: .65rem; padding-block: .4rem 1rem; color: #fff; text-decoration: none; border-block-end: 1px solid #23407F; }
+.brand img { inline-size: 2.6rem; block-size: 2.6rem; flex: 0 0 2.6rem; border-radius: .8rem; }
 .brand strong { line-height: 1.45; }
 .brand small, .sidebar-account small { display: block; margin-block-start: .2rem; color: #b0c8d6; }
 .sidebar nav { display: grid; gap: .3rem; }
 .sidebar nav a { padding: .75rem .65rem; border-radius: .65rem; color: var(--sidebar-text); text-decoration: none; min-height: 44px; }
-.sidebar nav a:hover, .sidebar nav a[aria-current] { background: #17656b; color: #fff; }
-.sidebar-account { border-block-start: 1px solid #315165; margin-block-start: auto; padding-block-start: 1rem; }
+.sidebar nav a:hover, .sidebar nav a[aria-current] { background: #2459D6; color: #fff; }
+.sidebar-account { border-block-start: 1px solid #23407F; margin-block-start: auto; padding-block-start: 1rem; }
 #nav-toggle { display: none; }
 .surface { min-width: 0; }
 .topbar { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: .7rem clamp(.85rem, 3vw, 2rem); background: var(--paper); border-block-end: 1px solid var(--line); min-height: 4.25rem; }

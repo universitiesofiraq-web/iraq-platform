@@ -1,0 +1,123 @@
+/* dfa.css — هوية «دفعتنا» الموحدة: لازورد + ذهبي.
+   يُحمَّل بعد ورقة كل صفحة ويوحّد الألوان والخط والأزرار والبطاقات والحقول والرأس. */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --dfa-font: Cairo, "Readex Pro", "IBM Plex Sans Arabic", Tahoma, system-ui, sans-serif;
+  --dfa-primary: #14307A;
+  --dfa-primary-d: #0A1C4E;
+  --dfa-accent: #2459D6;
+  --dfa-accent-ink: #1D4ABA;
+  --dfa-accent-soft: #E6EDFC;
+  --dfa-gold: #E0A93B;
+  --dfa-gold-soft: #FBF1D9;
+  --dfa-bg: #F3F6FB;
+  --dfa-surface: #fff;
+  --dfa-ink: #0A1A3A;
+  --dfa-muted: #56648A;
+  --dfa-line: #D9E1EF;
+  --dfa-r: 14px;
+  --dfa-r-sm: 12px;
+  --dfa-shadow: 0 1px 2px rgba(10,26,58,.06), 0 8px 24px rgba(10,26,58,.08);
+
+  /* بطاقات الصفحات ذات style.css */
+  --color-primary: var(--dfa-primary);
+  --color-primary-strong: var(--dfa-primary-d);
+  --color-secondary: var(--dfa-accent);
+  --color-secondary-ink: var(--dfa-accent-ink);
+  --color-secondary-soft: var(--dfa-accent-soft);
+  --color-bg: var(--dfa-bg);
+  --color-text: var(--dfa-ink);
+  --color-muted: var(--dfa-muted);
+  --color-border: var(--dfa-line);
+  --color-petrol: var(--dfa-primary);
+  --color-petrol-strong: var(--dfa-primary-d);
+  --color-fav: #B7791F;
+  --banner-bg: linear-gradient(110deg, #0A1C4E 0%, #14307A 60%, #1B3F9A 100%);
+  --hero-bg: linear-gradient(120deg, #E6EDFC 0%, #EEF3FC 60%, #F6F8FD 100%);
+  --band-accent: var(--dfa-accent-ink);
+  --nav-surface: var(--dfa-primary-d);
+  --nav-bg: #14307A;
+  --nav-accent: #F0C766;
+  --nav-active-bg: #1B3F9A;
+  --nav-group-bg: #102A66;
+  --nav-line: #23407F;
+  --nav-scrim: rgba(10, 28, 78, .55);
+  --focus-ring: 0 0 0 3px rgba(224, 169, 59, .55);
+
+  /* لوحة الإدارة */
+  --page: var(--dfa-bg);
+  --accent: var(--dfa-accent);
+  --action: var(--dfa-accent-ink);
+  --sidebar: var(--dfa-primary-d);
+  --sidebar-text: #DCE6FF;
+}
+:root[data-theme="dark"] {
+  --color-primary: #1B3F9A;
+  --color-primary-strong: #2459D6;
+  --color-secondary: #5B8BFF;
+  --color-secondary-ink: #8FB0FF;
+  --color-secondary-soft: #14224D;
+  --color-bg: #08112B;
+  --color-border: #23335F;
+  --color-border-strong: #33478A;
+  --color-text: #E8EEFB;
+  --color-muted: #9AA9CC;
+  --color-petrol: #1B3F9A;
+  --color-petrol-strong: #2459D6;
+  --banner-bg: linear-gradient(110deg, #0A1C4E 0%, #14307A 70%);
+  --hero-bg: linear-gradient(120deg, #101C3F 0%, #14224D 100%);
+  --nav-surface: #050C20;
+  --nav-bg: #101C3F;
+  --nav-active-bg: #1B3F9A;
+  --nav-group-bg: #0B1634;
+  --nav-line: #1C2B55;
+  --page: #08112B;
+  --paper: #101C3F;
+  --soft: #14224D;
+  --ink: #E8EEFB;
+  --muted: #9AA9CC;
+  --line: #23335F;
+  --accent: #5B8BFF;
+  --action: #8FB0FF;
+  --sidebar: #050C20;
+}
+
+/* ---- أساس مشترك ---- */
+html { font-family: var(--dfa-font); }
+body, button, input, select, textarea { font-family: var(--dfa-font); }
+:focus-visible { outline: 3px solid var(--dfa-gold); outline-offset: 2px; }
+
+/* ---- الشعار (نفسه في كل الصفحات) ---- */
+.dfa-mark { display: block; flex: none; width: 32px; height: 32px; border-radius: 9px; }
+.iq-brand, .brand, .semester-brand { font-weight: 800; letter-spacing: 0; }
+.iq-brand { gap: 10px; }
+.brand-mark { border-radius: 10px; background: transparent; }
+
+/* ---- الأزرار ---- */
+.btn, button.btn, a.btn { border-radius: var(--dfa-r-sm); font-weight: 700; }
+.btn-primary { background: var(--dfa-accent); border-color: var(--dfa-accent); color: #fff; }
+.btn-primary:hover { background: var(--dfa-accent-ink); border-color: var(--dfa-accent-ink); }
+.btn-secondary { border-color: var(--dfa-line); }
+
+/* ---- البطاقات ---- */
+.card, .course-card, .iq-sec, .management-card, .panel { border-radius: var(--dfa-r); }
+.card, .iq-sec { box-shadow: var(--dfa-shadow); }
+
+/* ---- الحقول ---- */
+input[type=text], input[type=search], input[type=email], input[type=url], input[type=password],
+input[type=number], input[type=date], select, textarea, .field {
+  border-radius: var(--dfa-r-sm);
+}
+
+/* ---- الرأس الموحد لصفحات iq ---- */
+.iq-top { background: linear-gradient(100deg, #0A1C4E, #14307A); box-shadow: 0 2px 12px rgba(10,28,78,.18); }
+.iq-top nav a { border-radius: var(--dfa-r-sm); font-weight: 600; }
+.iq-top nav a.iq-login { background: var(--dfa-gold); color: #2A1D00; }
+
+/* ---- صفحات الدردشة والإدارة والدخول: أزرار وشارات بلون الهوية ---- */
+.unread { color: #04122e; }
+.login-card, .login { border-radius: 20px; }
+
+/* اسم المنصة قصير: يبقى ظاهراً على الهاتف أيضاً */
+@media (max-width: 520px) { .iq-brand span { display: inline; font-size: 1rem; } }

@@ -169,3 +169,6 @@ html body.st-compact #mx-dock:not(.st-dock-open)>#st-compact-dock-close{display:
 html body.st-compact #mx-dock.st-dock-open>#st-compact-dock-close{order:-1;min-width:44px;background:var(--reader-hover);color:var(--reader-text);border:0;border-radius:12px}
 
 body.st-compact #studio-selbar{border-radius:20px;box-shadow:0 10px 30px #18273a24;border-color:var(--reader-line);background:var(--reader-surface);color:var(--reader-text);z-index:19}
+/* تحسين الواجهات 2026-11-15: رسالة تعذّر العرض لا تختفي خلف الأشرطة العائمة */
+body.st-compact #error:not(:empty){padding-top:calc(var(--reader-reserve,68px) + 12px)}
+body.st-compact #error .mx-fail-open,body.st-compact #error .mx-fail-retry{min-height:44px}

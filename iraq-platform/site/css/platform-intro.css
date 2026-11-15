@@ -49,3 +49,18 @@
   main:has(.intro-video) > .login { order: -1; }
   .intro-video { align-self: center; }
 }
+
+/* تحسين الواجهات 2026-11-15: الهاتف — الشعار سطر واحد، بطاقات المزايا شبكة كاملة بلا قصّ، أهداف لمس 44px */
+.back, .lang, .contact-btn { min-height: 44px; display: inline-flex; align-items: center; }
+@media (max-width: 780px) {
+  .brand { font-size: 20px; white-space: nowrap; }
+  .topbar .tools { gap: 8px; }
+  .intro:has(.intro-video) .features {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+    width: 100%; direction: rtl; position: static; left: auto; transform: none;
+  }
+  .intro:has(.intro-video) .feature { width: auto; min-height: 88px; }
+  .intro:has(.intro-video) .feature b { font-size: 13px; }
+  .intro:has(.intro-video) .feature small { font-size: 11px; }
+}
+@media (max-width: 420px) { .topbar { padding: 0 12px; gap: 8px; } .brand { font-size: 18px; } .topbar .lang { display: none; } }

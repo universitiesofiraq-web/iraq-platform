@@ -18,7 +18,7 @@
     inp.onfocus = function () { inp.select(); };
     var acts = document.createElement("div"); acts.className = "inv-acts";
     acts.appendChild(btn("نسخ", "pri", function () { (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { msg("نُسخ الرابط ✓", true); }, function () { inp.select(); msg("حدّد الرابط وانسخه."); }); }));
-    var text = "سجّل في المنصة العراقية واحصل على ملازم " + n.name;
+    var text = "سجّل في دفعتنا واحصل على ملازم " + n.name;
     var tg = document.createElement("a"); tg.textContent = "تيليغرام"; tg.target = "_blank"; tg.rel = "noopener"; tg.href = "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent(text); acts.appendChild(tg);
     var wa = document.createElement("a"); wa.textContent = "واتساب"; wa.target = "_blank"; wa.rel = "noopener"; wa.href = "https://wa.me/?text=" + encodeURIComponent(text + " " + url); acts.appendChild(wa);
     acts.appendChild(btn("إيقاف الرابط", "", function () { if (!confirm("لن يعمل الرابط بعد الآن. إيقافه؟")) return; post({ action: "revoke", code: item.code }).then(function (d) { d.ok ? (msg("تم إيقاف الرابط.", true), load(box, n)) : msg("تعذّر الإيقاف."); }); }));
@@ -30,7 +30,7 @@
     live(n.type, n.id).then(function (items) {
       box.replaceChildren();
       if (!items.length) {
-        box.appendChild(btn("إنشاء رابط الدعوة", "pri", function () { post({ action: "create", type: n.type, id: n.id }).then(function (d) { d.ok ? load(box, n) : msg(d.error === "forbidden" ? "لا تملك صلاحية لهذا القسم." : "تعذّر الإنشاء."); }); }));
+        box.appendChild(btn("إنشاء رابط الدعوة", "pri", function () { var b = this; b.disabled = true; post({ action: "create", type: n.type, id: n.id }).then(function (d) { if (d.ok) return load(box, n); b.disabled = false; msg(d.error === "forbidden" ? "لا تملك صلاحية لهذا القسم." : d.error === "too_many_invites" ? "وصلت للحد الأقصى من الروابط الفعّالة. أوقف رابطاً قديماً أولاً." : "تعذّر الإنشاء، حاول مرة أخرى."); }); }));
       } else box.appendChild(showLink(box, n, items[0]));
     });
   }

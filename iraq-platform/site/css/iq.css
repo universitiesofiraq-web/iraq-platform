@@ -1,4 +1,4 @@
-/* iq.css — هوية المنصة العراقية: لازورد بابل + نحاسي */
+/* iq.css — هوية دفعتنا: لازورد بابل + نحاسي */
 :root{
   --bg:#EEF2F8;--surface:#fff;--ink:#0A1A3A;--ink2:#56648A;--line:#D9E1EF;
   --lapis:#14307A;--lapis-d:#0A1C4E;--tile:#2459D6;--gold:#E0A93B;--gold-soft:#FBF1D9;
@@ -25,7 +25,7 @@ button,input,select{font:inherit}
 .iq-top nav a{color:#DCE6FF;text-decoration:none;font-size:.92rem;padding:10px 12px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center}
 .iq-top nav a:hover{background:rgba(255,255,255,.1)}
 .iq-top nav a.iq-login{background:var(--gold);color:#2A1D00;font-weight:600}
-@media(max-width:520px){.iq-top nav a:not(.iq-login){display:none}}
+@media(max-width:520px){.iq-brand span{display:none}.iq-top{padding-inline:12px}.iq-top nav{min-width:0;overflow-x:auto;scrollbar-width:none}.iq-top nav::-webkit-scrollbar{display:none}.iq-top nav a{flex:none;padding:10px 10px;font-size:.88rem}.iq-brand{flex:none;min-width:44px;justify-content:center}.iq-top nav a.iq-login{order:-1}}
 
 /* الواجهة الرئيسية */
 .iq-hero{position:relative;background:var(--lapis-d);color:#fff;padding:44px 16px 72px;
@@ -107,7 +107,7 @@ button,input,select{font:inherit}
 .ct-note{color:var(--ink2);font-size:.92rem}
 .ct-msg{min-height:1.4em}
 .ct-bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.ct-bar i{display:block;height:100%;width:0;background:var(--tile);transition:width .2s}
-.ct a.back,.cg a.back{color:var(--lapis);font-size:.92rem}
+.ct a.back,.cg a.back{color:var(--lapis);font-size:.92rem;display:inline-flex;align-items:center;min-height:44px;justify-self:start;text-decoration:none;font-weight:600}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* صفحة الرفع المبسّطة */
@@ -121,13 +121,13 @@ button,input,select{font:inherit}
 .up-seg{display:flex;gap:6px}.up-seg button{flex:1;min-height:46px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--ink);font-weight:600}
 .up-seg button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .up-row{display:flex;gap:10px}.up-num{flex:0 0 112px}.up-grow{flex:1;min-width:0}
-.up-link{background:none;border:0;color:var(--accent);font-weight:700;text-align:start;padding:6px 0}
+.up-link{background:none;border:0;color:var(--accent);font-weight:700;text-align:start;padding:6px 0;min-height:44px;justify-self:start}
 .up-add{display:grid;gap:10px;padding:12px;border:1px dashed var(--line);border-radius:12px}
 .up-drop{display:grid;gap:4px;justify-items:center;padding:22px 12px;border:2px dashed var(--line);border-radius:14px;background:transparent;color:var(--ink)}
 .up-drop .up-ico{font-size:1.8rem}.up-drop small{color:var(--ink2)}.up-drop strong{overflow-wrap:anywhere}
-.up-more summary{cursor:pointer;color:var(--ink2);margin-bottom:8px}
+.up-more summary{cursor:pointer;color:var(--ink2);min-height:44px;display:flex;align-items:center}
 .ct-msg.ok{color:#2f855a}.ct-msg.bad{color:#e5736d}
-.up-go{min-height:54px;font-size:1.05rem;position:sticky;bottom:12px}
+.up-go{width:100%;min-height:54px;font-size:1.05rem;position:sticky;bottom:max(12px,env(safe-area-inset-bottom));box-shadow:0 8px 24px rgba(10,26,58,.18);z-index:2}
 
 /* مركز الرفع */
 .uc-head{display:flex;align-items:center;gap:12px}.uc-title{flex:1;min-width:0}.uc-title h1{margin:0}
@@ -155,5 +155,14 @@ button,input,select{font:inherit}
 .inv-link{display:grid;gap:8px}
 .inv-link input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg,var(--surface));color:var(--ink);direction:ltr;text-align:left}
 .inv-acts{display:flex;flex-wrap:wrap;gap:8px}
-.inv-acts button,.inv-acts a{padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-decoration:none;cursor:pointer}
+.inv-acts button,.inv-acts a{min-height:44px;display:inline-flex;align-items:center;padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-decoration:none;cursor:pointer}
 .inv-acts .pri{background:var(--accent);color:var(--on-accent);border-color:transparent}
+
+/* مشترك (تحسين الواجهات 2026-11-15) */
+.up #form{display:grid;gap:12px}
+.ct-note:empty{display:none}
+.iq-top .iq-brand{min-height:44px}
+.sj-main{display:grid;gap:2px;min-width:0;flex:1 1 220px}.sj-name{font-weight:700;color:var(--lapis);text-decoration:none;overflow-wrap:anywhere}.sj-meta{color:var(--ink2)}.sj-err{color:var(--bad);margin:0;width:100%;font-size:.9rem}
+.sj-act a{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
+.sj-main .sj-tag{justify-self:start;margin:4px 0 0}
+.inv-row button{min-height:44px;padding:9px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;justify-self:start}.inv-row button.pri{background:var(--accent);color:var(--on-accent);border-color:transparent}.inv-row button:disabled{opacity:.6}

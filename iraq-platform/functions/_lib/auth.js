@@ -124,7 +124,7 @@ async function googleLogin(req, env, now, opts) {
   try { p = await verifyGoogleToken(b.credential, env.GOOGLE_CLIENT_ID, opts, now); } catch { return fail("google_unavailable", 502); }
   if (!p) return fail("bad_token", 401);
   const email = p.email.toLowerCase();
-  const name = String(p.name || email.split("@")[0]).trim().slice(0, 60) || "المنصة العراقية";
+  const name = String(p.name || email.split("@")[0]).trim().slice(0, 60) || "دفعتنا";
   const isAdmin = adminList(env).includes(email);
 
   let u = await env.DB.prepare("SELECT * FROM users WHERE google_sub = ?").bind(p.sub).first();

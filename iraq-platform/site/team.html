@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>إدارة الفريق | المنصة العراقية</title>
+  <title>إدارة الفريق | دفعتنا</title>
   <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <meta name="theme-color" content="#13294B">
+  <meta name="theme-color" content="#0A1C4E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=4">
+  <link rel="stylesheet" href="css/iq.css?v=11"><link rel="stylesheet" href="css/dfa.css?v=2">
   <style>
     .tm-list{display:grid;gap:8px;margin:12px 0 24px}
     .tm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line,#2a3a6a);border-radius:12px;flex-wrap:wrap}
@@ -22,7 +22,7 @@
 </head>
 <body>
   <header class="iq-top">
-    <a class="iq-brand" href="/"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2" fill="#E0A93B"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" fill="#E0A93B"/><circle cx="16" cy="16" r="4" fill="#0A1C4E"/></svg><span>المنصة العراقية</span></a>
+    <a class="iq-brand" href="/"><img class="dfa-mark" src="assets/brand.svg" width="32" height="32" alt=""><span>دفعتنا</span></a>
     <nav><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
   </header>
   <main class="ct">
@@ -103,6 +103,6 @@
     }).catch(function () { $("gate").textContent = "تعذّر التحقق من الحساب."; });
   })();
   </script>
-  <script src="js/upload-link.js"></script>
+  <script src="js/upload-link.js?v=2"></script>
 </body>
 </html>

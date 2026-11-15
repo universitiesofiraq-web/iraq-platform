@@ -9,7 +9,7 @@
 
   // آخر قسم فتحه الطالب: يتابع إليه بدل صفحة الجامعات
   function savedHome() {
-    try { var s = JSON.parse(localStorage.getItem("iq.dept") || "null"); if (s && Number(s.id) > 0) return "dept.html?id=" + Number(s.id); } catch (e) { /* لا شيء */ }
+    try { var s = JSON.parse(localStorage.getItem("iq.dept") || "null"); if (s && Number(s.id) > 0) return "platform.html?dept=" + Number(s.id); } catch (e) { /* لا شيء */ }
     return "index.html";
   }
   // الوجهة بعد الدخول: مسار نسبي داخل الموقع فقط
@@ -23,16 +23,18 @@
     if (new URLSearchParams(location.search).get("next")) { location.href = nextUrl(); return; }
     var s = null;
     try { s = JSON.parse(localStorage.getItem("iq.dept") || "null"); } catch (e) { /* لا شيء */ }
-    if (s && Number(s.id) > 0) { location.href = "dept.html?id=" + Number(s.id); return; }
+    if (s && Number(s.id) > 0) { location.href = "platform.html?dept=" + Number(s.id); return; }
     fetch("/api/sync", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
       var v = d && d.data && d.data["iq.dept"] && d.data["iq.dept"].v;
-      if (v && Number(v.id) > 0) { location.href = "dept.html?id=" + Number(v.id); return; }
+      if (v && Number(v.id) > 0) { location.href = "platform.html?dept=" + Number(v.id); return; }
       // طالب جديد بلا قسم محفوظ: صفحة التسجيل التي تعرض كل الجامعات
       return fetch("/api/catalog/me", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (m) {
         location.href = m && m.profile && m.profile.university_state === "active" ? "platform.html?dept=" + Number(m.profile.department_id) : "join.html";
       });
     }).catch(function () { location.href = "index.html"; });
   }
+
+  if (new URLSearchParams(location.search).get("next")) say("سجّل الدخول للمتابعة إلى الصفحة التي طلبتها.");
 
   /* ---------- نافذة التواصل ---------- */
   var dlg = $("contact");

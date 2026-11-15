@@ -2,7 +2,7 @@
 .uc2{--uc-brand:var(--accent);--uc-brand2:var(--tile);--uc-soft:color-mix(in srgb,var(--accent) 10%,transparent);--uc-ring:color-mix(in srgb,var(--ink) 9%,transparent);
   max-width:860px;margin:18px auto 90px;padding:0 14px}
 .uc2 *{box-sizing:border-box}
-.uc2-back{display:inline-block;margin:6px 0 10px;color:var(--lapis);font-weight:700;text-decoration:none}
+.uc2-back{display:inline-flex;align-items:center;min-height:44px;margin:0 0 6px;color:var(--lapis);font-weight:700;text-decoration:none}
 .uc2-panel{border:1px solid var(--line);border-radius:28px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
 .uc2-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:14px 18px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .uc2-orb{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:16px;color:#fff;background:conic-gradient(from 210deg,var(--lapis-d),var(--uc-brand2),var(--uc-brand),var(--lapis-d));box-shadow:0 8px 22px -8px var(--uc-brand2)}
@@ -81,3 +81,8 @@
 @keyframes ucBorder{0%{background-position:0 50%}100%{background-position:300% 50%}}
 @keyframes ucIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.uc2-row,.uc2-drop.drag{animation:none}}
+
+.uc2-up-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:18px 0 8px}.uc2-up-head h3{margin:0;font-size:15px}
+.uc2-up-head input{flex:1 1 180px;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit}
+#upList{list-style:none;padding:0;margin:0;display:grid;gap:8px}.uc2-up-empty{color:var(--ink2);text-align:center}
+.uc2-chip.bad{background:#fde8e8;color:#b42318}

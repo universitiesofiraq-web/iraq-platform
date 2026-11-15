@@ -3,6 +3,17 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
+  function linkify(span, text) { /* الروابط http/https فقط تصبح قابلة للضغط؛ بقية النص كما هو (textContent، بلا HTML) */
+    var re = /https?:\/\/[^\s<>"]+/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      var url = m[0].replace(/[).,!?؛،]+$/, "");
+      if (m.index > last) span.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var a = document.createElement("a"); a.href = url; a.textContent = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dir = "ltr";
+      span.appendChild(a); last = m.index + url.length; re.lastIndex = last;
+    }
+    if (last < text.length) span.appendChild(document.createTextNode(text.slice(last)));
+    return span;
+  }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
   var ERR = { slow_down: "تمهّل قليلاً قبل الرسالة التالية.", unauthorized: "سجّل الدخول لاستعمال الرسائل الخاصة.", not_found: "هذا الحساب غير متاح.",
     cant_message: "لا يمكنك مراسلة هذا الحساب (المراسلة مع زملاء قسمك وممثليك).", you_blocked: "حظرتَ هذا الحساب. ارفع الحظر أولاً." };
@@ -92,7 +103,7 @@
     if (!prev || !sameDay(prev.at, m.created_at)) { log.appendChild(el("div", "day-sep", new Date(m.created_at).toLocaleDateString("ar-IQ", { weekday: "long", day: "numeric", month: "long" }))); prev = null; }
     var mine = m.sender_id === me.id, cont = !!prev && prev.uid === m.sender_id && m.created_at - prev.at < 300000;
     var box = el("article", "message" + (mine ? " mine" : "") + (cont ? " cont" : ""));
-    var bub = el("div", "bubble"), tx = el("span", "msg-text", m.body); tx.dir = "auto";
+    var bub = el("div", "bubble"), tx = linkify(el("span", "msg-text"), m.body || ""); tx.dir = "auto";
     bub.appendChild(tx); bub.appendChild(el("span", "msg-time", clock(m.created_at)));
     var acts = el("span", "msg-actions");
     if (mine) acts.appendChild(act("حذف للطرفين", function () { api("POST", "delete", { message_id: m.id }).then(function (r) { r.status === 200 ? drop(m.id) : fail(r); }); }));

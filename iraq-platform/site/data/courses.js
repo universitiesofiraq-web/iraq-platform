@@ -4,7 +4,7 @@
   القسم يأتي من ?dept= ثم من المحفوظ في المتصفح (iq.dept)، وإلا نعود لصفحة الجامعات.
 */
 var SITE = {
-  title: "المنصة العراقية", subtitle: "ملفات المواد الدراسية لقسمك في مكان واحد.",
+  title: "دفعتنا", subtitle: "ملفات المواد الدراسية لقسمك في مكان واحد.",
   filesBase: "files/", aiEndpoint: "", disclaimer: "",
   university: { name: "", nameEn: "", nameFa: "", image: "", imageWidth: 0, imageHeight: 0, imageAlt: "" }
 };

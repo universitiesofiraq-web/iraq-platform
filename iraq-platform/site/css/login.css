@@ -63,3 +63,4 @@ html[lang=en] .contact{direction:ltr}
 .g-slot{display:flex;justify-content:center;margin:13px 0;min-height:44px}
 .actions .subtitle{margin:0 0 6px}
 .g-slot[hidden],.actions button[hidden]{display:none}
+.back,.lang,.contact-btn{min-height:44px;display:inline-flex;align-items:center}
