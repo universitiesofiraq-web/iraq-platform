@@ -221,7 +221,6 @@
     var facts = el("div", "mv-facts");
     if (prof) { /* المرحلة المسجّلة في الحساب (تتبعها الدردشة) */
       [prof.university, prof.college, prof.department, "المرحلة " + prof.stage].forEach(function (p) { if (p) facts.appendChild(el("span", "", p)); });
-      if (prof.membership === "pending") facts.appendChild(el("span", "", "بانتظار تأكيد الممثل"));
     } else if (u) facts.appendChild(el("span", "", "لم تسجّل قسمك ومرحلتك بعد"));
     if (u && u.admin) facts.appendChild(el("span", "", "مشرف"));
     else if (u) (u.scopes || []).filter(function (x) { return x.level === "rep"; }).forEach(function (x) { facts.appendChild(el("span", "", "ممثل" + (x.label ? " · " + x.label : ""))); });
