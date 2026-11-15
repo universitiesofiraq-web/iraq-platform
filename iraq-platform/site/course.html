@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="المنصة العراقية">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <link rel="stylesheet" href="css/style.css?v=ui1">
   <link rel="stylesheet" href="css/mobile-v1.css?v=m7">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); else if (window.matchMedia("(max-width: 760px)").matches) document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
@@ -107,7 +107,7 @@
   <script src="data/courses.js?v=p3-23"></script>
   <script src="api/uploads.js"></script>
   <script src="js/i18n.js?v=p3-23"></script>
-  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/app.js?v=ui1"></script>
   <script src="js/auth.js?v=p3-23"></script>
   <script src="js/nav.js?v=p3-23"></script>
   <script>
@@ -314,6 +314,8 @@
           t.setAttribute("datetime", f.added);
           fm.appendChild(t);
         }
+        var sz = MS.fileSize && MS.fileSize(f.size);
+        if (sz) fm.appendChild(el("span", "file-date file-size", sz));
         a.appendChild(fm);
         a.appendChild(el("span", "file-open", kind.open));
         if (!f.external) {

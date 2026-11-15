@@ -149,6 +149,11 @@
      المحاضرة الجديدة تُنشأ عند أول ملف، والموجودة يُضاف إليها الملف. بدون الخادم تبقى القائمة فارغة ولا يتأثر شيء. */
   /* أنواع المرفوعات (type): lecture = ملف أو رابط محاضرة، quiz = اختبار تفاعلي، exam = أسئلة السنوات السابقة.
      kind: file = PDF مرفوع، link = رابط خارجي. العنصر برقم محاضرة 0 يخصّ المادة كلها ويُحفظ في c.extras بدل المحاضرات. */
+  /* حجم ملف مقروء (ميغا/كيلوبايت) أو "" إن لم يُعرف */
+  MS.fileSize = function (b) {
+    b = Number(b); if (!(b > 0)) return "";
+    return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " ميغا" : Math.max(1, Math.round(b / 1024)) + " كيلوبايت";
+  };
   MS.applyUploads = function (items) {
     (items || []).forEach(function (u) {
       var c = u && u.id ? MS.course(u.courseId) : null;
@@ -158,6 +163,7 @@
         label: u.label,
         url: external ? u.url : "api/file/" + u.id,
         added: u.added,
+        size: u.size,
         uploaded: true,
         type: u.type || "lecture",
         external: external,

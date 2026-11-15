@@ -162,3 +162,6 @@ button,input,select{font:inherit}
 .up #form{display:grid;gap:12px}
 .ct-note:empty{display:none}
 .iq-top .iq-brand{min-height:44px}
+.sj-main{display:grid;gap:2px;min-width:0;flex:1 1 220px}.sj-name{font-weight:700;color:var(--lapis);text-decoration:none;overflow-wrap:anywhere}.sj-meta{color:var(--ink2)}.sj-err{color:var(--bad);margin:0;width:100%;font-size:.9rem}
+.sj-act a{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
+.sj-main .sj-tag{justify-self:start;margin:4px 0 0}

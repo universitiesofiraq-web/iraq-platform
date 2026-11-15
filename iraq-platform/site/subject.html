@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=7">
+  <link rel="stylesheet" href="css/iq.css?v=8">
 </head>
 <body>
   <header class="iq-top">
@@ -17,7 +17,7 @@
     <nav><a href="catalog.html">الجامعات</a><a href="contribute.html" data-upload-link hidden>رفع ملف</a><a class="iq-login" href="login.html">دخول</a></nav>
   </header>
   <main class="sj">
-    <div class="sj-top"><a href="catalog.html">← الجامعات</a><a id="up" href="contribute.html" data-upload-link hidden>رفع ملف</a></div>
+    <div class="sj-top"><a href="catalog.html">← الجامعات</a><a id="up" href="contribute.html" data-upload-link hidden>رفع ملف لهذه المادة</a></div>
     <div class="crumb" id="crumb"></div>
     <h1 id="title">…</h1>
     <p id="meta" class="crumb"></p>
@@ -39,42 +39,56 @@
     function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
     function href(it) { return it.kind === "link" ? it.url : "/api/file/" + it.id; }
 
+    function size(b) { b = Number(b); return b > 0 ? (b >= 1048576 ? (b / 1048576).toFixed(1) + " ميغا" : Math.max(1, Math.round(b / 1024)) + " كيلوبايت") : ""; }
+    function nameOf(it) { return it.number ? "المحاضرة " + it.number + (it.title ? " — " + it.title : "") : (it.label || it.title || "ملف"); }
+    /* زر يُعطَّل أثناء الطلب ويعرض رفض الخادم بجانب العنصر */
+    function act(btn, row, p, body, done) {
+      btn.disabled = true;
+      post(p, body).then(function (d) {
+        if (d && d.ok) return done ? done() : load();
+        btn.disabled = false;
+        var m = row.querySelector(".sj-err") || row.appendChild(el("p", null, "sj-err"));
+        m.textContent = d && d.error === "forbidden" ? "لا تملك صلاحية هذا الإجراء." : "تعذّر تنفيذ الطلب، حاول مرة أخرى.";
+      }).catch(function () { btn.disabled = false; });
+    }
     function row(it, pending) {
       var r = el("div", null, "sj-item" + (pending ? " sj-pend" : ""));
-      var left = el("div");
-      var a = el("a", (it.number ? "المحاضرة " + it.number + (it.title ? " — " + it.title : "") + " · " : "") + it.label);
-      a.href = href(it); a.target = "_blank"; a.rel = "noopener";
+      var left = el("div", null, "sj-main");
+      var a = el("a", nameOf(it), "sj-name");
+      a.href = href(it); a.target = "_blank"; a.rel = "noopener"; a.dir = "auto";
       left.appendChild(a);
-      if (it.kind !== "link") { var an = el("a", "✎ اكتب وظلّل", "sj-annot"); an.href = "pdf-notes.html?file=" + encodeURIComponent(href(it)); left.appendChild(document.createTextNode(" ")); left.appendChild(an); }
-      var s = el("small", it.added ? " " + it.added : ""); left.appendChild(s);
+      var meta = [it.number ? it.label : "", it.added || "", size(it.size)].filter(Boolean).join(" · ");
+      if (meta) left.appendChild(el("small", meta, "sj-meta"));
       if (pending) left.appendChild(el("span", "بانتظار الموافقة", "sj-tag"));
       r.appendChild(left);
-      var act = el("div", null, "sj-act");
+      var acts = el("div", null, "sj-act");
+      if (it.kind !== "link") { var an = el("a", "✎ اكتب وظلّل"); an.href = "pdf-notes.html?file=" + encodeURIComponent(href(it)); acts.appendChild(an); }
       if (pending && canReview) {
         var ok = el("button", "قبول"), no = el("button", "رفض");
-        ok.onclick = function () { post("review", { id: it.id, action: "approve" }).then(load); };
-        no.onclick = function () { post("review", { id: it.id, action: "reject" }).then(load); };
-        act.appendChild(ok); act.appendChild(no);
+        ok.onclick = function () { act(ok, r, "review", { id: it.id, action: "approve" }); };
+        no.onclick = function () { act(no, r, "review", { id: it.id, action: "reject" }); };
+        acts.appendChild(ok); acts.appendChild(no);
       } else if (!pending) {
         var rp = el("button", "إبلاغ");
         rp.onclick = function () {
           rp.hidden = true;
           var f = el("div", null, "sj-rep"), inp = el("input"), send = el("button", "إرسال");
-          inp.placeholder = "سبب الإبلاغ (حقوق نشر، ملف خاطئ...)"; inp.maxLength = 300;
+          inp.placeholder = "سبب الإبلاغ (حقوق نشر، ملف خاطئ...)"; inp.maxLength = 300; inp.setAttribute("aria-label", "سبب الإبلاغ");
           send.onclick = function () {
-            if (!inp.value.trim()) return;
-            post("report", { id: it.id, reason: inp.value }).then(function (d) { f.textContent = d.ok ? "شكراً، تم استلام البلاغ." : "تعذّر الإرسال."; });
+            if (!inp.value.trim()) { inp.focus(); return; }
+            send.disabled = true;
+            post("report", { id: it.id, reason: inp.value }).then(function (d) { if (d.ok) f.textContent = "شكراً، تم استلام البلاغ."; else { send.disabled = false; f.appendChild(el("p", "تعذّر الإرسال، حاول مرة أخرى.", "sj-err")); } });
           };
-          f.appendChild(inp); f.appendChild(send); r.appendChild(f);
+          f.appendChild(inp); f.appendChild(send); r.appendChild(f); inp.focus();
         };
-        act.appendChild(rp);
+        acts.appendChild(rp);
       }
       if (canReview) {
         var del = el("button", "حذف");
-        del.onclick = function () { if (confirm("حذف نهائي؟")) post("delete", { id: it.id }).then(load); };
-        act.appendChild(del);
+        del.onclick = function () { if (confirm("حذف «" + nameOf(it) + "» من المنصة نهائياً؟ لن يراه الطلاب بعد الآن.")) act(del, r, "delete", { id: it.id }); };
+        acts.appendChild(del);
       }
-      r.appendChild(act);
+      r.appendChild(acts);
       return r;
     }
 

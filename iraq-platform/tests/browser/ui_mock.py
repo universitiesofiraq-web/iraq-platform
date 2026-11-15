@@ -75,7 +75,7 @@ def route_for(role):
             seen.append(r.request.method + " " + u.split("127.0.0.1:8797")[-1].split("?")[0])
             return r.fulfill(status=404, content_type="application/json", body='{"ok":false,"error":"not_found"}')
         body, code = (res if isinstance(res, tuple) else (res, 200))
-        if u.endswith("uploads.js"): return r.fulfill(status=200, content_type="application/javascript", body="window.__UPLOADS=" + json.dumps(body))
+        if u.endswith("uploads.js"): return r.fulfill(status=200, content_type="application/javascript", body="window.UPLOADS=" + json.dumps(body.get("items", []) if isinstance(body, dict) else []))
         r.fulfill(status=code, content_type="application/json", body=body if isinstance(body, str) else json.dumps(body))
     return handler
 
