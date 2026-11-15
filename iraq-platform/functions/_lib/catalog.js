@@ -149,6 +149,20 @@ async function handleCatalogRaw(req, env) {
            WHERE st.department_id=? AND ${visible} ORDER BY st.number, t.number, sb.name_ar`, id);
         return json({ ok: true, items });
       }
+      if (part === "search") { // بحث المواد والأساتذة في كل الجامعات المفعّلة (عام)
+        const term = String(q.get("q") || "").replace(/\s+/g, " ").trim().slice(0, 60);
+        if (term.length < 2) return json({ ok: true, items: [] });
+        const like = "%" + term.replace(/[\\%_]/g, "\\$&") + "%";
+        const items = await all(env,
+          `SELECT sb.id, sb.name_ar, sb.name_en, sb.professor, st.number AS stage, t.number AS term,
+                  d.id AS department_id, d.name_ar AS department, c.name_ar AS college, u.name_ar AS university
+           FROM subjects sb JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+           JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
+           JOIN universities u ON u.id=c.university_id
+           WHERE ${visible} AND (sb.name_ar LIKE ?1 ESCAPE '\\' OR sb.name_en LIKE ?1 ESCAPE '\\' OR sb.professor LIKE ?1 ESCAPE '\\')
+           ORDER BY sb.name_ar LIMIT 30`, like);
+        return json({ ok: true, items });
+      }
       if (part === "department") {
         const id = num(q.get("id"));
         if (!id) return fail("bad_request", 400);
