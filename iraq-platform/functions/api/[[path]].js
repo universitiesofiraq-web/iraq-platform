@@ -14,6 +14,7 @@ import { handleInvites } from "../_lib/invites.js";
 import { handleActivation } from "../_lib/activation.js";
 import { handleGroupChat } from "../_lib/group_chat.js";
 import { handleAvatar } from "../_lib/avatar.js";
+import { handleDeptStats } from "../_lib/dept_stats.js";
 import { handleExams } from "../_lib/exams.js";
 import { handleCollegeLogo } from "../_lib/college_logo.js";
 import { handleDm } from "../_lib/dm.js";
@@ -33,6 +34,8 @@ export async function onRequest({ request, env }) {
   if (uploadOptions) return uploadOptions;
   const catRes = await handleCatalog(request, env);
   if (catRes) return catRes;
+  const statsRes = await handleDeptStats(request, env); // إحصاءات القسم للممثل
+  if (statsRes) return statsRes;
   const examRes = await handleExams(request, env); // تقويم الامتحانات
   if (examRes) return examRes;
   const logoRes = await handleCollegeLogo(request, env, { currentUser }); // شعار الكلية
