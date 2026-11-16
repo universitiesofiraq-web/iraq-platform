@@ -25,14 +25,14 @@ test("offline caching excludes private APIs and keeps only explicitly public upl
     self: { addEventListener: (name, handler) => { handlers[name] = handler; }, clients: { claim() {} } },
     caches: {
       open: async () => cache,
-      keys: async () => ["ms-v50", "ms-v51", "ms-files", "ms-files-public", "another-app"],
+      keys: async () => ["ms-v50", "ms-v51", "ms-v52", "ms-files", "ms-files-public", "another-app"],
       delete: async key => removed.push(key)
     }
   });
   let activation;
   handlers.activate({ waitUntil: task => { activation = task; } });
   await activation;
-  assert.deepEqual(removed, ["ms-v50", "ms-files"]);
+  assert.deepEqual(removed, ["ms-v50", "ms-v51", "ms-files"]);
 
   const fetchThroughWorker = path => {
     let response;
