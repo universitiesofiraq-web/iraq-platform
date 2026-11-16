@@ -1,5 +1,5 @@
 // functions/_lib/avatar.js — صورة الطالب واسمه الظاهر في الدردشة والقائمة.
-//   GET  /api/avatar/<id>          صورة JPEG (لمن سجّل الدخول فقط؛ تُخزَّن في المتصفح، والرابط فيه ?v=<updated_at>)
+//   GET  /api/avatar/<id>          صورة JPEG لحساب نشط (لمن سجّل الدخول فقط)
 //   GET  /api/profile/public       {display_name, has_avatar, updated_at} للحساب الحالي
 //   POST /api/profile/public       {name?} أو {image?: "data:image/jpeg;base64,..."} أو {remove: true}
 // لا يغيّر الاسم الحقيقي ولا رقم الجواز ولا بيانات الدرجات: هذا اسم عرض فقط.
@@ -25,10 +25,12 @@ export async function handleAvatar(req, env, opts = {}) {
 
   try {
     if (img && req.method === "GET") {
-      const row = await env.DB.prepare("SELECT avatar FROM user_avatars WHERE user_id=?").bind(Number(img[1])).first();
+      const row = await env.DB.prepare(
+        "SELECT a.avatar FROM user_avatars a JOIN users u ON u.id=a.user_id WHERE a.user_id=? AND u.active=1"
+      ).bind(Number(img[1])).first();
       if (!row || !row.avatar) return new Response("", { status: 404, headers: { "cache-control": "no-store" } });
       const bin = Uint8Array.from(atob(row.avatar), (c) => c.charCodeAt(0));
-      return new Response(bin, { headers: { "content-type": "image/jpeg", "cache-control": "private, max-age=604800", "x-content-type-options": "nosniff" } });
+      return new Response(bin, { headers: { "content-type": "image/jpeg", "cache-control": "private, no-cache", "x-content-type-options": "nosniff" } });
     }
     if (!isPub) return fail("not_found", 404);
     if (req.method === "GET") {
