@@ -148,8 +148,21 @@ async function deleteAccount(req, env, user) {
   const b = await readJson(req);
   if (!b || b.confirm !== "DELETE") return fail("bad_request", 400);
   const id = user.id, sid = String(id);
+  const owner = isAdminUser(user, env);
+  const args = ["deleted-" + id + "@deleted.invalid", "حساب محذوف", "deleted-" + id, id];
+  const ownerGuard = owner ? ` AND EXISTS (
+    SELECT 1 FROM users AS other
+    WHERE other.active=1 AND other.id<>users.id AND lower(other.email) IN (SELECT value FROM json_each(?))
+  )` : "";
+  if (owner) args.push(JSON.stringify(adminList(env)));
+  // التحقق وإيقاف الحساب في كتابة واحدة حتى لا يستطيع مالكان حذف حسابيهما معاً.
+  const updated = await env.DB.prepare(
+    "UPDATE users SET email=?, name=?, google_sub=?, active=0 WHERE id=? AND active=1" + ownerGuard
+  ).bind(...args).run();
+  if (!updated.meta.changes) return fail(owner ? "last_owner" : "account_inactive", 409);
   const stmts = [
     ["DELETE FROM sessions WHERE user_id = ?", id], ["DELETE FROM user_data WHERE user_id = ?", id],
+    ["DELETE FROM user_avatars WHERE user_id = ?", id],
     ["DELETE FROM user_profile WHERE user_id = ?", id], ["DELETE FROM user_scopes WHERE user_id = ?", id],
     ["DELETE FROM scopes WHERE user_id = ?", id], ["DELETE FROM rep_requests WHERE user_id = ?", id],
     ["DELETE FROM pdf_notes WHERE user_id = ?", id], ["DELETE FROM pdf_assets WHERE user_id = ?", id],
@@ -165,8 +178,6 @@ async function deleteAccount(req, env, user) {
   for (const [q, v] of stmts) {
     try { await env.DB.prepare(q).bind(v).run(); } catch (e) { /* جدول غير موجود بعد */ }
   }
-  await env.DB.prepare("UPDATE users SET email = ?, name = ?, google_sub = ?, active = 0 WHERE id = ?")
-    .bind("deleted-" + id + "@deleted.invalid", "حساب محذوف", "deleted-" + id, id).run();
   return json({ ok: true }, 200, { "set-cookie": cookieHeader("", req, 0) });
 }
 
