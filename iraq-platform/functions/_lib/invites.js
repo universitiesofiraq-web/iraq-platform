@@ -19,7 +19,7 @@ export function newCode() {
   return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
 }
 
-// يحلّ رمزاً صالحاً (غير موقوف، جامعته غير موقوفة) إلى مكانه في الدليل، وإلا null
+// يحلّ رمزاً صالحاً لجامعة مفعّلة إلى مكانه في الدليل، وإلا null.
 export async function resolveInvite(env, code) {
   if (typeof code !== "string" || !/^[A-Z2-9]{10}$/.test(code)) return null;
   const row = await env.DB.prepare(
@@ -32,7 +32,7 @@ export async function resolveInvite(env, code) {
      LEFT JOIN university_onboarding o ON o.university_id=u.id
      WHERE i.code=? AND i.revoked_at IS NULL`
   ).bind(code).first();
-  if (!row || row.state === "suspended") return null;
+  if (row?.state !== "active") return null;
   return row;
 }
 
