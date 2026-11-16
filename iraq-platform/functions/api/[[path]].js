@@ -6,7 +6,7 @@ import { d1Manifest } from "../_lib/d1manifest.js";
 import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
 import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
-import { handleOnboarding } from "../_lib/onboarding.js";
+import { activeUploadCourses, handleOnboarding } from "../_lib/onboarding.js";
 import { handleAdminWorkspace } from "../_lib/admin-workspace.js";
 import { handleUploadOptions } from "../_lib/upload-options.js";
 import { handleCatalog } from "../_lib/catalog.js";
@@ -65,6 +65,7 @@ export async function onRequest({ request, env }) {
   return handle(request, {
     store: kvStore(env.LECTURES),
     manifest: env.DB ? d1Manifest(env.DB, env.LECTURES) : undefined, // القائمة في D1 (تُستورد من KV مرة واحدة)
+    activeCourses: courseIds => activeUploadCourses(env.DB, courseIds),
     env: (k) => env[k],
     ip: request.headers.get("CF-Connecting-IP") || "",
     now: () => Date.now(),
