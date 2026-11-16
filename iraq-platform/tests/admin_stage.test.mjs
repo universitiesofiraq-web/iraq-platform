@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { handleAdminWorkspace } from "../functions/_lib/admin-workspace.js";
 import { handleAuth, uploadAccount } from "../functions/_lib/auth.js";
 import { handle } from "../netlify/lib/core.mjs";
+import { onRequest } from "../functions/api/[[path]].js";
 import { database, seedAcademic, signedRequest } from "./helpers/d1.mjs";
 
 function fixture() {
@@ -18,6 +19,44 @@ function fixture() {
   `);
   return { DB, sql, env: { DB, ADMIN_EMAILS: "owner@example.test" } };
 }
+
+test("published uploads recheck university activation on lists and direct file requests", async () => {
+  const { env, sql } = fixture();
+  sql.exec("INSERT INTO university_onboarding VALUES (1,'active',2,1,1,1)");
+  const id = "aaaaaaaa-aaaa-aaaa-aaaa-000000000001";
+  const inactive = "aaaaaaaa-aaaa-aaaa-aaaa-000000000002";
+  const legacy = "aaaaaaaa-aaaa-aaaa-aaaa-000000000003";
+  const entries = [[id, "s11"], [inactive, "s21"], [legacy, "legacy-course"]]
+    .map(([fileId, courseId]) => ({ id: fileId, courseId, kind: "file", status: "approved", size: 5, chunks: 1 }));
+  env.LECTURES = {
+    async get(key) {
+      if (key === "manifest.json") return entries;
+      if (key.startsWith("chunks/")) return new TextEncoder().encode("%PDF-").buffer;
+      return null;
+    }
+  };
+  const request = (path, who) => onRequest({ request: signedRequest(sql, "/api/" + path, who), env });
+  const listed = async () => (await (await request("uploads")).json()).items.map(entry => entry.id);
+  assert.deepEqual(await listed(), [id, legacy]);
+  assert.match(await (await request("uploads.js")).text(), new RegExp(id));
+  assert.equal((await request("file/" + inactive)).status, 404);
+  const file = await request("file/" + id);
+  assert.match(file.headers.get("cache-control"), /must-revalidate/);
+  assert.equal(await file.text(), "%PDF-");
+
+  sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
+  assert.deepEqual(await listed(), [legacy]);
+  assert.doesNotMatch(await (await request("uploads.js")).text(), new RegExp(id));
+  assert.equal((await request("file/" + id)).status, 404);
+  const head = await onRequest({ request: new Request("https://example.test/api/file/" + id, { method: "HEAD" }), env });
+  assert.equal(head.status, 404);
+  const managed = await request("file/" + id, 5);
+  assert.equal(managed.headers.get("cache-control"), "private, no-store");
+  assert.equal(await managed.text(), "%PDF-");
+  const withoutDatabase = { LECTURES: env.LECTURES };
+  const unavailable = await onRequest({ request: new Request("https://example.test/api/file/" + id), env: withoutDatabase });
+  assert.equal(unavailable.status, 404);
+});
 
 test("stage appointment is unique, atomic, audited and restricted to an ancestor", async () => {
   const { env, sql } = fixture();
