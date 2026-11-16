@@ -29,6 +29,8 @@ test("invite links: scoped creation, public resolution, revocation and source tr
   const dept = (await (await create(5, "department", 1)).json()).code;
   const stage = (await (await create(7, "stage", 12)).json()).code;
   assert.match(dept, /^[A-Z2-9]{10}$/);
+  assert.equal((await inv("/api/invite?code=" + stage, 9)).status, 404);
+  sql.exec("INSERT INTO university_onboarding (university_id,state,manager_id,verified_at,updated_at,updated_by) VALUES (1,'active',1,1,1,1)");
   const resolved = await (await inv("/api/invite?code=" + stage, 9)).json();
   assert.deepEqual([resolved.department_id, resolved.stage, resolved.type], [1, 2, "stage"]);
   assert.equal((await inv("/api/invite?code=AAAAAAAAAA", 9)).status, 404);
@@ -40,6 +42,10 @@ test("invite links: scoped creation, public resolution, revocation and source tr
   assert.equal((await join(10, { department_id: 1, stage: 3, invite: stage })).status, 200); // مرحلة مختلفة: تسجيل مباشر
   const counts = sql.prepare("SELECT invite_code AS c, COUNT(*) AS n FROM signup_events GROUP BY invite_code ORDER BY n").all();
   assert.deepEqual(counts.map(r => [r.c, r.n]), [[null, 1], [stage, 1]]);
+
+  sql.exec("UPDATE university_onboarding SET state='suspended' WHERE university_id=1");
+  assert.equal((await inv("/api/invite?code=" + stage, 9)).status, 404);
+  assert.equal((await join(9, { department_id: 1, stage: 2, invite: stage })).status, 403);
 
   assert.equal((await inv("/api/admin/invites", 9, { action: "revoke", code: dept })).status, 403);
   assert.equal((await inv("/api/admin/invites", 5, { action: "revoke", code: dept })).status, 200);

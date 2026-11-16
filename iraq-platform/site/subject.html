@@ -38,9 +38,15 @@
       return fetch("/api/" + p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json(); });
     }
     function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-    var CF = "ms-files", canSave = !!(window.caches && window.fetch);
+    var CF = "ms-files-public", canSave = !!(window.caches && window.fetch);
     function isSaved(path) { return canSave ? caches.open(CF).then(function (c) { return c.match(path); }).then(Boolean).catch(function () { return false; }) : Promise.resolve(false); }
-    function savePath(path) { return caches.open(CF).then(function (c) { return fetch(path).then(function (r) { if (!r.ok) throw new Error("x"); return c.put(path, r); }); }); }
+    function savePath(path) {
+      return fetch(path, { cache: "no-store" }).then(function (r) {
+        var policy = r.headers.get("cache-control") || "";
+        if (r.status !== 200 || r.redirected || !/\bpublic\b/i.test(policy) || /\b(?:private|no-store)\b/i.test(policy)) throw new Error("file_not_available_offline");
+        return caches.open(CF).then(function (c) { return c.put(path, r); });
+      });
+    }
     function unsavePath(path) { return caches.open(CF).then(function (c) { return c.delete(path); }); }
     function offlineBtn(it) {
       var path = "/api/file/" + it.id, b = el("button", "حفظ بلا إنترنت");

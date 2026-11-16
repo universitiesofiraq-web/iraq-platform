@@ -273,9 +273,19 @@
       if (u.admin) sheet.appendChild(row("طلبات التفعيل", "activation-requests.html"));
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep"; })) sheet.appendChild(row("روابط الدعوة", "invites.html"));
       if (u.admin || (u.scopes || []).some(function (x) { return x.level === "rep" && (x.type === "college" || x.type === "university"); })) sheet.appendChild(row("مركز الرفع", "upload-center.html"));
-      sheet.appendChild(row("تسجيل الخروج", null, function () {
-        if (window.MSAuth && MSAuth.logout) MSAuth.logout().then(function () { location.reload(); });
-      }));
+      var logoutStatus = el("p", "mv-who");
+      logoutStatus.setAttribute("role", "status");
+      var logoutButton = row("تسجيل الخروج", null, function () {
+        if (!window.MSAuth || !MSAuth.logout) return;
+        logoutButton.disabled = true;
+        logoutStatus.textContent = "";
+        MSAuth.logout().then(function () { location.reload(); }, function () {
+          logoutButton.disabled = false;
+          logoutStatus.textContent = "تعذّر تسجيل الخروج. تحقق من الاتصال وحاول مرة أخرى.";
+        });
+      });
+      sheet.appendChild(logoutButton);
+      sheet.appendChild(logoutStatus);
     } else {
       sheet.appendChild(row("تسجيل الدخول", "login.html?next=" + encodeURIComponent(location.pathname + location.search)));
     }

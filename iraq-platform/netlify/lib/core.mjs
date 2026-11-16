@@ -173,9 +173,16 @@ async function dropChunks(deps, prefix, n) {
 }
 
 /* ---------- المسارات العامة ---------- */
+async function publicUploads(deps) {
+  const list = (await readManifest(deps)).filter(visible);
+  if (!deps.activeCourses) return list.map(publicEntry);
+  const active = await deps.activeCourses(list.map(e => e.courseId));
+  return list.filter(e => active.has(e.courseId)).map(publicEntry);
+}
+
 async function uploadsJs(deps) {
   try {
-    const list = (await readManifest(deps)).filter(visible).map(publicEntry);
+    const list = await publicUploads(deps);
     return new Response("window.UPLOADS = " + JSON.stringify(list) + ";\n", {
       headers: {
         "content-type": "application/javascript; charset=utf-8",
@@ -194,7 +201,8 @@ async function uploadsJs(deps) {
 async function serveFile(id, method, deps, req) {
   const entry = (await readManifest(deps)).find((e) => e.id === id);
   if (!entry || entry.kind === "link") return fail("not_found", 404);
-  if (!visible(entry)) {
+  const publicFile = visible(entry) && (!deps.activeCourses || (await deps.activeCourses([entry.courseId])).has(entry.courseId));
+  if (!publicFile) {
     const a = deps.account && (await deps.account(req));
     if (!a || !(await mayManage(a, entry.courseId))) return fail("not_found", 404);
   }
@@ -202,7 +210,7 @@ async function serveFile(id, method, deps, req) {
     "content-type": "application/pdf",
     "content-disposition": `inline; filename="lecture.pdf"; filename*=UTF-8''${encodeURIComponent(entry.filename || "lecture.pdf")}`,
     "content-length": String(entry.size),
-    "cache-control": visible(entry) ? "public, max-age=86400" : "private, no-store",
+    "cache-control": publicFile ? "public, max-age=0, must-revalidate" : "private, no-store",
     "x-content-type-options": "nosniff"
   };
   if (method === "HEAD") return new Response(null, { status: 200, headers });
@@ -453,7 +461,7 @@ export async function handle(req, deps) {
     const method = req.method;
 
     if (method === "GET" && path === "uploads.js") return await uploadsJs(deps);
-    if (method === "GET" && path === "uploads") return json({ ok: true, items: (await readManifest(deps)).filter(visible).map(publicEntry) });
+    if (method === "GET" && path === "uploads") return json({ ok: true, items: await publicUploads(deps) });
     const fm = path.match(/^file\/([0-9a-f-]{36})$/);
     if (fm && (method === "GET" || method === "HEAD")) return await serveFile(fm[1], method, deps, req);
 

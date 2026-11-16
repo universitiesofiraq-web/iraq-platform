@@ -138,7 +138,10 @@
         if (d && d.error === "unauthorized") { location.href = loginUrl(); return; }
         list.innerHTML = "";
         var items = (d && d.items) || [];
-        if (!items.length) list.innerHTML = '<div class="cg-empty">لا توجد عناصر. تواصل معنا لإضافتها.</div>';
+        if (!items.length) {
+          list.innerHTML = '<div class="cg-empty"></div>';
+          list.firstElementChild.textContent = lv === 0 ? "لا توجد جامعات مفعّلة للتسجيل حالياً." : "لا توجد عناصر متاحة في هذا الاختيار.";
+        }
         items.forEach(function (it) {
           var row = document.createElement("div"); row.className = "cg-item";
           if (lv === 0) { var lg = document.createElement("img"); lg.className = "uc-logo-img"; lg.alt = ""; lg.loading = "lazy"; lg.src = "/api/university-logo/" + it.id; lg.onerror = function () { lg.remove(); }; row.appendChild(lg); }
@@ -160,6 +163,29 @@
       });
     }
 
+    function offerActivation(departmentId) {
+      var message = $("msg");
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-primary";
+      button.textContent = "إرسال طلب تفعيل القسم";
+      button.onclick = function () {
+        button.disabled = true;
+        fetch("/api/activation-request", {
+          method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ department_id: departmentId })
+        }).then(function (r) { return r.json(); }).then(function (r) {
+          if (!r.ok) throw new Error(r.error);
+          button.textContent = "تم إرسال الطلب ✓";
+        }).catch(function () {
+          button.disabled = false;
+          button.textContent = "تعذّر إرسال الطلب. أعد المحاولة";
+        });
+      };
+      message.appendChild(document.createTextNode(" "));
+      message.appendChild(button);
+    }
+
     function submit(stage) {
       var dep = stack[2];
       $("msg").textContent = "جارٍ التسجيل…";
@@ -168,23 +194,9 @@
         body: JSON.stringify({ department_id: dep.id, stage: stage, invite: INFO ? INV : undefined })
       }).then(function (r) { return r.json(); }).then(function (r) {
         if (!r.ok) {
-          $("msg").textContent = r.error === "suspended" ? "هذه الجامعة موقوفة مؤقتاً. تواصل مع إدارة المنصة." :
+          $("msg").textContent = r.error === "suspended" || r.error === "university_inactive" ? "التسجيل في هذه الجامعة غير متاح حالياً." :
             r.error === "unauthorized" ? "سجّل دخولك أولاً." : "تعذّر التسجيل، حاول مرة أخرى.";
-          return;
-        }
-        if (r.university_state !== "active") { // الجامعة في الدليل لكنها غير مفعّلة بعد: نحفظ التسجيل ونوضّح الحالة
-          $("list").innerHTML = '<div class="jn-done"><b>تم حفظ تسجيلك</b>جامعتك لم تُفعَّل في المنصة بعد. أرسل طلب تفعيل قسمك لتسرّع الإدارة تفعيله.</div>';
-          var rb = document.createElement("button"); rb.type = "button"; rb.className = "btn btn-primary"; rb.textContent = "إرسال طلب تفعيل القسم";
-          function sent() { rb.disabled = true; rb.textContent = "تم إرسال الطلب ✓"; $("msg").textContent = "سنفعّل قسمك قريباً، وستفتح صفحته تلقائياً عند التفعيل."; }
-          rb.onclick = function () {
-            rb.disabled = true; $("msg").textContent = "جارٍ الإرسال…";
-            fetch("/api/activation-request", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ department_id: dep.id }) })
-              .then(function (x) { return x.json(); }).then(function (x) { x.ok ? sent() : (rb.disabled = false, $("msg").textContent = "تعذّر إرسال الطلب، حاول مرة أخرى."); })
-              .catch(function () { rb.disabled = false; $("msg").textContent = "تعذّر الاتصال بالخادم."; });
-          };
-          $("list").appendChild(rb);
-          fetch("/api/activation-request?department_id=" + dep.id, { credentials: "same-origin" }).then(function (x) { return x.json(); }).then(function (x) { if (x && x.sent) sent(); }).catch(function () {});
-          $("msg").textContent = "";
+          if (r.error === "university_inactive") offerActivation(dep.id);
           return;
         }
         try { localStorage.setItem("iq.dept", JSON.stringify({ id: dep.id, name: dep.name + " — " + stack[1].name })); } catch (e) { /* لا شيء */ }
@@ -216,13 +228,17 @@
       if (INV) {
         return fetch("/api/invite?code=" + encodeURIComponent(INV), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (i) {
           if (i && i.ok) fromInvite(i);
-          else { $("msg").textContent = "رابط الدعوة غير صالح أو أُوقف. اختر جامعتك يدوياً."; INV = ""; load(); }
+          else { INV = ""; load(); $("msg").textContent = "رابط الدعوة غير متاح. اختر جامعتك يدوياً."; }
         });
       }
       if (d && d.profile && !change) {
         $("lead").textContent = "تسجيلك الحالي: " + d.profile.department + " — " + d.profile.university + ". ما تختاره أدناه يغيّر تسجيلك إلى القسم الجديد.";
       }
       load();
+      if (d && d.profile && !change && d.profile.university_state === "registered") {
+        $("msg").textContent = "جامعتك بانتظار التفعيل.";
+        offerActivation(d.profile.department_id);
+      }
     }).catch(function (error) {
       if (error.code === "unauthorized") { location.href = loginUrl(); return; }
       IQApi.showError($("list"), error);
