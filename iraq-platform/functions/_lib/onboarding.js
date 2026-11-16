@@ -6,6 +6,23 @@ import { isGlobalAdmin } from "./scope.js";
 export const ACTIVE_UNIVERSITY =
   "EXISTS (SELECT 1 FROM university_onboarding o WHERE o.university_id=u.id AND o.state='active')";
 
+export async function activeUploadCourses(DB, courseIds) {
+  const active = new Set(), subjects = new Set();
+  for (const courseId of courseIds) {
+    if (/^s\d+$/.test(courseId)) subjects.add(Number(courseId.slice(1)));
+    else active.add(courseId); // المواد القديمة غير المرتبطة بشجرة D1
+  }
+  if (!DB || !subjects.size) return active;
+  const { results } = await DB.prepare(`SELECT sb.id FROM subjects sb
+    JOIN terms t ON t.id=sb.term_id JOIN stages st ON st.id=t.stage_id
+    JOIN departments d ON d.id=st.department_id JOIN colleges c ON c.id=d.college_id
+    JOIN universities u ON u.id=c.university_id
+    WHERE sb.id IN (SELECT value FROM json_each(?)) AND ${ACTIVE_UNIVERSITY}`)
+    .bind(JSON.stringify([...subjects])).all();
+  for (const row of results || []) active.add("s" + row.id);
+  return active;
+}
+
 const filters = {
   active: "o.state='active'",
   registered: "o.state='registered'",
