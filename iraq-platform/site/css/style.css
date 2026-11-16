@@ -1350,6 +1350,8 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
   html.nav-open, html.nav-open body { overflow: hidden; }
 }
 .uni-photo img { max-height: 260px; aspect-ratio: auto; }
+/* اللابتوب والآيباد: نخفي الشرح والاختصارات المكررة لأن القائمة الجانبية تغطيها */
+@media (min-width: 721px) { .wide-hide { display: none; } }
 @media (max-width: 720px) {
   :root { --banner-h: 168px; }
   .sem-head { padding-top: var(--space-4); }
