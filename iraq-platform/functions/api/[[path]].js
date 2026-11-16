@@ -1,5 +1,6 @@
 // functions/api/[[path]].js — نقطة دخول Cloudflare Pages Functions لمسارات /api/*.
 // يتطلب ربط KV باسم LECTURES وسرّ UPLOAD_CODES من لوحة Cloudflare. بدون الربط: القائمة فارغة وبقية المسارات 503.
+import { handleLeague } from "../_lib/league.js";
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
 import { d1Manifest } from "../_lib/d1manifest.js";
@@ -22,6 +23,8 @@ import { handleDm } from "../_lib/dm.js";
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
   if (authRes) return authRes;
+  const leagueRes = await handleLeague(request, env);
+  if (leagueRes) return leagueRes;
   const onboardingRes = await handleOnboarding(request, env);
   if (onboardingRes) return onboardingRes;
   const workspaceRes = await handleAdminWorkspace(request, env);
