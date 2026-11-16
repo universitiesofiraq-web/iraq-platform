@@ -682,7 +682,7 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 /* ---- الواجهة ---- */
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1fr); /* عمود واحد على كل الشاشات: نفس ترتيب الهاتف */
   align-items: center;
   gap: var(--space-6);
   padding-block: var(--space-6);
@@ -921,7 +921,7 @@ a.quick-item:hover, button.quick-item:hover { border-color: var(--color-secondar
 .donut-legend { color: var(--color-muted); font-size: var(--text-sm); line-height: 1.8; }
 .donut-legend strong { color: var(--color-text); }
 
-.tools-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.tools-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 .panel { padding: var(--space-5); min-width: 0; }
 .panel-title { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 700; color: var(--color-muted); }
 .panel-title .ico { color: var(--color-secondary); }
@@ -995,7 +995,7 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
 .prof-subjects span { color: var(--color-secondary-ink); font-size: var(--text-xs); line-height: 1.6; }
 
 /* ---- المساعدة: الخطوات والأسئلة الشائعة ---- */
-.help-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+.help-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
 .steps { display: grid; gap: var(--space-4); }
 .step { display: flex; gap: var(--space-3); align-items: flex-start; }
 .step-num {
@@ -1349,13 +1349,7 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
   .sidebar.open + .scrim { opacity: 1; visibility: visible; transition: opacity 0.2s ease; }
   html.nav-open, html.nav-open body { overflow: hidden; }
 }
-@media (max-width: 960px) {
-  .hero-grid { grid-template-columns: 1fr; gap: var(--space-5); }
-  .uni-photo img { max-height: 220px; aspect-ratio: auto; }
-  .tools-grid { grid-template-columns: 1fr 1fr; }
-  .tools-grid > :last-child { grid-column: 1 / -1; }
-  .help-grid { grid-template-columns: 1fr; }
-}
+.uni-photo img { max-height: 260px; aspect-ratio: auto; }
 @media (max-width: 720px) {
   :root { --banner-h: 168px; }
   .sem-head { padding-top: var(--space-4); }
