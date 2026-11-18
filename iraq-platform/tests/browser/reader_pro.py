@@ -50,6 +50,11 @@ with sync_playwright() as p:
     pg.click("#st-docmenu-btn"); pg.wait_for_timeout(200); pg.click("#medixa-dark"); pg.wait_for_timeout(200)
     ck("menu: night button switches the platform theme", pg.evaluate("localStorage.getItem('ms.theme')") == '"dark"' and pg.evaluate("document.body.classList.contains('medixa-dark') && document.documentElement.dataset.theme==='dark'"))
     ck("menu: closes after choosing", pg.evaluate("document.getElementById('st-docmenu').hidden"))
+    pg.click("#st-docmenu-btn"); pg.wait_for_timeout(200); pg.click("#medixa-suite-toggle"); pg.wait_for_timeout(400)
+    ck("study space: platform name and night surface", pg.evaluate("document.querySelector('#medixa-suite .suite-head b').textContent") == "مساحة الدراسة"
+       and pg.evaluate("getComputedStyle(document.getElementById('medixa-suite')).backgroundColor") != "rgb(248, 251, 252)")
+    ck("no old English brand labels in the reader", pg.evaluate("!/MEDIXA|Study Mask|Study Suite/.test(document.body.innerText)"))
+    pg.keyboard.press("Escape"); pg.evaluate("document.getElementById('medixa-suite').classList.remove('open')")
     pg.click("#medixa-thumbs-toggle"); pg.wait_for_timeout(300)
     pg.click("#studio-settings"); pg.wait_for_timeout(300)
     z = pg.evaluate("""(()=>{const t=document.getElementById('studio-toolbar'),p=document.querySelector('.st-panel:not([hidden])');
