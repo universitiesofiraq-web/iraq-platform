@@ -54,6 +54,13 @@
   .mv-home .mv-tile:first-child .mv-ic { color: #ffe1a4; background: #ffffff14; }
   .mv-home .mv-tile:first-child small { color: #d6e8ed; }
   .mv-home .mv-tile.is-soon { background: var(--ds-surface); box-shadow: none; }
+  /* «دفتري»: بطاقة عريضة بشكل تطبيق */
+  .mv-home .mv-tile.mv-app {
+    grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: flex-start;
+    min-height: 84px; gap: 14px; background: linear-gradient(120deg, #1d5a6b, #1b3a66); border-color: #2b5f73; color: #fff;
+  }
+  .mv-home .mv-tile.mv-app .mv-ic { color: #ffe1a4; background: #ffffff1f; width: 48px; height: 48px; }
+  .mv-home .mv-tile.mv-app small { color: #d6e8ed; }
   body.mv[data-mv="home"] :is(#announcements,#latest) h2 {
     padding-inline-start: 10px; border-inline-start: 3px solid var(--ds-gold);
   }
@@ -931,7 +938,7 @@
   }).catch(function(){});
 }catch(e){}})();
 </script>
-<script src="js/mobile-v1.js?v=m12"></script>
+<script src="js/mobile-v1.js?v=m13"></script>
 <script>
 (function(){try{
   if(!window.IQ_DEPT)return;
