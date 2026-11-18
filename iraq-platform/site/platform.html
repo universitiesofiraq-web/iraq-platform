@@ -18,6 +18,69 @@
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
     try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
   </script>
+<style id="student-dashboard-design">
+  .study-art { display: none; }
+  body.mv[data-mv="home"] .hero-text {
+    isolation: isolate;
+    min-height: clamp(142px, 16vw, 202px);
+    align-content: center;
+    gap: 10px;
+    padding: clamp(18px, 3vw, 38px);
+    padding-inline-end: 39%;
+    border-radius: 24px;
+    background: radial-gradient(ellipse at 12% 82%, #206e78 0%, transparent 52%), linear-gradient(115deg, #113f59, #10274b 65%, #101e3c);
+    box-shadow: 0 10px 24px -16px #122e55a6;
+  }
+  body.mv .hero-text::after { display: none; }
+  body.mv .study-art { display: block; position: absolute; inset-inline-end: 0; top: 2%; width: 37%; height: 96%; pointer-events: none; }
+  body.mv #heroTitle { font-size: clamp(1.6rem, 3vw, 2.8rem); line-height: 1.35; }
+  body.mv .mv-meta { color: #d5e9ec; font-size: clamp(.8rem, 1vw, .98rem); }
+  .mv-home .mv-welcome { margin-block: 12px; }
+  .mv-home .mv-search { border-radius: 14px; min-height: 48px; box-shadow: var(--ds-shadow-sm); }
+  .mv-home .mv-grid { gap: clamp(8px, 1vw, 14px); }
+  .mv-home .mv-tile {
+    align-items: flex-start; flex-direction: column; justify-content: space-between;
+    text-align: start; gap: 12px; padding: clamp(12px, 1.5vw, 22px);
+    border-radius: 18px; box-shadow: var(--ds-shadow-sm);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--h-bg) 38%, var(--ds-surface)), var(--ds-surface) 70%);
+  }
+  .mv-home .mv-tx { justify-items: start; gap: 4px; }
+  .mv-home .mv-tx strong { font-size: clamp(.9rem, 1.2vw, 1.05rem); }
+  .mv-home .mv-ic { border-radius: 12px; width: 38px; height: 38px; }
+  .mv-home .mv-tile:first-child {
+    background: linear-gradient(120deg, #174d64, #172f51);
+    border-color: #21475d; color: white;
+  }
+  .mv-home .mv-tile:first-child .mv-ic { color: #ffe1a4; background: #ffffff14; }
+  .mv-home .mv-tile:first-child small { color: #d6e8ed; }
+  .mv-home .mv-tile.is-soon { background: var(--ds-surface); box-shadow: none; }
+  body.mv[data-mv="home"] :is(#announcements,#latest) h2 {
+    padding-inline-start: 10px; border-inline-start: 3px solid var(--ds-gold);
+  }
+  body.mv[data-mv="home"] .sidebar {
+    background: linear-gradient(160deg, #102540, #132f49 65%, #13394b);
+    --nav-active-bg: #22516a; --nav-bg: #1b405a; --nav-group-bg: #193b55; --nav-line: #345069;
+  }
+  @media (max-width: 640px) {
+    .mv-home .mv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mv-home .mv-tile { flex-direction: row; align-items: center; justify-content: start; min-height: 72px; gap: 8px; padding: 10px; }
+    body.mv[data-mv="home"] .hero-text { border-radius: 18px; padding-inline-end: 32%; }
+    body.mv .study-art { width: 31%; }
+  }
+  @keyframes book-arrival { from { transform: translateY(12px); opacity: .35; } to { transform: none; opacity: 1; } }
+  @keyframes book-float { 50% { transform: translateY(-5px); } }
+  @keyframes trace-orbit { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .study-art .book { animation: book-arrival .65s ease-out, book-float 2.8s ease-in-out .65s 1; }
+    .study-art .orbit { stroke-dasharray: 100; animation: trace-orbit 1.25s ease-out; }
+    .mv-home .mv-tile { animation: book-arrival .38s ease-out backwards; transition: transform .18s ease, box-shadow .18s ease; }
+    .mv-home .mv-tile:nth-child(2n) { animation-delay: 55ms; }
+    .mv-home .mv-tile:nth-child(n+5) { animation-delay: 110ms; }
+    @media (hover:hover) {
+      .mv-home .mv-tile:not(.is-soon):hover { transform: translateY(-3px); box-shadow: var(--ds-shadow); }
+    }
+  }
+</style>
 </head>
 <body>
   <noscript>
@@ -52,6 +115,27 @@
   <section class="hero band" id="home">
     <div class="container hero-grid">
       <div class="hero-text">
+        <svg class="study-art" viewBox="0 0 300 180" aria-hidden="true" focusable="false" fill="none">
+          <defs>
+            <linearGradient id="paper-light" x2="1" y2="1"><stop stop-color="#fff1c6"/><stop offset="1" stop-color="#d9aa60"/></linearGradient>
+            <linearGradient id="paper-cool" x2="1" y2="1"><stop stop-color="#e2fff6"/><stop offset="1" stop-color="#71bfbd"/></linearGradient>
+          </defs>
+          <g stroke="#b4ebe5" opacity=".29" stroke-width=".9">
+            <ellipse class="orbit" pathLength="100" cx="149" cy="100" rx="132" ry="44" transform="rotate(-14 149 100)"/>
+            <ellipse cx="148" cy="95" rx="90" ry="66" transform="rotate(17 148 95)" stroke-dasharray="2 6"/>
+          </g>
+          <g fill="#ffe0a5"><circle cx="32" cy="128" r="2.8"/><circle cx="248" cy="59" r="2"/><path d="m207 27 1.5 5 5 1.5-5 1.5-1.5 5-1.5-5-5-1.5 5-1.5z"/></g>
+          <g class="book" stroke-linejoin="round">
+            <path d="m60 109 66 32 83-31-64-31z" fill="#08273b" opacity=".5"/>
+            <path d="m60 98 65 32 86-32v7l-85 32-66-32z" fill="#408b93" stroke="#9fdbd4"/>
+            <path d="m64 91 63 30 79-29 4 7-84 31-66-32z" fill="#f5dfae"/>
+            <path d="M126 122Q100 102 62 93l5-42q39 8 66 33z" fill="url(#paper-light)"/>
+            <path d="M126 122q35-23 81-30l-3-45q-38 6-71 37z" fill="url(#paper-cool)"/>
+            <g stroke="#876b47" opacity=".65"><path d="M76 67q25 6 46 22m-48-13q24 6 44 21m-45-12q22 6 37 16"/></g>
+            <g stroke="#426e75" opacity=".7"><path d="M144 87q20-15 47-22m-49 32q24-16 50-22m-50 32q22-16 42-20"/></g>
+            <path d="m167 63 9-4 1 28-5-2-6 6z" fill="#cd944a"/>
+          </g>
+        </svg>
         <p class="hero-brand" data-site-title></p>
         <p class="eyebrow">دفعتنا</p>
         <h1 id="heroTitle">مواد قسمك في مكان واحد</h1>
