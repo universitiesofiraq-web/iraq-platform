@@ -58,7 +58,8 @@
 
   /* منع تكرار الإرسال في كل الصفحات: أي طلب يغيّر بيانات (غير GET) يعطّل الزر الذي أطلقه
      ويعلّمه aria-busy حتى يصل الرد، فلا يُرسل الطلب مرتين بالضغط المتكرر. */
-  if (window.fetch && !window.fetch.__dsGuard) {
+  /* صفحة القارئ (pdf-notes) تحفظ وتزامن في الخلفية كل ثوانٍ: لا تعطّل أزرار أدواتها (html data-no-guard) */
+  if (window.fetch && !window.fetch.__dsGuard && !root.hasAttribute("data-no-guard")) {
     var raw = window.fetch;
     var guarded = function (input, init) {
       var method = (init && init.method || (input && input.method) || "GET").toUpperCase();

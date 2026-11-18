@@ -1,0 +1,118 @@
+/* reader-pro.css — «اكتب وظلّل» بألوان منصة دفعتنا (2026-11-19، بطلب محمد: «مثل المنصة، بلا تغيير الأيقونات»).
+   يُحمَّل آخر ورقة في pdf-notes.html. لا يغيّر أي أيقونة ولا مكان زر؛ يعيد فقط تعريف رموز ألوان القارئ القديمة
+   (--nw-* و --reader-* و --st-* و --ts-* و --sel-*) على رموز المنصة --ds-* من dfa.css، فتتبع الوضع الليلي الموحّد
+   (html[data-theme]) الذي يضبطه theme.js. body.medixa-dark يبقى متزامناً معه عبر js/reader-pro.js.
+   الصفحة نفسها تبقى بيضاء في الوضعين (ورق). */
+
+/* ---- رموز القارئ ← رموز المنصة (تحديد body.st-pro يعلو على القواعد الأصلية في الوضعين) ---- */
+:root:root{
+  --st-navy: var(--ds-primary-d); --st-navy-2: var(--ds-primary-d);
+  --st-teal: var(--ds-accent); --st-teal-2: var(--ds-accent-ink); --st-teal-soft: var(--ds-accent-soft);
+  --st-line: var(--ds-line); --st-ink: var(--ds-ink); --st-muted: var(--ds-ink-2); --st-shadow: var(--ds-shadow);
+}
+body.st-pro.st-compact{
+  --reader-surface: var(--ds-surface); --reader-text: var(--ds-ink); --reader-line: var(--ds-line);
+  --reader-hover: var(--ds-surface-2); --reader-accent: var(--ds-accent-soft);
+  --nw-pill: var(--ds-surface); --nw-ink: var(--ds-ink); --nw-dim: var(--ds-line-strong); --nw-hover: var(--ds-surface-2);
+  --nw-on: var(--ds-accent-soft); --nw-on-ink: var(--ds-accent-ink); --nw-sep: var(--ds-line);
+  --nw-chip: var(--ds-surface-2); --nw-chip-ink: var(--ds-ink-2);
+  --nw-shadow: 0 0 0 1px var(--ds-line), 0 4px 16px rgba(10, 26, 58, .08);
+  --ts-bg: var(--ds-surface); --ts-ink: var(--ds-ink); --ts-muted: var(--ds-ink-2); --ts-line: var(--ds-line); --ts-line2: var(--ds-line-strong);
+  --ts-soft: var(--ds-surface-2); --ts-teal: var(--ds-accent); --ts-teal-2: var(--ds-accent-ink); --ts-teal-soft: var(--ds-accent-soft);
+  background: var(--ds-surface-2); color: var(--ds-ink);
+}
+:root[data-theme="dark"] body.st-pro.st-compact{ --nw-shadow: 0 0 0 1px var(--ds-line), 0 6px 20px rgba(0, 0, 0, .35); background: var(--ds-bg); }
+body.st-pro #studio-toolbar{
+  --ts-bg: var(--ds-surface); --ts-ink: var(--ds-ink); --ts-muted: var(--ds-ink-2); --ts-line: var(--ds-line); --ts-line2: var(--ds-line-strong);
+  --ts-pill: var(--ds-surface-2); --ts-acc: var(--ds-accent); --ts-acc-soft: var(--ds-accent-soft); --ts-acc-track: var(--ds-line-strong);
+  --ts-soft: var(--ds-surface-2); --ts-teal: var(--ds-accent); --ts-teal-2: var(--ds-accent-ink); --ts-teal-soft: var(--ds-accent-soft);
+}
+body.st-pro .st-fingermode{ --ts-line: var(--ds-line); --ts-soft: var(--ds-surface-2); --ts-bg: var(--ds-surface); --ts-ink: var(--ds-ink); --ts-teal: var(--ds-accent); --ts-teal-2: var(--ds-accent-ink); --ts-muted: var(--ds-ink-2); }
+body.st-pro #studio-selbar{
+  --sel-line: var(--ds-line); --sel-ink: var(--ds-ink); --sel-teal: var(--ds-accent); --sel-hover: var(--ds-surface-2); --sel-on: var(--ds-accent-soft);
+  background: var(--ds-surface); color: var(--ds-ink); border-color: var(--ds-line);
+}
+
+/* ---- الخط: خط المنصة للواجهة فقط. طبقة نص PDF (.st-text) ومحرر النص على الصفحة يبقيان كما هما (محاذاة النص) ---- */
+body.st-pro :is(header, #studio-toolbar, #studio-selbar, .st-pop, .st-panel, #study-panel, #mx-dock, dialog, .st-quick, .sab-fab, #st-focus-status, .st-toast, #error)
+  :not(.st-text, .st-text *, textarea, svg, svg *){ font-family: var(--ds-font); }
+body.st-pro :is(header, #studio-toolbar, #mx-dock, .sab-fab, #error){ font-family: var(--ds-font); }
+
+/* ---- اللوحات والقوائم والحوارات ---- */
+body.st-pro :is(.st-pop, .st-panel, #study-panel, #st-docmenu){ background: var(--ds-surface); color: var(--ds-ink); border-color: var(--ds-line); }
+body.st-pro .st-panel{ border-radius: var(--ds-r-lg); box-shadow: var(--ds-shadow); }
+body.st-pro :is(.st-pop, #st-docmenu){ border-radius: var(--ds-r); box-shadow: 0 0 0 1px var(--ds-line), 0 14px 36px rgba(10, 26, 58, .16); }
+body.st-pro .st-pop-h{ color: var(--ds-ink-2); }
+body.st-pro .st-pop .st-btn:hover{ background: var(--ds-surface-2); color: var(--ds-ink); }
+body.st-pro .st-pop .st-btn.active, body.st-pro .st-pop .st-grid .st-btn.active{ background: var(--ds-accent-soft); color: var(--ds-accent-ink); border-color: transparent; }
+body.st-pro :is(.st-row-btn, .st-focus-btn, .st-mini, .st-x, dialog .st-btn){ background: var(--ds-surface-2); color: var(--ds-ink); border-color: var(--ds-line); }
+body.st-pro .st-th{ background: var(--ds-surface); border-color: var(--ds-line); }
+body.st-pro .st-th.current{ border-color: var(--ds-accent); box-shadow: 0 0 0 2px var(--ds-accent-soft); }
+body.st-pro .st-th-n{ background: var(--ds-accent); color: var(--ds-on-accent); }
+body.st-pro .st-notes input[type=search]{ background: var(--ds-surface-2); color: var(--ds-ink); border-color: var(--ds-line); }
+body.st-pro dialog{ background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-line); border-radius: var(--ds-r-lg); }
+body.st-pro #st-docmenu svg{ color: var(--ds-accent-ink); }
+body.st-pro #st-compact-documents .st-brand small{ color: var(--ds-accent-ink); }
+
+/* ---- لوحة أدوات الدراسة القديمة (#study-panel) ---- */
+body.st-pro #study-panel{ border-inline-end: 1px solid var(--ds-line); box-shadow: var(--ds-shadow); }
+body.st-pro #study-panel :is(input, textarea, select){ background: var(--ds-surface-2); color: var(--ds-ink); border-color: var(--ds-line); border-radius: var(--ds-r-sm); }
+body.st-pro #study-panel .tabs button{ border-radius: var(--ds-r-pill); border-color: var(--ds-line); background: var(--ds-surface); color: var(--ds-ink); }
+body.st-pro #study-panel .tabs button.active{ background: var(--ds-accent-soft); color: var(--ds-accent-ink); border-color: transparent; }
+body.st-pro #study-panel .study-item{ border-color: var(--ds-line); border-radius: var(--ds-r); }
+body.st-pro #study-panel .study-item small, body.st-pro #study-panel .muted{ color: var(--ds-ink-2); }
+body.st-pro #study-panel .study-action{ background: var(--ds-accent); color: var(--ds-on-accent); }
+body.st-pro #study-panel .answer{ background: var(--ds-ok-soft); color: var(--ds-ink); }
+body.st-pro #study-panel button{ background: var(--ds-surface-2); color: var(--ds-ink); border-color: var(--ds-line); }
+body.st-pro #study-panel button.study-action{ background: var(--ds-accent); color: var(--ds-on-accent); border-color: var(--ds-accent); }
+body.st-pro #study-summary{ background: var(--ds-accent-soft); }
+body.st-pro #study-summary .numbers span{ background: var(--ds-surface); color: var(--ds-ink); }
+body.st-pro #study-summary b{ color: var(--ds-accent-ink); }
+
+/* ---- الشريط السفلي (الصفحة والتكبير) ---- */
+html body.st-pro #mx-dock :is(#mx-reader-nav button, #st-zoom button){ background: transparent; border: 0; color: var(--ds-ink); border-radius: 50%; }
+html body.st-pro #mx-dock #mx-reader-nav input{ width: 2.4em; padding: 0; border: 0; background: transparent; color: var(--ds-ink); text-align: center; font: var(--ds-w-bold) 15px var(--ds-font); }
+@media (hover: hover){ html body.st-pro #mx-dock :is(#mx-reader-nav button, #st-zoom button):hover{ background: var(--ds-surface-2); } }
+:root[data-theme="dark"] body.st-pro .st-quick .st-swatch::before{ box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55); }
+body.st-pro #mx-dock :is(#mx-reader-nav, #st-zoom) :is(span, label){ color: var(--ds-ink-2); }
+
+/* ---- رسالة الخطأ ---- */
+body.st-pro #error{ color: var(--ds-bad); }
+body.st-pro #error .mx-raster-note{ color: var(--ds-ink); }
+body.st-pro #error .mx-fail-open{ background: var(--ds-accent); color: var(--ds-on-accent); border-radius: var(--ds-r-sm); }
+body.st-pro #error .mx-fail-retry{ background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-line-strong); border-radius: var(--ds-r-sm); }
+
+/* ---- التركيز من لوحة المفاتيح بلون المنصة ---- */
+body.st-pro :is(button, a, input, select, textarea):focus-visible{ outline: 3px solid var(--ds-gold); outline-offset: 2px; }
+
+/* ---- زر «المرشد الذكي»: لا يغطي شريط الأدوات أو الصفحة ----
+   على الكمبيوتر وiPad: صغير في الزاوية فوق مستوى الشريط السفلي. على الهاتف: دائرة فوق شريط الرسم السفلي. */
+body.st-pro .sab-fab{
+  right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 15; min-height: 44px; padding: 0 16px; border-radius: var(--ds-r-pill);
+  background: var(--ds-primary); color: #fff; font: var(--ds-w-bold) var(--ds-fs-sm)/1 var(--ds-font);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 8px 22px rgba(10, 26, 58, .28);
+}
+:root[data-theme="dark"] body.st-pro .sab-fab{ background: var(--ds-accent); color: var(--ds-on-accent); }
+@media (max-width: 720px){
+  body.st-pro .sab-fab{
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--rp-bottom, 132px));
+    width: 48px; height: 48px; padding: 0; font-size: 22px; line-height: 1;
+  }
+  body.st-pro .sab-fab .rp-lab{ display: none; }
+}
+/* أثناء الكتابة يخفت الزر حتى لا يشتت (يعود عند الاقتراب منه بالمؤشر) */
+body.st-pro.rp-inking .sab-fab{ opacity: .35; transition: opacity .2s; }
+@media (hover: hover){ body.st-pro.rp-inking .sab-fab:hover{ opacity: 1; } }
+@media (prefers-reduced-motion: reduce){ body.st-pro .sab-fab{ transition: none; } }
+
+/* ---- الوضع الليلي القديم في studio.css كان بألوان ثابتة و!important: نعيده إلى رموز المنصة ---- */
+html body.st-pro.medixa-dark #mx-dock, body.st-pro.medixa-dark .st-panel{ background: var(--ds-surface); color: var(--ds-ink); border-color: var(--ds-line); }
+html body.st-pro.medixa-dark #mx-dock button:not([aria-expanded=true]), html body.st-pro.medixa-dark #mx-dock input, body.st-pro.medixa-dark #st-zoom,
+html body.st-pro.medixa-dark #mx-dock > #mx-save-state, html body.st-pro.medixa-dark #mx-dock > #mx-occlusion{ background: transparent !important; color: var(--ds-ink) !important; border-color: var(--ds-line) !important; }
+body.st-pro.medixa-dark :is(.st-panel .st-x, .st-focus-btn, .st-chip:not([aria-pressed=true]), .st-note, .st-notes input[type=search], .st-add select, .st-th){ background: var(--ds-surface-2) !important; color: var(--ds-ink) !important; border-color: var(--ds-line) !important; }
+body.st-pro.medixa-dark :is(.st-note-b, .st-empty), html body.st-pro.medixa-dark #mx-dock :is(#mx-reader-nav label, [data-mx-total]){ color: var(--ds-ink-2); }
+
+/* ---- قائمة مفتوحة تعلو دائماً على لوحتي الصفحات والملاحظات (كانت ورقة الإعدادات تختفي خلف لوحة الصفحات) ---- */
+body.st-pro.st-compact #studio-toolbar:has(.st-pop:not([hidden]), .st-toolset:not([hidden])),
+body.st-pro.st-compact > header:has(.st-pop:not([hidden])){ z-index: 20; }
