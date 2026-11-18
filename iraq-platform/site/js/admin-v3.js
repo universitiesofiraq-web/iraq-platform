@@ -277,10 +277,8 @@ function renderUniversities() {
     ["بلاغات مفتوحة", ov.reports || 0],
     ["الممثلون", ov.reps || 0]
   ]);
-  const layout = element("div", undefined, "panel-grid");
-  const universities = panel(labels[filter], filter === "active"
-    ? "تتفعّل الجامعة تلقائياً عند تسجيل أول طالب فيها."
-    : "اضغط «تفعيل» لإظهار الجامعة للطلاب، أو «إيقاف» لإخفائها.");
+  const activity = element("div", undefined, "activity-panels");
+  const universities = panel("نتائج الجامعات · " + number(rows.length));
   universities.card.id = "universities";
   if (rows.length) {
     universities.card.append(table(["الجامعة", "الحالة", "الطلاب", "الملفات", "الأقسام", "الإجراءات"],
@@ -295,7 +293,7 @@ function renderUniversities() {
   } else {
     universities.card.append(empty(query.length ? "لا توجد جامعات تطابق البحث." : "لا توجد جامعات في هذا العرض."));
   }
-  const joins = panel("طلبات التفعيل الأخيرة", "الطلاب الذين سجّلوا وتم قبولهم تلقائياً");
+  const joins = panel("التسجيلات الأخيرة");
   joins.card.id = "joins";
   const recent = listing.overview?.recent || [];
   if (recent.length) {
@@ -308,14 +306,19 @@ function renderUniversities() {
     }
     joins.card.append(list);
   } else joins.card.append(empty("لم يسجّل أي طالب بعد."));
-  layout.append(universities.card, joins.card);
+
   const log = panel("سجل تفعيل الجامعات", "متى تفعّلت كل جامعة ومن فعّلها");
   log.card.id = "audit";
   const history = element("div");
   auditItems(listing.audit || [], history);
   log.card.append(history);
   const content = $("content");
-  content.replaceChildren(choices, totals, layout, log.card);
+  activity.append(joins.card, log.card);
+  const summary = element("details", undefined, "overview-summary");
+  summary.open = Boolean($("overview-summary")?.open);
+  summary.id = "overview-summary";
+  summary.append(element("summary", "إحصاءات المنصة"), totals);
+  content.replaceChildren(choices, universities.card, summary, activity);
   content.hidden = false;
 }
 
@@ -400,16 +403,30 @@ async function globalTeam() {
 }
 
 function navigation(entries, current) {
-  $("sidebar-nav").replaceChildren(...entries.map(([title, href]) => link(title, href)));
-  const cur = current ? [...$("sidebar-nav").children].find(a => a.textContent === current) : $("sidebar-nav").firstElementChild;
-  cur?.setAttribute("aria-current", "page");
-  $("sidebar-nav").hidden = false;
+  const nav = $("sidebar-nav");
+  nav.replaceChildren();
+  function appendEntry([title, href]) {
+    const anchor = link(title, href);
+    if (title === (current || entries[0][0])) anchor.setAttribute("aria-current", "page");
+    nav.append(anchor);
+  }
+  if (entries === globalNav) {
+    for (const [label, links] of globalNavGroups) {
+      if (label) nav.append(element("h2", label, "nav-group"));
+      links.forEach(appendEntry);
+    }
+  } else entries.forEach(appendEntry);
+  nav.hidden = false;
 }
 
-const globalNav = [["الرئيسية", "admin.html"], ["الجامعات", "admin.html#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"],
-  ["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"],
-  ["تعيين الممثلين", "manage.html"], ["روابط الدعوة", "invites.html"], ["المستخدمون", "admin-tools.html#users"],
-  ["تحليل النمو", "admin.html?view=growth"], ["التسجيلات الأخيرة", "admin.html#joins"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]];
+const globalNavGroups = [
+  ["", [["الرئيسية", "admin.html"]]],
+  ["التنظيم الأكاديمي", [["الجامعات", "admin.html#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]]],
+  ["الأشخاص والصلاحيات", [["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["روابط الدعوة", "invites.html"]]],
+  ["المحتوى والتواصل", [["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"]]],
+  ["المتابعة", [["التسجيلات الأخيرة", "admin.html#joins"], ["تحليل النمو", "admin.html?view=growth"]]]
+];
+const globalNav = globalNavGroups.flatMap(([, links]) => links);
 
 function showGlobal() {
   if (new URLSearchParams(location.search).get("view") === "growth") return showGrowth();
@@ -417,12 +434,12 @@ function showGlobal() {
   $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
   $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
   $("scope-label").textContent = "جميع الجامعات";
-  $("search-box").hidden = false;
+  $("admin-tasks").hidden = $("directory-tools").hidden = $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
   const nav = globalNav;
   navigation(nav);
   $("page-actions").append(button("إضافة جامعة", () => profileForm(), "primary"));
-  if (me.owner) $("page-actions").append(button("الإدارة العامة", globalTeam));
+  if (me.owner) $("page-actions").append(button("تفويض مدير عام", globalTeam));
   loadUniversities();
 }
 

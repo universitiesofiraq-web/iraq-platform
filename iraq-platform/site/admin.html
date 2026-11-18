@@ -8,7 +8,38 @@
   <title>لوحة الإدارة | دفعتنا</title>
   <link rel="icon" href="assets/icon-192.png">
   <link rel="stylesheet" href="css/admin-v3.css?v=ds2"><link rel="stylesheet" href="css/dfa.css?v=7">
-  <script type="module" src="js/admin-v3.js?v=6"></script>
+  <script type="module" src="js/admin-v3.js?v=7"></script>
+  <style>
+    main { max-width: 88rem; }
+    .sidebar { background: linear-gradient(165deg,#112640,#163c50); gap: .55rem; }
+    .sidebar nav a { padding-block: .35rem; }
+    .sidebar nav a[aria-current] { background: #244d61; color: white; box-shadow: inset -3px 0 #eed18e; }
+    .nav-group { margin: .9rem .65rem .15rem; font-size: .85rem; color: #b5cdda; }
+    .topbar { justify-content: flex-end; min-height: 3.5rem; }
+    .layout .surface .heading { align-items: center; background: linear-gradient(110deg,#19526a,#152d49); color: white; }
+    .heading :is(.muted,.eyebrow) { color: #d2e3ed; }
+    #admin-tasks { margin-block: 1.35rem 1.75rem; }
+    .task-links { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .65rem; }
+    .task-links a { display: flex; align-items: center; min-height: 54px; padding: .75rem 1rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--ds-accent); border-radius: .8rem; background: var(--paper); color: var(--ink); text-decoration: none; font-weight: 700; }
+    .task-links a:hover { background: var(--ds-accent-soft); }
+    .directory-tools { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; }
+    .directory-tools h2 { margin: 0; }
+    .filters { gap: .4rem; }
+    .filters button[aria-pressed=true] { background: var(--ds-accent-soft); color: var(--ds-accent-ink); }
+    .activity-panels { display: grid; gap: .85rem; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+    .overview-summary { margin-block: 1rem; padding: .3rem 1rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--paper); }
+    .overview-summary summary { cursor: pointer; font-weight: 700; }
+    @media(max-width:740px) {
+      .activity-panels { grid-template-columns: 1fr; }
+      .sidebar { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+      .sidebar nav,.sidebar .side-link { grid-column: 1/-1; }
+      .sidebar:not([data-menu-open]) .side-link { display: none; }
+      .task-links { grid-template-columns: 1fr; gap: .35rem; }
+      .task-links a { min-height: 44px; padding-block: .45rem; }
+      .directory-tools .quick-search { flex-basis: 100%; max-width: none; }
+    }
+    @media print { #admin-tasks,.directory-tools .quick-search { display: none; } }
+  </style>
 </head>
 <body>
   <a class="skip" href="#main">انتقل إلى المحتوى</a>
@@ -28,10 +59,7 @@
     </aside>
     <div class="surface">
       <header class="topbar">
-        <label class="quick-search" id="search-box" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
-          <input id="search" type="search" placeholder="ابحث باسم الجامعة أو المحافظة" aria-label="ابحث باسم الجامعة أو المحافظة">
-        </label>
+
         <div class="top-actions">
           <button id="theme" type="button" aria-pressed="false">الوضع الداكن</button>
           <span id="account" class="account" hidden></span>
@@ -47,6 +75,21 @@
           <div class="actions" id="page-actions"></div>
         </div>
         <p class="notice" id="notice" role="status" aria-live="polite">جارٍ التحقق من الحساب…</p>
+        <section id="admin-tasks" aria-labelledby="tasks-title" hidden>
+          <h2 id="tasks-title">المهام اليومية</h2>
+          <div class="task-links">
+            <a href="activation-requests.html">مراجعة طلبات التفعيل</a>
+            <a href="admin-tools.html#files">مراجعة الملفات والبلاغات</a>
+            <a href="manage.html">تعيين ممثل</a>
+          </div>
+        </section>
+        <div class="directory-tools" id="directory-tools" hidden>
+          <h2>إدارة الجامعات</h2>
+        <label class="quick-search" id="search-box" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
+          <input id="search" type="search" placeholder="ابحث باسم الجامعة أو المحافظة" aria-label="ابحث باسم الجامعة أو المحافظة">
+        </label>
+        </div>
         <div id="content" hidden></div>
       </main>
     </div>
