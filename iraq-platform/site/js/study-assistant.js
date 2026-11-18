@@ -17,7 +17,7 @@
     if (code === "service_unavailable" || code === "server" || code === "SERVER_ERROR") return "المساعد غير متاح مؤقتًا. أعد المحاولة بعد قليل.";
     return error && typeof error.message === "string" ? error.message : "تعذّر الاتصال بالمساعد. أعد المحاولة.";
   }
-  function quota(q) { if (q) $("quota").textContent = "الطلبات المتبقية اليوم: " + q.remaining + " من " + q.dailyLimit; }
+  function quota(q) { if (q && q.remaining != null && q.dailyLimit != null) $("quota").textContent = "الطلبات المتبقية اليوم: " + q.remaining + " من " + q.dailyLimit; }
 
   function cites(list) {
     var box = el("div", null, "sa-cites");

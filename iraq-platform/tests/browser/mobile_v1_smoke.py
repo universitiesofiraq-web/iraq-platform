@@ -77,7 +77,10 @@ with sync_playwright() as p:
     pg.route("**/*", lambda r: route(r) if ("/api/" in r.request.url or r.request.url.endswith("uploads.js")) else r.continue_())
     pg.goto("http://127.0.0.1:8793/platform.html?dept=4046&stage=1"); pg.wait_for_selector(".mv-nav", state="attached")
     ck("desktop: bottom nav hidden", not pg.locator(".mv-nav").is_visible())
-    ck("desktop: sections all visible", pg.locator("#semesters").is_visible() and pg.locator("#latest").is_visible())
+    # اللابتوب بنفس ترتيب الهاتف (بطلب محمد): الرئيسية تعرض الشبكة وأحدث المحاضرات، والمواد عبر #semesters
+    ck("desktop: phone order (home view)", pg.locator(".mv-grid").is_visible() and pg.locator("#latest").is_visible() and not pg.locator("#semesters").is_visible())
+    pg.goto(pg.url.split("#")[0] + "#semesters"); pg.wait_for_timeout(250)
+    ck("desktop: subjects view via hash", pg.locator("#semesters").is_visible())
     # صفحات المادة والكورس: شريط التنقل حاضر وروابطه تحفظ القسم
     c = b.new_context(service_workers="block", viewport={"width": 390, "height": 800}); pg = c.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.route("**/*", lambda r: route(r) if ("/api/" in r.request.url or r.request.url.endswith("uploads.js")) else r.continue_())
