@@ -293,6 +293,12 @@ dialog::backdrop { background: var(--ds-scrim); }
 .unread { color: var(--ds-on-accent); }
 .login-card, .login { border-radius: var(--ds-r-lg); }
 
+/* ============ 13. أهداف لمس لا تقل عن 44px ============ */
+.footer-links a, .iq-foot a { display: inline-flex; align-items: center; min-height: var(--ds-control); }
+.sidebar .brand, .site-header select, .chip, .top-back { min-height: var(--ds-control); }
+.top-back { display: inline-flex; align-items: center; }
+summary { min-height: var(--ds-control); padding-block: 10px; cursor: pointer; }
+
 @media (prefers-reduced-motion: reduce) {
   .dfa-load .dfa-ring::before, .dfa-load .dfa-ring img, .btn[aria-busy="true"]::after { animation: none; }
   .btn, .cg-item { transition: none; }
