@@ -8,6 +8,7 @@ import { handleCatalog } from "../functions/_lib/catalog.js";
 import { database, seedAcademic, signedRequest } from "./helpers/d1.mjs";
 
 const script = name => readFileSync(new URL("../site/" + name, import.meta.url), "utf8");
+const CURRENT = /var V = "([^"]+)"/.exec(script("sw.js"))[1];
 const quotaError = () => new Error("D1_ERROR: Your account has exceeded D1's free tier daily row read limit. private diagnostic");
 
 test("offline caching excludes private APIs and keeps only explicitly public uploaded files", async () => {
@@ -25,14 +26,14 @@ test("offline caching excludes private APIs and keeps only explicitly public upl
     self: { addEventListener: (name, handler) => { handlers[name] = handler; }, clients: { claim() {} } },
     caches: {
       open: async () => cache,
-      keys: async () => ["ms-v50", "ms-v51", "ms-v52", "ms-files", "ms-files-public", "another-app"],
+      keys: async () => ["ms-v1", "ms-v2", CURRENT, "ms-files", "ms-files-public", "another-app"],
       delete: async key => removed.push(key)
     }
   });
   let activation;
   handlers.activate({ waitUntil: task => { activation = task; } });
   await activation;
-  assert.deepEqual(removed, ["ms-v50", "ms-v51", "ms-files"]);
+  assert.deepEqual(removed, ["ms-v1", "ms-v2", "ms-files"]);
 
   const fetchThroughWorker = path => {
     let response;

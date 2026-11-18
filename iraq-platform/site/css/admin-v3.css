@@ -16,7 +16,7 @@
   --wait-ink: #864700;
   --bad-bg: #ffebeb;
   --bad-ink: #9d3333;
-  font-family: "Readex Pro", Tahoma, Arial, sans-serif;
+  font-family: var(--ds-font);
   font-size: 15px;
 }
 :root[data-theme="dark"] {

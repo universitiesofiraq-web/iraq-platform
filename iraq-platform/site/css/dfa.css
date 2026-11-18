@@ -1,134 +1,292 @@
-/* dfa.css — هوية «دفعتنا» الموحدة: لازورد + ذهبي.
-   يُحمَّل بعد ورقة كل صفحة ويوحّد الألوان والخط والأزرار والبطاقات والحقول والرأس. */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+/* dfa.css — نظام تصميم «دفعتنا» الموحّد (الإصدار 5).
+   يُحمَّل آخر ورقة أنماط في كل صفحة. يحدد الرموز (--ds-*) مرة واحدة، ثم يربط بها رموز
+   الأوراق القديمة (iq.css و style.css و admin-v3.css و group-chat.css) حتى تتشارك الصفحات
+   الألوان والخط والمسافات والحواف في الوضعين. الوضع يضبطه js/theme.js على <html data-theme>.
+   القاعدة: لا ألوان مباشرة في أوراق الصفحات الجديدة؛ استعمل --ds-* فقط. */
 
+/* ============ 1. الرموز ============ */
 :root {
-  --dfa-font: Cairo, "Readex Pro", "IBM Plex Sans Arabic", Tahoma, system-ui, sans-serif;
-  --dfa-primary: #14307A;
-  --dfa-primary-d: #0A1C4E;
-  --dfa-accent: #2459D6;
-  --dfa-accent-ink: #1D4ABA;
-  --dfa-accent-soft: #E6EDFC;
-  --dfa-gold: #E0A93B;
-  --dfa-gold-soft: #FBF1D9;
-  --dfa-bg: #F3F6FB;
-  --dfa-surface: #fff;
-  --dfa-ink: #0A1A3A;
-  --dfa-muted: #56648A;
-  --dfa-line: #D9E1EF;
-  --dfa-r: 14px;
-  --dfa-r-sm: 12px;
-  --dfa-shadow: 0 1px 2px rgba(10,26,58,.06), 0 8px 24px rgba(10,26,58,.08);
+  /* الخط: Cairo بأربعة أوزان فقط */
+  --ds-font: Cairo, "Readex Pro", Tahoma, system-ui, sans-serif;
+  --ds-w-regular: 400; --ds-w-medium: 600; --ds-w-bold: 700; --ds-w-black: 800;
+  --ds-fs-xs: .75rem;   /* 12 تسميات صغيرة */
+  --ds-fs-sm: .875rem;  /* 14 نص ثانوي */
+  --ds-fs-base: 1rem;   /* 16 نص */
+  --ds-fs-md: 1.125rem; /* 18 عنوان بطاقة */
+  --ds-fs-lg: 1.375rem; /* 22 عنوان قسم */
+  --ds-fs-xl: 1.75rem;  /* 28 عنوان صفحة */
+  --ds-lh: 1.65; --ds-lh-tight: 1.3;
 
-  /* بطاقات الصفحات ذات style.css */
-  --color-primary: var(--dfa-primary);
-  --color-primary-strong: var(--dfa-primary-d);
-  --color-secondary: var(--dfa-accent);
-  --color-secondary-ink: var(--dfa-accent-ink);
-  --color-secondary-soft: var(--dfa-accent-soft);
-  --color-bg: var(--dfa-bg);
-  --color-text: var(--dfa-ink);
-  --color-muted: var(--dfa-muted);
-  --color-border: var(--dfa-line);
-  --color-petrol: var(--dfa-primary);
-  --color-petrol-strong: var(--dfa-primary-d);
+  /* المسافات */
+  --ds-s1: 4px; --ds-s2: 8px; --ds-s3: 12px; --ds-s4: 16px; --ds-s5: 24px; --ds-s6: 32px; --ds-s7: 48px;
+  --ds-gutter: 16px;
+  --ds-w: 1120px;        /* عرض المحتوى العام */
+  --ds-w-narrow: 640px;  /* صفحات الدخول والاختيار */
+  --ds-control: 44px;    /* ارتفاع الحقول والأزرار وأقل هدف لمس */
+  --ds-header: 60px;
+
+  /* الحواف والظلال */
+  --ds-r-sm: 10px; --ds-r: 14px; --ds-r-lg: 20px; --ds-r-pill: 999px;
+  --ds-shadow-sm: 0 1px 2px rgba(10, 26, 58, .06);
+  --ds-shadow: 0 1px 2px rgba(10, 26, 58, .05), 0 6px 20px rgba(10, 26, 58, .07);
+  --ds-ring: 0 0 0 3px rgba(224, 169, 59, .55);
+
+  /* الألوان — النهاري */
+  --ds-bg: #F4F6FB;
+  --ds-surface: #FFFFFF;
+  --ds-surface-2: #EEF2F9;
+  --ds-ink: #0B1B3B;
+  --ds-ink-2: #4A5878;
+  --ds-line: #DCE3EF;
+  --ds-line-strong: #C3CEE2;
+  --ds-primary: #14307A;      /* لازوردي */
+  --ds-primary-d: #0A1C4E;
+  --ds-accent: #2459D6;       /* التفاعل */
+  --ds-accent-ink: #1D4ABA;
+  --ds-accent-soft: #E7EEFC;
+  --ds-on-accent: #FFFFFF;
+  --ds-gold: #E0A93B;         /* ذهبي للتمييز فقط */
+  --ds-gold-ink: #7A4F00;
+  --ds-gold-soft: #FBF1D9;
+  --ds-ok: #17804D;   --ds-ok-soft: #E3F5EB;
+  --ds-warn: #9A6200; --ds-warn-soft: #FDF1DA;
+  --ds-bad: #B42318;  --ds-bad-soft: #FDE8E6;
+  --ds-header-bg: linear-gradient(100deg, #0A1C4E, #14307A);
+  --ds-header-ink: #E7EEFF;
+  --ds-scrim: rgba(10, 28, 78, .55);
+  color-scheme: light;
+
+  /* ---- ربط رموز iq.css ---- */
+  --bg: var(--ds-bg); --surface: var(--ds-surface); --ink: var(--ds-ink); --ink2: var(--ds-ink-2); --line: var(--ds-line);
+  --lapis: var(--ds-primary); --lapis-d: var(--ds-primary-d); --tile: var(--ds-accent); --accent: var(--ds-accent);
+  --on-accent: var(--ds-on-accent); --gold: var(--ds-gold); --gold-soft: var(--ds-gold-soft);
+  --ok: var(--ds-ok); --bad: var(--ds-bad); --r: var(--ds-r); --shadow: var(--ds-shadow); --font: var(--ds-font);
+
+  /* ---- ربط رموز style.css ---- */
+  --font-body: var(--ds-font); --font-display: var(--ds-font);
+  --color-primary: var(--ds-primary); --color-primary-strong: var(--ds-primary-d);
+  --color-secondary: var(--ds-accent); --color-secondary-ink: var(--ds-accent-ink); --color-secondary-soft: var(--ds-accent-soft);
+  --color-bg: var(--ds-bg); --color-surface: var(--ds-surface); --color-surface-alt: var(--ds-surface-2);
+  --color-text: var(--ds-ink); --color-heading: var(--ds-ink); --color-muted: var(--ds-ink-2);
+  --color-border: var(--ds-line); --color-border-strong: var(--ds-line-strong);
+  --color-petrol: var(--ds-primary); --color-petrol-strong: var(--ds-primary-d);
+  --color-success: var(--ds-ok); --color-success-soft: var(--ds-ok-soft);
+  --color-warning: var(--ds-warn); --color-warning-soft: var(--ds-warn-soft);
+  --color-danger: var(--ds-bad); --color-danger-soft: var(--ds-bad-soft);
   --color-fav: #B7791F;
-  --banner-bg: linear-gradient(110deg, #0A1C4E 0%, #14307A 60%, #1B3F9A 100%);
-  --hero-bg: linear-gradient(120deg, #E6EDFC 0%, #EEF3FC 60%, #F6F8FD 100%);
-  --band-accent: var(--dfa-accent-ink);
-  --nav-surface: var(--dfa-primary-d);
-  --nav-bg: #14307A;
-  --nav-accent: #F0C766;
-  --nav-active-bg: #1B3F9A;
-  --nav-group-bg: #102A66;
-  --nav-line: #23407F;
-  --nav-scrim: rgba(10, 28, 78, .55);
-  --focus-ring: 0 0 0 3px rgba(224, 169, 59, .55);
+  --banner-bg: var(--ds-header-bg);
+  --hero-bg: var(--ds-surface);
+  --band-accent: var(--ds-accent-ink);
+  --nav-surface: var(--ds-primary-d); --nav-bg: var(--ds-primary); --nav-accent: #F0C766;
+  --nav-active-bg: #1B3F9A; --nav-group-bg: #102A66; --nav-line: #23407F; --nav-scrim: var(--ds-scrim);
+  --focus-ring: var(--ds-ring);
 
-  /* لوحة الإدارة */
-  --page: var(--dfa-bg);
-  --accent: var(--dfa-accent);
-  --action: var(--dfa-accent-ink);
-  --sidebar: var(--dfa-primary-d);
-  --sidebar-text: #DCE6FF;
+  /* ---- ربط رموز admin-v3.css ---- */
+  --page: var(--ds-bg); --paper: var(--ds-surface); --soft: var(--ds-surface-2); --muted: var(--ds-ink-2);
+  --action: var(--ds-accent-ink); --sidebar: var(--ds-primary-d); --sidebar-text: #DCE6FF;
+  --ok-bg: var(--ds-ok-soft); --ok-ink: var(--ds-ok); --wait-bg: var(--ds-warn-soft); --wait-ink: var(--ds-warn);
+  --bad-bg: var(--ds-bad-soft); --bad-ink: var(--ds-bad);
+
+  /* ---- ربط رموز group-chat.css ---- */
+  --fg: var(--ds-ink); --panel: var(--ds-surface); --panel2: var(--ds-surface-2); --accent2: var(--ds-accent-ink);
 }
+
 :root[data-theme="dark"] {
-  --color-primary: #1B3F9A;
-  --color-primary-strong: #2459D6;
-  --color-secondary: #5B8BFF;
-  --color-secondary-ink: #8FB0FF;
-  --color-secondary-soft: #14224D;
-  --color-bg: #08112B;
-  --color-border: #23335F;
-  --color-border-strong: #33478A;
-  --color-text: #E8EEFB;
-  --color-muted: #9AA9CC;
-  --color-petrol: #1B3F9A;
-  --color-petrol-strong: #2459D6;
-  --banner-bg: linear-gradient(110deg, #0A1C4E 0%, #14307A 70%);
-  --hero-bg: linear-gradient(120deg, #101C3F 0%, #14224D 100%);
-  --nav-surface: #050C20;
-  --nav-bg: #101C3F;
-  --nav-active-bg: #1B3F9A;
-  --nav-group-bg: #0B1634;
-  --nav-line: #1C2B55;
-  --page: #08112B;
-  --paper: #101C3F;
-  --soft: #14224D;
-  --ink: #E8EEFB;
-  --muted: #9AA9CC;
-  --line: #23335F;
-  --accent: #5B8BFF;
-  --action: #8FB0FF;
-  --sidebar: #050C20;
+  --ds-bg: #0A1330;
+  --ds-surface: #111C3F;
+  --ds-surface-2: #172552;
+  --ds-ink: #E8EEFB;
+  --ds-ink-2: #A3B1D1;
+  --ds-line: #24345F;
+  --ds-line-strong: #33478A;
+  --ds-primary: #8FB0FF;
+  --ds-primary-d: #050C20;
+  --ds-accent: #6E97FF;
+  --ds-accent-ink: #9DB8FF;
+  --ds-accent-soft: #182A5C;
+  --ds-on-accent: #04122E;
+  --ds-gold: #F0C766;
+  --ds-gold-ink: #F0C766;
+  --ds-gold-soft: #2B2410;
+  --ds-ok: #4CC38A;   --ds-ok-soft: #10301F;
+  --ds-warn: #F0B455; --ds-warn-soft: #33250B;
+  --ds-bad: #FF8A80;  --ds-bad-soft: #3A1513;
+  --ds-header-bg: linear-gradient(100deg, #050C20, #0E2161);
+  --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ds-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+
+  /* الأوراق القديمة تعيد تعريف بعض الرموز في الوضع الليلي: نثبتها على النظام */
+  --bg: var(--ds-bg); --surface: var(--ds-surface); --ink: var(--ds-ink); --ink2: var(--ds-ink-2); --line: var(--ds-line);
+  --lapis: var(--ds-primary); --lapis-d: var(--ds-primary-d); --tile: var(--ds-accent); --accent: var(--ds-accent);
+  --on-accent: var(--ds-on-accent); --gold-soft: var(--ds-gold-soft); --shadow: var(--ds-shadow);
+  --color-primary: #1B3F9A; --color-primary-strong: var(--ds-accent);
+  --color-secondary: var(--ds-accent); --color-secondary-ink: var(--ds-accent-ink); --color-secondary-soft: var(--ds-accent-soft);
+  --color-bg: var(--ds-bg); --color-surface: var(--ds-surface); --color-surface-alt: var(--ds-surface-2);
+  --color-text: var(--ds-ink); --color-heading: var(--ds-ink); --color-muted: var(--ds-ink-2);
+  --color-border: var(--ds-line); --color-border-strong: var(--ds-line-strong);
+  --color-petrol: #1B3F9A; --color-petrol-strong: var(--ds-accent);
+  --color-success: var(--ds-ok); --color-success-soft: var(--ds-ok-soft);
+  --color-warning: var(--ds-warn); --color-warning-soft: var(--ds-warn-soft);
+  --color-danger: var(--ds-bad); --color-danger-soft: var(--ds-bad-soft);
+  --banner-bg: var(--ds-header-bg); --hero-bg: var(--ds-surface);
+  --nav-surface: #050C20; --nav-bg: #101C3F; --nav-active-bg: #1B3F9A; --nav-group-bg: #0B1634; --nav-line: #1C2B55;
+  --page: var(--ds-bg); --paper: var(--ds-surface); --soft: var(--ds-surface-2); --muted: var(--ds-ink-2);
+  --action: var(--ds-accent-ink); --sidebar: #050C20;
+  --ok-bg: var(--ds-ok-soft); --ok-ink: var(--ds-ok); --wait-bg: var(--ds-warn-soft); --wait-ink: var(--ds-warn);
+  --bad-bg: var(--ds-bad-soft); --bad-ink: var(--ds-bad);
+  --fg: var(--ds-ink); --panel: var(--ds-surface); --panel2: var(--ds-surface-2); --accent2: var(--ds-accent-ink);
 }
 
-/* ---- أساس مشترك ---- */
-html { font-family: var(--dfa-font); }
-body, button, input, select, textarea { font-family: var(--dfa-font); }
-:focus-visible { outline: 3px solid var(--dfa-gold); outline-offset: 2px; }
+/* ============ 2. الأساس ============ */
+html { font-family: var(--ds-font); -webkit-text-size-adjust: 100%; }
+body { background: var(--ds-bg); color: var(--ds-ink); font-size: var(--ds-fs-base); line-height: var(--ds-lh); }
+body, button, input, select, textarea { font-family: var(--ds-font); }
+h1, h2, h3 { line-height: var(--ds-lh-tight); }
+:focus-visible { outline: 3px solid var(--ds-gold); outline-offset: 2px; }
+::selection { background: var(--ds-accent-soft); }
+[hidden] { display: none !important; }
+.ds-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ---- الشعار (نفسه في كل الصفحات) ---- */
+/* ============ 3. الشعار والشريط العلوي ============ */
 .dfa-mark { display: block; flex: none; width: 32px; height: 32px; border-radius: 9px; }
-.iq-brand, .brand, .semester-brand { font-weight: 800; letter-spacing: 0; }
-.iq-brand { gap: 10px; }
+.iq-brand, .brand, .semester-brand { font-weight: var(--ds-w-black); letter-spacing: 0; }
+.iq-brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-size: 1.1rem; }
 .brand-mark { border-radius: 10px; background: transparent; }
 
-/* ---- الأزرار ---- */
-.btn, button.btn, a.btn { border-radius: var(--dfa-r-sm); font-weight: 700; }
-.btn-primary { background: var(--dfa-accent); border-color: var(--dfa-accent); color: #fff; }
-.btn-primary:hover { background: var(--dfa-accent-ink); border-color: var(--dfa-accent-ink); }
-.btn-secondary { border-color: var(--dfa-line); }
-
-/* ---- البطاقات ---- */
-.card, .course-card, .iq-sec, .management-card, .panel { border-radius: var(--dfa-r); }
-.card, .iq-sec { box-shadow: var(--dfa-shadow); }
-
-/* ---- الحقول ---- */
-input[type=text], input[type=search], input[type=email], input[type=url], input[type=password],
-input[type=number], input[type=date], select, textarea, .field {
-  border-radius: var(--dfa-r-sm);
+.iq-top {
+  position: sticky; top: 0; z-index: 40;
+  min-height: var(--ds-header); padding: 8px max(var(--ds-gutter), calc((100% - var(--ds-w)) / 2));
+  display: flex; align-items: center; justify-content: space-between; gap: var(--ds-s3);
+  background: var(--ds-header-bg); color: var(--ds-header-ink);
+  box-shadow: 0 2px 12px rgba(10, 28, 78, .18);
+}
+.iq-top nav { display: flex; align-items: center; gap: var(--ds-s1); min-width: 0; }
+.iq-top nav a, .iq-top nav button {
+  min-height: var(--ds-control); display: inline-flex; align-items: center; padding: 0 12px;
+  border-radius: var(--ds-r-sm); color: var(--ds-header-ink); font-weight: var(--ds-w-medium); text-decoration: none; white-space: nowrap;
+}
+.iq-top nav a:hover, .iq-top nav button:hover { background: rgba(255, 255, 255, .1); }
+.iq-top nav a[aria-current="page"] { background: rgba(255, 255, 255, .14); color: #fff; }
+.iq-top nav a.iq-login { background: var(--ds-gold); color: #2A1D00; font-weight: var(--ds-w-bold); }
+.iq-top nav a.iq-login:hover { background: #F0C766; }
+@media (max-width: 520px) {
+  .iq-top { padding-inline: 12px; }
+  .iq-brand span { display: inline; font-size: 1rem; }
+  .iq-top nav { overflow-x: auto; scrollbar-width: none; }
+  .iq-top nav a, .iq-top nav button { padding: 0 9px; }
 }
 
-/* ---- الرأس الموحد لصفحات iq ---- */
-.iq-top { background: linear-gradient(100deg, #0A1C4E, #14307A); box-shadow: 0 2px 12px rgba(10,28,78,.18); }
-.iq-top nav a { border-radius: var(--dfa-r-sm); font-weight: 600; }
-.iq-top nav a.iq-login { background: var(--dfa-gold); color: #2A1D00; }
+/* ============ 4. التخطيط ============ */
+.ds-page { width: 100%; max-width: var(--ds-w); margin-inline: auto; padding: var(--ds-s5) var(--ds-gutter) var(--ds-s7); }
+.ds-page.narrow, .cg { max-width: var(--ds-w-narrow); }
+.ds-head { margin-bottom: var(--ds-s4); }
+.ds-head h1, .cg > h1 { margin: 0 0 var(--ds-s1); font-size: var(--ds-fs-xl); font-weight: var(--ds-w-black); color: var(--ds-ink); }
+.ds-head p, .cg > .crumb { margin: 0; color: var(--ds-ink-2); font-size: var(--ds-fs-sm); }
+@media (min-width: 768px) { :root { --ds-gutter: 24px; } }
 
-/* ---- صفحات الدردشة والإدارة والدخول: أزرار وشارات بلون الهوية ---- */
-.unread { color: #04122e; }
-.login-card, .login { border-radius: 20px; }
+/* ============ 5. الأزرار ============ */
+.btn, button.btn, a.btn {
+  min-height: var(--ds-control); display: inline-flex; align-items: center; justify-content: center; gap: var(--ds-s2);
+  padding: 0 var(--ds-s4); border: 1px solid transparent; border-radius: var(--ds-r-sm);
+  font-weight: var(--ds-w-bold); font-size: var(--ds-fs-base); text-decoration: none; cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.btn-primary { background: var(--ds-accent); border-color: var(--ds-accent); color: var(--ds-on-accent); }
+.btn-primary:hover { background: var(--ds-accent-ink); border-color: var(--ds-accent-ink); }
+.btn-secondary { background: var(--ds-surface); border-color: var(--ds-line-strong); color: var(--ds-ink); }
+.btn-secondary:hover { border-color: var(--ds-accent); color: var(--ds-accent-ink); }
+.btn-ghost { background: transparent; color: var(--ds-accent-ink); }
+.btn-ghost:hover { background: var(--ds-accent-soft); }
+.btn-danger { background: var(--ds-bad); border-color: var(--ds-bad); color: #fff; }
+.btn-sm { min-height: 36px; padding: 0 var(--ds-s3); font-size: var(--ds-fs-sm); }
+@media (pointer: coarse) { .btn-sm { min-height: var(--ds-control); } }
+.btn:disabled, .btn[aria-disabled="true"], .btn[aria-busy="true"] { opacity: .55; cursor: not-allowed; }
+.btn[aria-busy="true"]::after { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: dfa-spin .8s linear infinite; }
 
-/* اسم المنصة قصير: يبقى ظاهراً على الهاتف أيضاً */
-@media (max-width: 520px) { .iq-brand span { display: inline; font-size: 1rem; } }
+/* ============ 6. الحقول ============ */
+input[type=text], input[type=search], input[type=email], input[type=url], input[type=password],
+input[type=number], input[type=date], input[type=time], input[type=tel], select, textarea, .field {
+  border-radius: var(--ds-r-sm);
+}
+.ds-field, .cg-q {
+  width: 100%; min-height: var(--ds-control); padding: 10px 14px;
+  border: 1px solid var(--ds-line-strong); border-radius: var(--ds-r-sm);
+  background: var(--ds-surface); color: var(--ds-ink); font-size: var(--ds-fs-base);
+}
+.ds-field:focus, .cg-q:focus { outline: none; border-color: var(--ds-accent); box-shadow: var(--ds-ring); }
+.ds-field::placeholder, .cg-q::placeholder { color: var(--ds-ink-2); opacity: .8; }
+.ds-label { display: block; margin-bottom: var(--ds-s1); font-size: var(--ds-fs-sm); font-weight: var(--ds-w-medium); color: var(--ds-ink); }
 
-/* ---- شاشة/مؤشر التحميل الموحد: الشعار + دائرة دوّارة ---- */
-.dfa-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 16px; color: var(--dfa-muted); font-size: .95rem; text-align: center; }
+/* ============ 7. البطاقات والقوائم ============ */
+.card, .course-card, .iq-sec, .management-card, .panel { border-radius: var(--ds-r); }
+.card, .iq-sec { box-shadow: var(--ds-shadow-sm); }
+.ds-card { background: var(--ds-surface); border: 1px solid var(--ds-line); border-radius: var(--ds-r); padding: var(--ds-s4); }
+.ds-list { display: grid; gap: var(--ds-s2); }
+.cg-item {
+  min-height: 56px; display: flex; align-items: center; gap: var(--ds-s3); width: 100%;
+  padding: 12px 16px; border: 1px solid var(--ds-line); border-radius: var(--ds-r);
+  background: var(--ds-surface); color: var(--ds-ink); text-align: start; text-decoration: none; cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.cg-item:hover { border-color: var(--ds-accent); background: var(--ds-accent-soft); }
+.cg-item small { color: var(--ds-ink-2); font-size: var(--ds-fs-sm); }
+
+/* ============ 8. الشارات والتبويبات ============ */
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 10px; border-radius: var(--ds-r-pill);
+  background: var(--ds-surface-2); color: var(--ds-ink-2); font-size: var(--ds-fs-xs); font-weight: var(--ds-w-bold); }
+.ds-badge.ok { background: var(--ds-ok-soft); color: var(--ds-ok); }
+.ds-badge.warn { background: var(--ds-warn-soft); color: var(--ds-warn); }
+.ds-badge.bad { background: var(--ds-bad-soft); color: var(--ds-bad); }
+.ds-tabs { display: flex; gap: var(--ds-s1); padding: 4px; border-radius: var(--ds-r); background: var(--ds-surface-2); overflow-x: auto; scrollbar-width: none; }
+.ds-tabs > * { flex: 1 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: var(--ds-r-sm); background: transparent;
+  color: var(--ds-ink-2); font-weight: var(--ds-w-bold); cursor: pointer; }
+.ds-tabs > [aria-selected="true"], .ds-tabs > [aria-current="step"], .ds-tabs > .on { background: var(--ds-surface); color: var(--ds-accent-ink); box-shadow: var(--ds-shadow-sm); }
+
+/* ============ 9. الحالات: تحميل، فراغ، خطأ، نجاح، بلا صلاحية ============ */
+.ds-alert { display: flex; gap: var(--ds-s2); align-items: flex-start; padding: 12px 14px; border-radius: var(--ds-r-sm);
+  border: 1px solid var(--ds-line); background: var(--ds-surface-2); color: var(--ds-ink); font-size: var(--ds-fs-sm); }
+.ds-alert[data-kind="ok"] { border-color: transparent; background: var(--ds-ok-soft); color: var(--ds-ok); }
+.ds-alert[data-kind="warn"], .ds-alert[data-kind="denied"] { border-color: transparent; background: var(--ds-warn-soft); color: var(--ds-warn); }
+.ds-alert[data-kind="error"] { border-color: transparent; background: var(--ds-bad-soft); color: var(--ds-bad); }
+.ds-empty, .cg-empty { padding: var(--ds-s6) var(--ds-s4); border: 1px dashed var(--ds-line-strong); border-radius: var(--ds-r);
+  color: var(--ds-ink-2); text-align: center; font-size: var(--ds-fs-sm); }
+
+.dfa-load { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 16px; color: var(--ds-ink-2); font-size: .95rem; text-align: center; }
 .dfa-load .dfa-ring { position: relative; width: 64px; height: 64px; display: grid; place-items: center; }
-.dfa-load .dfa-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(91,139,255,.25); border-top-color: var(--dfa-gold); animation: dfa-spin .9s linear infinite; }
+.dfa-load .dfa-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(91, 139, 255, .25); border-top-color: var(--ds-gold); animation: dfa-spin .9s linear infinite; }
 .dfa-load .dfa-ring img { width: 36px; height: 36px; border-radius: 10px; animation: dfa-pulse 1.6s ease-in-out infinite; }
-.dfa-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #08112B; color: #C7D8FF; transition: opacity .25s; }
+.dfa-splash { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: var(--ds-bg); color: var(--ds-ink-2); transition: opacity .25s; }
 .dfa-splash.dfa-out { opacity: 0; pointer-events: none; }
 @keyframes dfa-spin { to { transform: rotate(360deg); } }
 @keyframes dfa-pulse { 50% { transform: scale(.88); opacity: .8; } }
-@media (prefers-reduced-motion: reduce) { .dfa-load .dfa-ring::before, .dfa-load .dfa-ring img { animation: none; } }
+
+/* ============ 10. الحوارات ============ */
+dialog { border: 1px solid var(--ds-line); border-radius: var(--ds-r-lg); background: var(--ds-surface); color: var(--ds-ink); box-shadow: var(--ds-shadow); }
+dialog::backdrop { background: var(--ds-scrim); }
+
+/* ============ 11. رحلة الاختيار (الجامعة ← الكلية ← القسم ← المرحلة) ============ */
+.ds-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ds-s1); margin: var(--ds-s4) 0; padding: 0; list-style: none; counter-reset: ds-step; }
+.ds-steps > li { counter-increment: ds-step; }
+.ds-steps button, .ds-steps span {
+  width: 100%; min-height: var(--ds-control); display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 6px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-sm); background: var(--ds-surface);
+  color: var(--ds-ink-2); font-size: var(--ds-fs-sm); font-weight: var(--ds-w-bold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ds-steps button { cursor: pointer; }
+.ds-steps .done { border-color: var(--ds-gold); background: var(--ds-gold-soft); color: var(--ds-gold-ink); }
+.ds-steps .now { border-color: var(--ds-accent); background: var(--ds-accent); color: var(--ds-on-accent); }
+.ds-path { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 var(--ds-s4); padding: 0; list-style: none; }
+.ds-path button { min-height: 36px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-pill); background: var(--ds-surface);
+  color: var(--ds-accent-ink); font-size: var(--ds-fs-sm); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-path button:hover { border-color: var(--ds-accent); }
+@media (pointer: coarse) { .ds-path button { min-height: var(--ds-control); } }
+
+/* ============ 12. صفحات الدردشة: تتبع الوضع بدل الليلي الثابت ============ */
+.unread { color: var(--ds-on-accent); }
+.login-card, .login { border-radius: var(--ds-r-lg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dfa-load .dfa-ring::before, .dfa-load .dfa-ring img, .btn[aria-busy="true"]::after { animation: none; }
+  .btn, .cg-item { transition: none; }
+}
