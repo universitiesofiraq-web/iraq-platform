@@ -277,7 +277,6 @@ function renderUniversities() {
     ["بلاغات مفتوحة", ov.reports || 0],
     ["الممثلون", ov.reps || 0]
   ]);
-  const activity = element("div", undefined, "activity-panels");
   const universities = panel("نتائج الجامعات · " + number(rows.length));
   universities.card.id = "universities";
   if (rows.length) {
@@ -293,33 +292,79 @@ function renderUniversities() {
   } else {
     universities.card.append(empty(query.length ? "لا توجد جامعات تطابق البحث." : "لا توجد جامعات في هذا العرض."));
   }
-  const joins = panel("التسجيلات الأخيرة");
-  joins.card.id = "joins";
-  const recent = listing.overview?.recent || [];
-  if (recent.length) {
-    const list = element("ul", undefined, "list");
-    for (const r of recent) {
-      const li = element("li");
-      li.append(element("strong", r.name + " · " + r.university),
-        element("small", [r.college, r.department, stageLabel(r.stage), date(r.created_at)].filter(Boolean).join(" · ")));
-      list.append(li);
-    }
-    joins.card.append(list);
-  } else joins.card.append(empty("لم يسجّل أي طالب بعد."));
-
   const log = panel("سجل تفعيل الجامعات", "متى تفعّلت كل جامعة ومن فعّلها");
   log.card.id = "audit";
   const history = element("div");
   auditItems(listing.audit || [], history);
   log.card.append(history);
   const content = $("content");
-  activity.append(joins.card, log.card);
   const summary = element("details", undefined, "overview-summary");
   summary.open = Boolean($("overview-summary")?.open);
   summary.id = "overview-summary";
   summary.append(element("summary", "إحصاءات المنصة"), totals);
-  content.replaceChildren(choices, universities.card, summary, activity);
+  content.replaceChildren(choices, universities.card, summary, log.card);
   content.hidden = false;
+}
+
+async function showRegistrations() {
+  $("title").textContent = "التسجيلات الأخيرة";
+  $("description").textContent = "آخر ٣٠ حسابًا مرتبطًا بمرحلة دراسية، مرتبة حسب تاريخ إنشاء الحساب.";
+  navigation(globalNav, "التسجيلات الأخيرة");
+  $("page-actions").append(link("العودة إلى لوحة الإدارة", "admin.html", "button"));
+  const content = $("content");
+  const { card } = panel("الطلاب المسجّلون");
+  content.replaceChildren(card);
+  content.hidden = false;
+
+  async function load() {
+    showNotice("جارٍ تحميل التسجيلات…");
+    card.setAttribute("aria-busy", "true");
+    const results = element("div");
+    card.replaceChildren(card.firstElementChild, results);
+    try {
+      const { recent } = await api(adminRoot + "/overview");
+      if (!recent.length) {
+        results.append(empty("لا توجد تسجيلات لطلاب مرتبطين بمرحلة دراسية."));
+        showNotice();
+        return;
+      }
+      const form = element("div", undefined, "form");
+      const search = element("input");
+      search.type = "search";
+      search.placeholder = "ابحث بالاسم أو الجامعة أو الكلية أو القسم";
+      form.append(field("البحث في التسجيلات المعروضة", search));
+      const count = element("p", undefined, "muted");
+      count.setAttribute("role", "status");
+      const rows = element("div");
+      function render() {
+        const terms = normalized(search.value).trim().split(/\s+/).filter(Boolean);
+        const matches = recent.filter(r => {
+          const text = normalized([r.name, r.university, r.college, r.department].join(" "));
+          return terms.every(term => text.includes(term));
+        });
+        count.textContent = number(matches.length) + " من " + number(recent.length) + " تسجيلًا";
+        rows.replaceChildren(matches.length
+          ? table(["الطالب", "الجامعة والكلية", "القسم والمرحلة", "إنشاء الحساب"], matches.map(r => {
+            const affiliation = element("div");
+            affiliation.append(element("strong", r.university), element("small", r.college));
+            const academic = element("div");
+            academic.append(element("strong", r.department), element("small", stageLabel(r.stage)));
+            return [element("strong", r.name), affiliation, academic, date(r.created_at)];
+          }))
+          : empty("لا توجد تسجيلات تطابق البحث."));
+      }
+      results.append(form, count, rows);
+      search.addEventListener("input", render);
+      render();
+      showNotice();
+    } catch (error) {
+      showNotice(error.message, true);
+      results.append(button("إعادة المحاولة", load));
+    } finally {
+      card.removeAttribute("aria-busy");
+    }
+  }
+  await load();
 }
 
 async function showGrowth() {
@@ -424,16 +469,18 @@ const globalNavGroups = [
   ["التنظيم الأكاديمي", [["الجامعات", "admin.html#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]]],
   ["الأشخاص والصلاحيات", [["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["روابط الدعوة", "invites.html"]]],
   ["المحتوى والتواصل", [["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"]]],
-  ["المتابعة", [["التسجيلات الأخيرة", "admin.html#joins"], ["تحليل النمو", "admin.html?view=growth"]]]
+  ["المتابعة", [["التسجيلات الأخيرة", "admin.html?view=registrations"], ["تحليل النمو", "admin.html?view=growth"]]]
 ];
 const globalNav = globalNavGroups.flatMap(([, links]) => links);
 
 function showGlobal() {
-  if (new URLSearchParams(location.search).get("view") === "growth") return showGrowth();
-  $("title").textContent = "لوحة الإدارة العامة";
-  $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
+  const view = new URLSearchParams(location.search).get("view");
   $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
   $("scope-label").textContent = "جميع الجامعات";
+  if (view === "registrations" || (!view && location.hash === "#joins")) return showRegistrations();
+  if (view === "growth") return showGrowth();
+  $("title").textContent = "لوحة الإدارة العامة";
+  $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
   $("admin-tasks").hidden = $("directory-tools").hidden = $("search-box").hidden = false;
   $("search").addEventListener("input", renderUniversities);
   const nav = globalNav;
