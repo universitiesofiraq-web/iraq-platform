@@ -59,6 +59,13 @@
   new MutationObserver(soon).observe(body, { childList: true });
   setTimeout(placeFab, 600); setTimeout(placeFab, 2500);
 
+  /* ---------- 3) مكتبة التصدير تُحمَّل بهدوء بعد فتح الملف (لا تؤخّر الفتح، وتبقى جاهزة بلا إنترنت) ---------- */
+  setTimeout(function () {
+    var c = navigator.connection; if (c && c.saveData) return;
+    var go = function () { if (window.MedixaStudio && MedixaStudio.loadPdfLib) MedixaStudio.loadPdfLib().catch(function () {}); };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 5000 }); else go();
+  }, 10000);
+
   /* يخفت الزر أثناء الكتابة بالقلم أو الإصبع على الصفحة */
   var inkT = 0;
   addEventListener('pointerdown', function (e) {

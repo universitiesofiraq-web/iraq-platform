@@ -233,11 +233,39 @@
   M.on('pages', () => { if (R.io) applyOrder(); });
 
   /* ---------- open ---------- */
+  /* ---------- opening feedback: a card in the page column with the download progress ---------- */
+  function loader(root, status) {
+    let box = document.getElementById('st-loading');
+    if (!box) { box = document.createElement('div'); box.id = 'st-loading'; box.innerHTML = '<div class="st-ld-ring" aria-hidden="true"></div><p class="st-ld-t">جارٍ فتح الملف…</p><div class="st-ld-bar" aria-hidden="true"><i></i></div><p class="st-ld-n"></p>'; root.prepend(box); }
+    box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite');
+    const t = box.querySelector('.st-ld-t'), bar = box.querySelector('.st-ld-bar i'), n = box.querySelector('.st-ld-n');
+    const mb = x => (x / 1048576).toFixed(x < 10485760 ? 1 : 0);
+    return {
+      progress(got, total) {
+        if (total > 0) { const f = Math.min(1, got / total); bar.style.transform = 'scaleX(' + f + ')'; box.classList.add('st-ld-known'); n.textContent = Math.round(f * 100) + '٪ — ' + mb(got) + ' من ' + mb(total) + ' ميغا'; if (status) status.textContent = 'جارٍ التحميل ' + Math.round(f * 100) + '%'; }
+        else n.textContent = mb(got) + ' ميغا';
+      },
+      step(text) { t.textContent = text; bar.style.transform = 'scaleX(1)'; if (status) status.textContent = text; },
+      done() { box.remove(); }
+    };
+  }
+  /* read the whole response, reporting progress (falls back to arrayBuffer when the body cannot be streamed) */
+  async function readAll(res, ld) {
+    const total = +res.headers.get('content-length') || 0;
+    if (!res.body || !res.body.getReader) { const b = new Uint8Array(await res.arrayBuffer()); ld.progress(b.length, b.length); return b; }
+    const rd = res.body.getReader(), parts = []; let got = 0, last = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; const now = performance.now(); if (now - last > 120) { last = now; ld.progress(got, total); } }
+    ld.progress(got, total || got);
+    if (parts.length === 1) return parts[0];
+    const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out;
+  }
+
   R.open = async function (o) {
     const { src, root, status, error } = o; R.root = root;
+    const loading = loader(root, status);
     const isNotebook = /^notebook:/.test(src);
     const failView = message => {
-      error.textContent = ''; const p = document.createElement('p'); p.textContent = message; error.append(p);
+      loading.done(); error.textContent = ''; const p = document.createElement('p'); p.textContent = message; error.append(p);
       let u = null; try { u = new URL(src, location.href); } catch {}
       if (u && u.origin === location.origin && /^https?:$/.test(u.protocol)) { const a = document.createElement('a'); a.href = u.href; a.target = '_blank'; a.rel = 'noopener'; a.className = 'mx-fail-open'; a.textContent = 'افتح الملف مباشرة'; error.append(a, ' '); }
       const r = document.createElement('button'); r.type = 'button'; r.className = 'mx-fail-retry'; r.textContent = 'أعد المحاولة'; r.onclick = () => location.reload(); error.append(r); status.textContent = 'تعذر عرض الملف هنا';
@@ -255,17 +283,22 @@
         for (let i = 1; i <= R.raster.length; i++) { const im = await imageFor(i); R.sizes.push({ w: im.naturalWidth, h: im.naturalHeight }); R.proxies.push(null); }
         const note = document.createElement('p'); note.className = 'mx-raster-note'; note.textContent = 'مكتبة عرض PDF غير متاحة الآن، فنعرض صور الصفحات المحفوظة. الرسم وأدوات الدراسة تعمل؛ البحث في النص وتنزيل PDF بالتعليقات غير متاحين.'; error.append(note);
       } else {
-        const res = await fetch(src); if (!res.ok) throw Error('HTTP ' + res.status);
-        R.bytes = new Uint8Array(await res.arrayBuffer());
+        /* the download may already be running: pdf-notes.html starts it in <head>, while the scripts load (2026-11-19) */
+        const pre = window.__stPdf && window.__stPdf.src === src ? window.__stPdf.p : null; if (window.__stPdf) window.__stPdf = null;
+        const res = await (pre || fetch(src)).catch(() => fetch(src)); if (!res.ok) throw Error('HTTP ' + res.status);
+        R.bytes = await readAll(res, loading);
+        loading.step('جارٍ تجهيز الصفحات…');
         R.doc = await pdfjsLib.getDocument({ data: R.bytes.slice(), standardFontDataUrl: FONTS, cMapUrl: CMAPS, cMapPacked: true, disableFontFace: true }).promise; /* same as the course viewer: without these, letters of some files overlap on iPad */
         if (manifest && manifest.length) R.raster = manifest.map(u => new URL(u, location.href).href);
-        for (let i = 1; i <= R.doc.numPages; i++) { const pr = await R.doc.getPage(i), vp = pr.getViewport({ scale: 1 }); R.sizes.push({ w: vp.width, h: vp.height }); R.proxies.push(pr); }
+        /* all pages at once (the worker answers in parallel) instead of one round trip after another */
+        const prs = await Promise.all(Array.from({ length: R.doc.numPages }, (_, i) => R.doc.getPage(i + 1)));
+        for (const pr of prs) { const vp = pr.getViewport({ scale: 1 }); R.sizes.push({ w: vp.width, h: vp.height }); R.proxies.push(pr); }
       }
       R.nSources = R.sizes.length; M.setSources(R.nSources);
       await M.init({ src, bytes: R.bytes });
       if (isNotebook && !M.S.layout.blanks.length) M.addBlank(0, 'lined');           /* a notebook always has a page to write on */
       R.io = new IntersectionObserver(es => { for (const e of es) { const p = e.target.__p; if (p) p.near = e.isIntersecting; } if (!R.frozen) settle(); }, { rootMargin: TOUCH ? '700px 0px' : '1600px 0px' });
-      R.pages = M.pageOrder(R.nSources).map(makePage); root.append(...R.pages.map(p => p.el)); labels();
+      R.pages = M.pageOrder(R.nSources).map(makePage); loading.done(); root.append(...R.pages.map(p => p.el)); labels();
       if (window.ResizeObserver) { let w0 = root.clientWidth; new ResizeObserver(() => { if (Math.abs(root.clientWidth - w0) > 2) { w0 = root.clientWidth; relayout(); } }).observe(root); }
       M.ready(); emit('opened', R);
       return R;
@@ -274,6 +307,7 @@
   /* The PDF to export over: the original bytes, or an empty document for a notebook. */
   R.getBytes = async function () {
     if (R.bytes) return R.bytes;
+    if (R.notebook && M.loadPdfLib) await M.loadPdfLib().catch(() => {});
     if (R.notebook && window.PDFLib) { const d = await PDFLib.PDFDocument.create(); return new Uint8Array(await d.save()); }
     return null;
   };

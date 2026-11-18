@@ -973,7 +973,15 @@
     return { strokes, pages: [...pages].sort((a, b) => a - b), hasMargins: Object.keys(S.layout.margins).length > 0 };
   }
   /* Output page list: every source page (in place) plus the virtual blank pages in display order. */
+  /* pdf-lib (525 KB) is needed only to export: loaded on first use, or quietly after the file opened (2026-11-19) */
+  let libP = null;
+  function loadPdfLib() {
+    if (window.PDFLib) return Promise.resolve(window.PDFLib);
+    if (!libP) libP = new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'vendor/pdf-lib/pdf-lib.min.js'; sc.onload = () => ok(window.PDFLib); sc.onerror = () => { libP = null; no(Error('تعذّر تحميل مكتبة التصدير')); }; document.head.append(sc); });
+    return libP;
+  }
   async function exportPdf(bytes, opts) {
+    await loadPdfLib();
     opts = opts || {};
     const { PDFDocument, rgb, LineCapStyle, LineJoinStyle } = window.PDFLib;
     const hasSrc = !!bytes && S.nSources > 0;                         /* a notebook has no source pages (pdf-lib would add one to an empty file) */
@@ -1234,7 +1242,7 @@
     /* the toolbar toggle: 'nav' = the pen writes, the finger scrolls and zooms; 'draw' = the finger writes too; 'auto' */
     setFingerMode(m) { if (m === 'draw') setInput({ fingerMode: 'draw', stylusOnly: false, fingerDraw: true }); else if (m === 'nav') setInput({ fingerMode: 'nav' }); else setInput({ fingerMode: 'auto', stylusOnly: false, fingerDraw: true, autoStylus: true }); },
     setSnap(v) { S.snap = !!v; },
-    setInkHd, getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
+    setInkHd, loadPdfLib, getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
   };
   window.MedixaStudio = api;
 })();
