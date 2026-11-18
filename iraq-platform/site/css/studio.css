@@ -140,6 +140,10 @@ main#pages{max-width:none;overflow-x:auto;padding-inline:10px}
 body.medixa-dark .page canvas.ink,body.medixa-dark .page canvas.ink-hd,body.medixa-dark .page canvas.over,body.medixa-dark .st-blank canvas.ink,body.medixa-dark .st-blank canvas.ink-hd{mix-blend-mode:normal}
 /* live layer (stroke in progress, lasso, eraser cursor) above the committed ink; never takes input */
 .page canvas.over,.st-blank canvas.over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* the live pen stroke (studio-ink liveInc): one group, its opacity is the ink alpha */
+.page .ink-live,.st-blank .ink-live{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply}
+.page .ink-live canvas,.st-blank .ink-live canvas{position:absolute;inset:0;width:100%;height:100%}
+body.medixa-dark .page .ink-live,body.medixa-dark .st-blank .ink-live{mix-blend-mode:normal}
 /* touch belongs to the ink engine inside the document (draw / one-finger pan / two-finger pan + pinch). Text selection
    is MEDIXA's own (studio-smart.js, 2026-10-21): the browser never selects inside the document, so iPad shows no tall
    blue blocks, no edit menu and no Touch-to-Search; editors inside a page keep normal text editing */

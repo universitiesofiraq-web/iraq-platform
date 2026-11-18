@@ -211,11 +211,14 @@
   function ribbon(pts, widths) {
     const polys = [];
     const circle = (x, y, r) => { const n = r > 6 ? 16 : 10, c = []; for (let k = 0; k < n; k++) { const a = -k / n * 2 * Math.PI; c.push([x + r * Math.cos(a), y + r * Math.sin(a)]); } return c; };
-    for (let i = 0; i < pts.length; i++) polys.push(circle(pts[i][0], pts[i][1], Math.max(0.15, widths[i] / 2)));
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1], b = pts[i], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy); if (l < 1e-6) continue;
-      const nx = -dy / l, ny = dx / l, ra = widths[i - 1] / 2, rb = widths[i] / 2;
-      polys.push([[a[0] + nx * ra, a[1] + ny * ra], [a[0] - nx * ra, a[1] - ny * ra], [b[0] - nx * rb, b[1] - ny * rb], [b[0] + nx * rb, b[1] + ny * rb]]);
+    /* bead, quad, bead, quad… in drawing order (2026-11-19): the union is the same in any order, but when the polygons
+       are filled in chunks (fillPolys) neighbours stay in the same chunk, so edges are not anti-aliased twice */
+    for (let i = 0; i < pts.length; i++) {
+      if (i > 0) {
+        const a = pts[i - 1], b = pts[i], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy);
+        if (l >= 1e-6) { const nx = -dy / l, ny = dx / l, ra = widths[i - 1] / 2, rb = widths[i] / 2; polys.push([[a[0] + nx * ra, a[1] + ny * ra], [a[0] - nx * ra, a[1] - ny * ra], [b[0] - nx * rb, b[1] - ny * rb], [b[0] + nx * rb, b[1] + ny * rb]]); }
+      }
+      polys.push(circle(pts[i][0], pts[i][1], Math.max(0.15, widths[i] / 2)));
     }
     for (const p of polys) { let area = 0; for (let k = 0; k < p.length; k++) { const q = p[k], r = p[(k + 1) % p.length]; area += q[0] * r[1] - r[0] * q[1]; } if (area > 0) p.reverse(); }   /* same orientation everywhere */
     return polys;
@@ -238,7 +241,41 @@
     }
     return ctx.createPattern(tile, 'repeat') || color;
   }
-  function fillPolys(ctx, polys) { ctx.beginPath(); for (const p of polys) { ctx.moveTo(p[0][0], p[0][1]); for (let k = 1; k < p.length; k++) ctx.lineTo(p[k][0], p[k][1]); ctx.closePath(); } ctx.fill('nonzero'); }
+  /* Filling thousands of overlapping beads in ONE nonzero path costs O(n²) in the rasterizer: a 900-point stroke took
+     150 ms, so a long stroke lagged behind the pencil and a page full of handwriting re-drew slowly (2026-11-19).
+     Opaque ink is filled in chunks (the same pixels). Translucent ink (pencil, brush, opacity < 1) is filled opaque into
+     a scratch canvas in chunks and composited once with the stroke's alpha, so overlaps still never darken.
+     S.fillChunk is only changed by the regression test (a huge value = the old single fill). */
+  function fillRange(c, polys, i0, i1) { c.beginPath(); for (let j = i0; j < i1; j++) { const p = polys[j]; c.moveTo(p[0][0], p[0][1]); for (let k = 1; k < p.length; k++) c.lineTo(p[k][0], p[k][1]); c.closePath(); } c.fill('nonzero'); }
+  function fillChunks(c, polys, K) { for (let i = 0; i < polys.length; i += K) fillRange(c, polys, i, Math.min(polys.length, i + K)); }
+  let scratch = null, scratchT = 0;
+  function fillPolys(ctx, polys) {
+    const K = S.fillChunk || 48;
+    if (polys.length <= K) { fillRange(ctx, polys, 0, polys.length); return; }
+    if (ctx.globalAlpha >= 0.999 || !ctx.getTransform) { fillChunks(ctx, polys, K); return; }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of polys) for (const q of p) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+    const T = ctx.getTransform(), xs = [], ys = [];
+    for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { xs.push(T.a * x + T.c * y + T.e); ys.push(T.b * x + T.d * y + T.f); }
+    const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    const dx = Math.max(0, Math.floor(Math.min(...xs)) - 2), dy = Math.max(0, Math.floor(Math.min(...ys)) - 2);
+    const W = Math.min(cw, Math.ceil(Math.max(...xs)) + 2) - dx, H = Math.min(ch, Math.ceil(Math.max(...ys)) + 2) - dy;
+    if (W <= 0 || H <= 0) return;
+    if (!scratch) scratch = document.createElement('canvas');
+    if (scratch.width < W || scratch.height < H) { scratch.width = Math.max(W, scratch.width); scratch.height = Math.max(H, scratch.height); }
+    clearTimeout(scratchT); scratchT = setTimeout(() => { if (scratch) { scratch.width = scratch.height = 0; scratch = null; } }, 3000);   /* iPad canvas memory: give it back when idle */
+    const sc = scratch.getContext('2d');
+    sc.setTransform(1, 0, 0, 1, 0, 0); sc.globalAlpha = 1; sc.globalCompositeOperation = 'source-over'; sc.clearRect(0, 0, W, H);
+    sc.setTransform(T.a, T.b, T.c, T.d, T.e - dx, T.f - dy);
+    if (typeof ctx.fillStyle === 'string') { sc.fillStyle = ctx.fillStyle; fillChunks(sc, polys, K); }
+    else {
+      /* a textured fill (pencil grain has its own transparency): fill the shape as a solid mask in chunks, then paint the
+         texture once through the mask, so where chunks overlap the grain is not laid down twice */
+      sc.fillStyle = '#000'; fillChunks(sc, polys, K);
+      sc.globalCompositeOperation = 'source-in'; sc.fillStyle = ctx.fillStyle; sc.fillRect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8); sc.globalCompositeOperation = 'source-over';
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(scratch, 0, 0, W, H, dx, dy, W, H); ctx.restore();
+  }
   function arrowSegs(s, w, h) {
     const a = s.points[0], b = s.points[s.points.length - 1], k = h / w, size = Math.max(0.012, (s.width || 3) * 0.0048);
     const segs = [[a, b]].concat(C.arrowHead(a, b, size, k)); if (s.head === 'both') segs.push(...C.arrowHead(b, a, size, k));
@@ -486,13 +523,84 @@
       if (!pg.needsPaint) continue;
       pg.needsPaint = false;
       const ctx = pg.over.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, pg.over.width, pg.over.height);
-      if (pg.live) { ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t); drawStroke(ctx, pg.live, pg.pw, pg.ph); ctx.restore(); }
+      if (pg.live && !liveInc(pg, pg.live)) { liveReset(pg); ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t); drawStroke(ctx, pg.live, pg.pw, pg.ph); ctx.restore(); }
+      else if (!pg.live) liveReset(pg);
       if (pg.active && pg.active.tool === 'eraser') {
         if (pg.active.lasso && pg.active.lasso.length > 1) drawEraserLasso(ctx, pg, pg.active.lasso);
         else if (pg.active.last) drawCursor(ctx, pg, pg.active.last, pg.active.dynR);
       } else if (G.hover && G.hover.pg === pg) drawCursor(ctx, pg, G.hover.p, G.hover.r);
       emit('overlay', { pg, ctx });
     }
+  }
+  /* ---------- the live pen stroke, drawn incrementally (2026-11-19) ----------
+     Re-filling the whole live stroke every frame made a long stroke fall behind the pencil (the cost grew with its
+     length). The part of a pen stroke that can no longer change is drawn ONCE into a "pre" canvas; only the parts that
+     still change (the start taper and the last points) are re-drawn into a "tail" canvas each frame. Both sit in one
+     wrapper whose CSS opacity is the ink's alpha, so joins never darken. The geometry is exactly drawStroke's
+     (penWidths → Chaikin → beads and quads), and the committed stroke is still drawn by drawStroke (endTool).
+     Pencil (grain texture), dashed pens, shapes, snapped strokes and highlighters keep the full redraw. */
+  function liveEligible(L) {
+    return L && L.tool === 'pen' && L.pen && L.pen !== 'pencil' && !(L.dash && L.dash !== 'solid') && !C.shapeSegments(L) && L.points.length > 2 && L.points.length < 3000;
+  }
+  function liveLayer(pg) {
+    let v = pg.lv;
+    if (!v) {
+      const wrap = document.createElement('div'); wrap.className = 'ink-live'; wrap.setAttribute('aria-hidden', 'true'); wrap.hidden = true;
+      const pre = document.createElement('canvas'), tail = document.createElement('canvas'); wrap.append(pre, tail);
+      v = pg.lv = { wrap, pre, tail, L: null, start: null, done: null };
+    }
+    if (v.wrap.nextElementSibling !== pg.over) pg.over.before(v.wrap);
+    if (v.pre.width !== pg.over.width || v.pre.height !== pg.over.height) { v.pre.width = v.tail.width = pg.over.width; v.pre.height = v.tail.height = pg.over.height; v.L = null; v.start = v.done = null; v.tb = null; }   /* resizing cleared the pixels: start the stroke over */
+    clearTimeout(v.idle); v.idle = setTimeout(() => liveFree(pg), 20000);   /* iPad canvas memory: give the pixels back when idle */
+    return v;
+  }
+  function liveReset(pg) {
+    const v = pg.lv; if (!v || !v.L) return;
+    v.L = null; v.start = v.done = null; v.tb = null; v.wrap.hidden = true;
+    v.pre.getContext('2d').clearRect(0, 0, v.pre.width, v.pre.height); v.tail.getContext('2d').clearRect(0, 0, v.tail.width, v.tail.height);
+  }
+  function liveFree(pg) { const v = pg.lv; if (!v || pg.live) return; clearTimeout(v.idle); v.pre.width = v.pre.height = v.tail.width = v.tail.height = 0; v.wrap.remove(); pg.lv = null; }
+  function liveInc(pg, L) {
+    if (!liveEligible(L) || !pg.over.width) return false;
+    const v = liveLayer(pg), n = L.points.length, w = pg.pw, h = pg.ph;
+    if (v.L !== L) { liveReset(pg); v.L = L; v.start = v.done = null; v.tb = null; }
+    const st = C.penStyle(L.pen); v.wrap.style.opacity = String((st.alpha || 1) * (L.op || 1)); v.wrap.hidden = false;
+    const P = L.points.map(p => [p[0] * w, p[1] * h]), Wd = C.penWidths(L, w, h);
+    /* Chaikin point m (as in chaikin()): 0 = first point, 2n-1 = last, else 3/4–1/4 mixes of raw points i and i+1 */
+    const cp = m => {
+      if (m <= 0) return [P[0][0], P[0][1], Wd[0]];
+      if (m >= 2 * n - 1) return [P[n - 1][0], P[n - 1][1], Wd[n - 1]];
+      const i = (m - 1) >> 1, f = (m - 1) & 1 ? 0.25 : 0.75, a = P[i], b = P[i + 1];
+      return [a[0] * f + b[0] * (1 - f), a[1] * f + b[1] * (1 - f), Wd[i] * f + Wd[i + 1] * (1 - f)];
+    };
+    const ox = w * pg.ext.l, oy = h * pg.ext.t;
+    const range = (ctx, m0, m1, box, skipFirst) => {       /* beads m0..m1 and the quads between them */
+      if (m1 <= m0) return; const t = []; for (let m = m0; m <= m1; m++) t.push(cp(m));
+      if (box) for (const q of t) { const r = q[2] / 2 + 3; box[0] = Math.min(box[0], q[0] - r + ox); box[1] = Math.min(box[1], q[1] - r + oy); box[2] = Math.max(box[2], q[0] + r + ox); box[3] = Math.max(box[3], q[1] + r + oy); }
+      const polys = ribbon(t.map(q => [q[0], q[1]]), t.map(q => q[2]));
+      fillPolys(ctx, skipFirst ? polys.slice(1) : polys);  /* the shared first bead is already drawn by the range before */
+    };
+    const prep = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.translate(w * pg.ext.l, h * pg.ext.t); x.fillStyle = L.color || '#e43d56'; return x; };
+    /* raw points whose width can no longer change: 1.5 taper lengths (3 line widths) away from both ends */
+    const dT = 1.5 * 3 * (L.width || 3) * w / 800, cs = [0];
+    for (let i = 1; i < n; i++) cs.push(cs[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const tot = cs[n - 1]; let A = -1, B = -1;
+    for (let i = 2; i < n; i++) if (cs[i] >= dT) { A = i; break; }
+    for (let i = n - 5; i >= 0; i--) if (tot - cs[i] >= dT) { B = i; break; }
+    const f0 = A + 1, f1 = B - 1;                           /* frozen raw segments [f0, f1): their raw points i-1..i+1 are stable */
+    if (A >= 0 && B >= 0 && f1 > f0) {
+      if (v.start == null) { v.start = f0; v.done = f0; }
+      if (f1 > v.done) { const x = prep(v.pre); range(x, 2 * v.done, 2 * f1, null, v.done > v.start); v.done = f1; }
+    }
+    /* clear only where the tail was drawn last frame (a full clear of a 4-megapixel canvas every frame is not free) */
+    const t = prep(v.tail), ob = v.tb; t.save(); t.setTransform(1, 0, 0, 1, 0, 0);
+    if (ob) t.clearRect(Math.floor(ob[0]), Math.floor(ob[1]), Math.ceil(ob[2] - ob[0]) + 1, Math.ceil(ob[3] - ob[1]) + 1); else t.clearRect(0, 0, v.tail.width, v.tail.height);
+    t.restore();
+    const nb = [Infinity, Infinity, -Infinity, -Infinity];
+    if (v.start == null) range(t, 0, 2 * n - 1, nb);
+    else { range(t, 0, 2 * v.start, nb); range(t, 2 * v.done, 2 * n - 1, nb); }
+    v.tb = nb[0] < Infinity ? nb : null;
+    return true;
   }
   function paint(pg) { if (!pg) return; pg.needsPaint = true; if (!S.raf) S.raf = requestAnimationFrame(frame); }
   function setPageActive(n, on) { const pg = S.pages.get(n); if (!pg || pg.on === !!on) return; if (!on && pg.active) return; pg.on = !!on; sizePage(pg); if (on) { pg.dirty = true; paint(pg); } }
@@ -760,7 +868,7 @@
       if (!cancelled && S.styles.eraser.autoBack && !(rec && rec.eraserTip) && S.lastDrawTool && S.lastDrawTool !== 'eraser') setTool(S.lastDrawTool);
       return;
     }
-    const L = pg.live; pg.live = null;
+    const L = pg.live; pg.live = null; liveReset(pg);
     if (!L) return;
     if (cancelled) { paint(pg); setState(S.dirty ? 'pending' : 'saved'); return; }      /* an accidental / rejected contact leaves nothing */
     if (a.raw && !C.SHAPES.includes(L.tool) && !a.straight) {                         /* the filter trails slightly: end exactly where the pen lifted */
