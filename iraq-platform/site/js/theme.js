@@ -36,6 +36,12 @@
   function addToggle() {
     var nav = document.querySelector(".iq-top nav");
     if (!nav || nav.querySelector(".iq-theme")) return;
+    /* الصفحة الحالية: تمييز رابطها في الشريط العلوي */
+    var here = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "");
+    [].forEach.call(nav.querySelectorAll("a[href]"), function (a) {
+      var t = (a.getAttribute("href") || "").split(/[?#]/)[0].replace(/\.html$/, "");
+      if (t && t === here && !a.classList.contains("iq-login")) a.setAttribute("aria-current", "page");
+    });
     var b = document.createElement("button");
     b.type = "button"; b.className = "iq-theme";
     function paint() {

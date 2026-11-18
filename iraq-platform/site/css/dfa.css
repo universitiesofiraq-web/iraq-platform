@@ -139,6 +139,8 @@
 }
 
 /* ============ 2. الأساس ============ */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
 html { font-family: var(--ds-font); -webkit-text-size-adjust: 100%; }
 body { background: var(--ds-bg); color: var(--ds-ink); font-size: var(--ds-fs-base); line-height: var(--ds-lh); }
 body, button, input, select, textarea { font-family: var(--ds-font); }
@@ -151,7 +153,7 @@ h1, h2, h3 { line-height: var(--ds-lh-tight); }
 /* ============ 3. الشعار والشريط العلوي ============ */
 .dfa-mark { display: block; flex: none; width: 32px; height: 32px; border-radius: 9px; }
 .iq-brand, .brand, .semester-brand { font-weight: var(--ds-w-black); letter-spacing: 0; }
-.iq-brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-size: 1.1rem; }
+.iq-brand { display: inline-flex; align-items: center; gap: 10px; min-height: var(--ds-control); color: #fff; text-decoration: none; font-size: 1.1rem; }
 .brand-mark { border-radius: 10px; background: transparent; }
 
 .iq-top {
@@ -170,11 +172,16 @@ h1, h2, h3 { line-height: var(--ds-lh-tight); }
 .iq-top nav a[aria-current="page"] { background: rgba(255, 255, 255, .14); color: #fff; }
 .iq-top nav a.iq-login { background: var(--ds-gold); color: #2A1D00; font-weight: var(--ds-w-bold); }
 .iq-top nav a.iq-login:hover { background: #F0C766; }
+.iq-theme { min-width: var(--ds-control); min-height: var(--ds-control); justify-content: center; border: 0; background: none; font-size: 1.15rem; cursor: pointer; }
 @media (max-width: 520px) {
   .iq-top { padding-inline: 12px; }
   .iq-brand span { display: inline; font-size: 1rem; }
   .iq-top nav { overflow-x: auto; scrollbar-width: none; }
+  .iq-top nav::-webkit-scrollbar { display: none; }
+  .iq-top nav a, .iq-top nav button { flex: none; }
+  .iq-brand { flex: none; }
   .iq-top nav a, .iq-top nav button { padding: 0 9px; }
+  .iq-top nav .iq-opt { display: none; }  /* روابط ثانوية تظهر في الصفحة نفسها */
 }
 
 /* ============ 4. التخطيط ============ */

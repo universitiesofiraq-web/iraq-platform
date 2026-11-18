@@ -23,13 +23,7 @@ button,input,select{font:inherit}
 .iq-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* الشريط العلوي */
-.iq-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(16px,calc((100vw - 1040px)/2));background:var(--lapis-d);color:#fff}
-.iq-brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:1.05rem}
-.iq-top nav{display:flex;align-items:center;gap:4px}
-.iq-top nav a{color:#DCE6FF;text-decoration:none;font-size:.92rem;padding:10px 12px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center}
-.iq-top nav a:hover{background:rgba(255,255,255,.1)}
-.iq-top nav a.iq-login{background:var(--gold);color:#2A1D00;font-weight:600}
-@media(max-width:520px){.iq-brand span{display:none}.iq-top{padding-inline:12px}.iq-top nav{min-width:0;overflow-x:auto;scrollbar-width:none}.iq-top nav::-webkit-scrollbar{display:none}.iq-top nav a{flex:none;padding:10px 10px;font-size:.88rem}.iq-brand{flex:none;min-width:44px;justify-content:center}.iq-top nav a.iq-login{order:-1}}
+/* الشريط العلوي (.iq-top) معرّف مرة واحدة في dfa.css */
 
 /* الواجهة الرئيسية */
 .iq-hero{position:relative;background:var(--lapis-d);color:#fff;padding:44px 16px 72px;
@@ -75,7 +69,7 @@ button,input,select{font:inherit}
 .cg h1,.sj h1,.ct h1{font-size:1.6rem;line-height:1.3;margin:6px 0 14px}
 .cg h3{margin:22px 0 8px;font-size:.95rem;color:var(--ink2);font-weight:600}
 .cg-path{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px;font-size:.92rem;color:var(--ink2)}
-.cg-path button{background:var(--surface);border:1px solid var(--line);color:var(--lapis);cursor:pointer;padding:6px 12px;border-radius:99px;min-height:36px}
+.cg-path button{background:var(--surface);border:1px solid var(--line);color:var(--lapis);cursor:pointer;padding:6px 12px;border-radius:99px;min-height:40px}
 .cg-q,.ct input,.ct select,.cg-add input,.cg-add select{width:100%;padding:12px 14px;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .cg-q{margin-bottom:12px}
 .cg-q:focus,.ct input:focus,.ct select:focus{outline:3px solid var(--gold);border-color:transparent}
@@ -167,7 +161,6 @@ button,input,select{font:inherit}
 /* مشترك (تحسين الواجهات 2026-11-15) */
 .up #form{display:grid;gap:12px}
 .ct-note:empty{display:none}
-.iq-top .iq-brand{min-height:44px}
 .sj-main{display:grid;gap:2px;min-width:0;flex:1 1 220px}.sj-name{font-weight:700;color:var(--lapis);text-decoration:none;overflow-wrap:anywhere}.sj-meta{color:var(--ink2)}.sj-err{color:var(--bad);margin:0;width:100%;font-size:.9rem}
 .sj-act a{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
 .sj-main .sj-tag{justify-self:start;margin:4px 0 0}
