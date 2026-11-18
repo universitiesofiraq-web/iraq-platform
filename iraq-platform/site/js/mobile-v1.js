@@ -78,20 +78,19 @@
     if (opts.href) t.href = opts.href; else t.type = "button";
     var ic = el("span", "mv-ic"); ic.setAttribute("aria-hidden", "true"); ic.appendChild(MS.icon(ico, 22)); t.appendChild(ic);
     var tx = el("span", "mv-tx"); tx.appendChild(el("strong", "", label)); tx.appendChild(el("small", opts.soon ? "mv-soon" : "", opts.soon ? "قريباً" : sub)); t.appendChild(tx);
+    if (opts.app) t.classList.add("mv-app");
     if (opts.soon) { t.classList.add("is-soon"); t.setAttribute("aria-disabled", "true"); t.tabIndex = -1; }
     if (opts.click) t.addEventListener("click", opts.click);
     return t;
   }
   var openGuide = function () { var g = document.querySelector("[data-open-guide]"); if (g) g.click(); };
   var grid = el("div", "mv-grid");
-  grid.appendChild(tile("المواد الدراسية", "مواد مرحلتك", "book", 1, { href: "#semesters" }));
-  grid.appendChild(tile("المحاضرات", "أحدث الملفات", "file", 2, { href: "#latest" }));
+  /* المواد الدراسية مع «أحدث المحاضرات» في خانة واحدة (بطلب محمد)، وفي أعلى الشبكة */
+  grid.appendChild(tile("المواد الدراسية", "المواد وأحدث المحاضرات", "book", 1, { href: "#semesters" }));
+  /* «دفتري»: وضع اكتب وظلّل بشكل تطبيق، بعرض الشبكة كله */
+  grid.appendChild(tile("دفتري", "اكتب وظلّل على ملفاتك", "quill", 2, { href: "pdf-notes.html", app: true }));
   grid.appendChild(tile("المرشد الذكي", "اسأل ولخّص", "sparkles", 4, { click: openGuide }));
   grid.appendChild(tile("دردشة مجموعتي", "زملاء مرحلتك", "users", 5, { href: "group-chat.html" }));
-  grid.appendChild(tile("المفضلة", "موادك المحفوظة", "star", 3, { href: "#favorites" }));
-  grid.appendChild(tile("أدوات الطالب", "التقدم والامتحان", "tools", 6, { href: "#tools" }));
-  grid.appendChild(tile("التقويم", "المواعيد", "calendar", 1, { soon: true }));
-  grid.appendChild(tile("بنك الأسئلة", "تدرّب واختبر", "help", 2, { soon: true }));
 
   /* «تابع دراستك»: آخر مادة فتحها الطالب + تقدّمه المحفوظ في هذا المتصفح (لا بيانات وهمية) */
   var cont = el("a", "mv-continue"); cont.hidden = true;
