@@ -88,7 +88,7 @@
   /* المواد الدراسية مع «أحدث المحاضرات» في خانة واحدة (بطلب محمد)، وفي أعلى الشبكة */
   grid.appendChild(tile("المواد الدراسية", "المواد وأحدث المحاضرات", "book", 1, { href: "#semesters" }));
   /* «دفتري»: وضع اكتب وظلّل بشكل تطبيق، بعرض الشبكة كله */
-  grid.appendChild(tile("دفتري", "اكتب وظلّل على ملفاتك", "quill", 2, { href: "pdf-notes.html", app: true }));
+  grid.appendChild(tile("دفتري", "محاضراتك في تطبيق واحد", "quill", 2, { href: "dafter.html", app: true }));
   grid.appendChild(tile("المرشد الذكي", "اسأل ولخّص", "sparkles", 4, { click: openGuide }));
   grid.appendChild(tile("دردشة مجموعتي", "زملاء مرحلتك", "users", 5, { href: "group-chat.html" }));
 

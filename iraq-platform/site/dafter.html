@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script src="js/theme.js?v=3"></script>
+  <title>دفتري | دفعتنا</title>
+  <meta name="description" content="دفتري: الوصول إلى محاضرات موادك وكتابة الملاحظات عليها.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/favicon-48.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#0A1C4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="دفتري">
+  <link rel="stylesheet" href="css/style.css?v=ds1">
+  <link rel="stylesheet" href="css/dfa.css?v=7">
+  <style>
+    /* دفتري: واجهة تطبيق للهاتف والآيباد (بطلب محمد). الألوان من متغيرات المنصة */
+    html, body { background: var(--ds-bg, #f5f7fb); }
+    body { margin: 0; min-height: 100vh; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+    [hidden] { display: none !important; }
+
+    .df-top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      background: color-mix(in srgb, var(--ds-surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--ds-line, #e2e8f0); }
+    .df-top h1 { margin: 0; font-size: 1.3rem; font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .df-top small { color: var(--ds-muted, #64748b); display: block; font-size: .8rem; }
+    .df-round { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; border: 0; background: var(--ds-accent-soft); color: var(--ds-accent); text-decoration: none; flex: none; cursor: pointer; }
+
+    .df-wrap { max-width: 980px; margin-inline: auto; padding: 16px; display: grid; gap: 22px; }
+    .df-card { background: var(--ds-surface); border: 1px solid var(--ds-line, #e2e8f0); border-radius: 20px; box-shadow: var(--ds-shadow-sm); }
+    .df-sec-h { margin: 0 4px 8px; }
+    .df-sec-h h2 { margin: 0; font-size: 1.05rem; }
+    .df-empty { padding: 18px; color: var(--ds-muted, #64748b); margin: 0; }
+
+    /* متابعة */
+    .df-continue { display: flex; align-items: center; gap: 14px; padding: 18px; text-decoration: none; color: #fff; background: linear-gradient(120deg, #1d5a6b, #1b3a66); border: 0; }
+    .df-cont-tx { flex: 1; min-width: 0; display: grid; gap: 4px; }
+    .df-continue small { color: #d6e8ed; }
+    .df-continue strong { font-size: 1.1rem; }
+    .df-bar { height: 6px; border-radius: 6px; background: #ffffff33; overflow: hidden; margin-top: 8px; }
+    .df-bar > span { display: block; height: 100%; background: #ffe1a4; }
+
+    /* المواد كتطبيقات */
+    .df-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px; }
+    .df-app { display: grid; justify-items: center; gap: 8px; padding: 12px 6px; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; text-align: center; text-decoration: none; }
+    .df-app-ico { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--ds-accent-soft); color: var(--ds-accent); box-shadow: var(--ds-shadow-sm); transition: transform .15s ease; }
+    .df-app:active .df-app-ico { transform: scale(.94); }
+    .df-app-name { font-size: .85rem; font-weight: 600; line-height: 1.35; max-width: 120px; overflow-wrap: anywhere; }
+    .df-app-n { font-size: .75rem; color: var(--ds-muted, #64748b); }
+
+    /* قائمة أحدث المحاضرات */
+    .df-list { list-style: none; margin: 0; padding: 0; }
+    .df-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: inherit; border-top: 1px solid var(--ds-line, #e2e8f0); }
+    .df-item:first-child { border-top: 0; }
+    .df-item:hover { background: var(--ds-accent-soft); }
+    .df-num { display: grid; place-items: center; min-width: 40px; height: 40px; border-radius: 12px; background: var(--ds-accent-soft); color: var(--ds-accent); font-weight: 800; flex: none; }
+    .df-tx { display: grid; gap: 2px; min-width: 0; }
+    .df-tx small { color: var(--ds-muted, #64748b); }
+
+    /* عرض المادة: شبكة بطاقات المحاضرات */
+    .df-search { display: flex; align-items: center; gap: 8px; margin: 14px 16px 6px; padding: 0 14px; height: 46px; border-radius: 16px; background: var(--ds-surface); border: 1px solid var(--ds-line, #e2e8f0); box-shadow: var(--ds-shadow-sm); }
+    .df-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: inherit; font-size: 1rem; }
+    .df-count { margin: 8px 18px 4px; color: var(--ds-muted, #64748b); font-size: .85rem; }
+    .df-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 8px 16px 16px; }
+    .df-lec { display: flex; flex-direction: column; overflow: hidden; border-radius: 20px; background: var(--ds-surface); border: 1px solid var(--ds-line, #e2e8f0);
+      box-shadow: var(--ds-shadow-sm); text-decoration: none; color: inherit; transition: transform .15s ease, box-shadow .15s ease; }
+    .df-lec:active { transform: scale(.97); }
+    .df-cover { position: relative; aspect-ratio: 4 / 5; display: grid; place-content: center; justify-items: center; gap: 6px; padding: 14px; color: #fff; text-align: center; }
+    .df-cover .df-big { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 800; line-height: 1; }
+    .df-cover .df-ct { font-size: .85rem; line-height: 1.35; max-width: 92%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+    .df-cover .df-subj { position: absolute; top: 10px; inset-inline-start: 10px; font-size: .7rem; background: #ffffff26; padding: 3px 8px; border-radius: 999px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .df-meta { padding: 10px 12px 12px; display: grid; gap: 2px; min-width: 0; }
+    .df-meta strong { font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .df-meta small { color: var(--ds-muted, #64748b); font-size: .78rem; }
+    @media (min-width: 720px) { .df-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .df-apps { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
+    @media (min-width: 1000px) { .df-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+    /* شريط تنقل عائم، وزر إضافة */
+    .df-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom)); inset-inline: 0; margin-inline: auto; width: max-content; z-index: 12;
+      display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px; background: color-mix(in srgb, var(--ds-surface) 94%, transparent);
+      border: 1px solid var(--ds-line, #e2e8f0); box-shadow: 0 10px 30px -10px #0b1d3a55; backdrop-filter: blur(12px); }
+    .df-dock a { display: grid; place-items: center; width: 52px; height: 44px; border-radius: 999px; color: var(--ds-muted, #64748b); text-decoration: none; }
+    .df-dock a[aria-current="page"] { background: var(--ds-accent-soft); color: var(--ds-accent); }
+    .df-fab { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom)); inset-inline-end: 18px; z-index: 12; width: 60px; height: 60px; border-radius: 50%; border: 0;
+      display: grid; place-items: center; background: var(--ds-accent); color: #fff; box-shadow: 0 12px 24px -10px #1d4ed8aa; text-decoration: none; }
+    @media (prefers-reduced-motion: reduce) { .df-lec, .df-app-ico { transition: none; } }
+  </style>
+</head>
+<body>
+  <noscript><p class="load-error">هذه الصفحة تحتاج إلى تفعيل JavaScript.</p></noscript>
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- عرض الرئيسية: المتابعة والمواد وأحدث المحاضرات -->
+  <div id="viewHome">
+    <header class="df-top">
+      <h1>دفتري<small id="dfSub"></small></h1>
+    </header>
+    <main class="df-wrap">
+      <section id="dfContSec" hidden>
+        <a class="df-card df-continue" id="dfCont" href="#">
+          <span class="dfContIco" aria-hidden="true"></span>
+          <span class="df-cont-tx">
+            <small>تابع دراستك</small>
+            <strong id="dfContName"></strong>
+            <span class="df-bar" aria-hidden="true"><span id="dfContBar"></span></span>
+            <small id="dfContTxt"></small>
+          </span>
+        </a>
+      </section>
+      <section aria-labelledby="dfApps-h">
+        <div class="df-sec-h"><h2 id="dfApps-h">موادي</h2></div>
+        <div class="df-apps" id="dfApps"></div>
+      </section>
+      <section aria-labelledby="dfLatest-h">
+        <div class="df-sec-h"><h2 id="dfLatest-h">أحدث المحاضرات</h2></div>
+        <div class="df-card"><ul class="df-list" id="dfLatest"></ul></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- عرض المادة: مجلد المادة كشبكة بطاقات محاضرات -->
+  <div id="viewSubject" hidden>
+    <header class="df-top">
+      <a class="df-round" href="#" id="dfBack" aria-label="رجوع">›</a>
+      <h1 id="dfSubT"></h1>
+    </header>
+    <label class="df-search">
+      <span aria-hidden="true">&#128269;</span>
+      <input type="search" id="dfQ" placeholder="ابحث في محاضرات المادة" aria-label="ابحث في محاضرات المادة">
+    </label>
+    <p class="df-count" id="dfCount"></p>
+    <div class="df-grid" id="dfGrid"></div>
+  </div>
+
+  <nav class="df-dock" aria-label="التنقل">
+    <a href="platform.html" aria-label="الرئيسية">&#8962;</a>
+    <a href="dafter.html" aria-current="page" aria-label="دفتري">&#9638;</a>
+    <a href="platform.html#semesters" aria-label="المواد">&#9776;</a>
+  </nav>
+  <a class="df-fab" href="pdf-notes.html" aria-label="اكتب وظلّل" title="اكتب وظلّل">+</a>
+
+  <script src="js/api-client.js"></script>
+  <script src="data/courses.js?v=p3-23"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/i18n.js?v=p3-23"></script>
+  <script src="js/app.js?v=ui2"></script>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+      function href(c) { return "course.html?id=" + encodeURIComponent(c.id); }
+      var HUES = [["#1d5a6b", "#1b3a66"], ["#6b3fa0", "#2b2a66"], ["#8a4b1f", "#5c2d12"], ["#1c6b4a", "#123f30"], ["#7a2e4a", "#4a1a2e"], ["#2d5f8a", "#173a57"]];
+      function hueOf(c) { var i = 0; for (var k = 0; k < c.id.length; k++) i += c.id.charCodeAt(k); return HUES[i % HUES.length]; }
+      function lastAdded(l) { return l.files.reduce(function (m, f) { return (f.added || "") > m ? f.added : m; }, ""); }
+      function fmt(iso) {
+        var d = new Date(iso); if (isNaN(d)) return "";
+        return d.toLocaleDateString("ar-IQ", { day: "numeric", month: "short", year: "numeric" });
+      }
+
+      if (window.MS && MS.dataError && MS.dataError()) return;
+      if (window.MS) MS.initShared();
+      $("dfSub").textContent = (window.SITE && SITE.subtitle) || "";
+
+      var list = (window.COURSES || []).slice();
+      function byId(id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+
+      /* ---------- الرئيسية ---------- */
+      var last = null;
+      try { last = MS.course(MS.getLast()); } catch (e) { last = null; }
+      if (last) {
+        var total = last.lectures.length, d = 0;
+        try { d = MS.progress.done(last); } catch (e) { d = 0; }
+        $("dfCont").href = href(last);
+        $("dfContSec").hidden = false;
+        $("dfContName").textContent = last.name || "";
+        $("dfContBar").style.width = (total ? Math.round(d / total * 100) : 0) + "%";
+        $("dfContTxt").textContent = total ? (d + " من " + total + " محاضرة مقروءة") : "";
+        $("dfCont").querySelector(".dfContIco").appendChild(MS.icon("book", 26));
+      }
+
+      var apps = $("dfApps");
+      list.forEach(function (c) {
+        var a = el("a", "df-app"); a.href = "#s=" + encodeURIComponent(c.id);
+        var ic = el("span", "df-app-ico"); ic.appendChild(MS.icon(c.icon || "book", 30)); a.appendChild(ic);
+        a.appendChild(el("span", "df-app-name en", c.name));
+        a.appendChild(el("span", "df-app-n", MS.lecturesLabel(c.lectures.length, true)));
+        apps.appendChild(a);
+      });
+      if (!list.length) apps.appendChild(el("p", "df-empty", "لا توجد مواد بعد"));
+
+      var items = [];
+      list.forEach(function (c) {
+        c.lectures.forEach(function (l) { var a = lastAdded(l); if (a) items.push({ c: c, l: l, d: a }); });
+      });
+      items.sort(function (a, b) { return b.d.localeCompare(a.d); });
+      var ll = $("dfLatest");
+      items.slice(0, 8).forEach(function (it) {
+        var a = el("a", "df-item"); a.href = href(it.c) + "#lec-" + it.l.number;
+        a.appendChild(el("span", "df-num", String(it.l.number)));
+        var t = el("span", "df-tx");
+        t.appendChild(el("span", "en", it.l.title));
+        t.appendChild(el("small", "en", it.c.name));
+        a.appendChild(t);
+        ll.appendChild(a);
+      });
+      if (!items.length) ll.appendChild(el("li", "df-empty", "ستظهر هنا أحدث المحاضرات فور رفعها."));
+
+      /* ---------- عرض المادة (مجلد) ---------- */
+      var cur = null;
+      function paintGrid() {
+        var grid = $("dfGrid"), q = ($("dfQ").value || "").trim().toLowerCase();
+        grid.textContent = "";
+        if (!cur) return;
+        var ordered = cur.lectures.slice().sort(function (a, b) { return a.number - b.number; });
+        var shown = ordered.filter(function (l) { return !q || (l.title || "").toLowerCase().indexOf(q) >= 0 || String(l.number) === q; });
+        $("dfCount").textContent = shown.length + " محاضرة";
+        if (!shown.length) { grid.appendChild(el("p", "df-empty", cur.lectures.length ? "لا توجد محاضرة بهذا الاسم" : "لا توجد محاضرات بعد")); return; }
+        var h = hueOf(cur);
+        shown.forEach(function (l) {
+          var a = el("a", "df-lec"); a.href = href(cur) + "#lec-" + l.number;
+          var cov = el("span", "df-cover"); cov.style.background = "linear-gradient(150deg, " + h[0] + ", " + h[1] + ")";
+          cov.appendChild(el("span", "df-subj en", cur.name));
+          cov.appendChild(el("span", "df-big", String(l.number)));
+          cov.appendChild(el("span", "df-ct en", l.title));
+          a.appendChild(cov);
+          var m = el("span", "df-meta");
+          m.appendChild(el("strong", "en", l.title));
+          var when = lastAdded(l);
+          m.appendChild(el("small", "", when ? fmt(when) : "بلا ملفات بعد"));
+          a.appendChild(m);
+          grid.appendChild(a);
+        });
+      }
+      function route() {
+        var m = /^#s=(.+)$/.exec(location.hash || "");
+        var c = m ? byId(decodeURIComponent(m[1])) : null;
+        $("viewHome").hidden = !!c;
+        $("viewSubject").hidden = !c;
+        cur = c;
+        if (c) {
+          $("dfSubT").textContent = c.name || "";
+          document.title = c.name + " | دفتري";
+          $("dfQ").value = "";
+          paintGrid();
+          window.scrollTo(0, 0);
+        } else {
+          document.title = "دفتري | دفعتنا";
+        }
+      }
+      $("dfBack").addEventListener("click", function (e) { e.preventDefault(); location.hash = ""; });
+      $("dfQ").addEventListener("input", paintGrid);
+      window.addEventListener("hashchange", route);
+      route();
+    })();
+  </script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
