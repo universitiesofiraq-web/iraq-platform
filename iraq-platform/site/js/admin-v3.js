@@ -172,24 +172,6 @@ function table(headers, rows) {
   return wrap;
 }
 
-function auditItems(items, node) {
-  if (!items.length) {
-    node.replaceChildren(empty("لا توجد إجراءات مسجّلة بعد."));
-    return;
-  }
-  const list = element("ul", undefined, "list");
-  for (const entry of items) {
-    const item = element("li");
-    const activity = entry.previous_state === entry.state
-      ? (entry.verified_at ? "تحديث التحقق أو المسؤول" : "تحديث المسؤول")
-      : labels[entry.state];
-    item.append(element("strong", [entry.university, activity].filter(Boolean).join(" · ")),
-      element("small", [entry.actor, date(entry.created_at)].filter(Boolean).join(" · ")));
-    list.append(item);
-  }
-  node.replaceChildren(list);
-}
-
 function profileForm(item) {
   const name = element("input"), city = element("input");
   name.required = true; name.maxLength = city.maxLength = 120;
@@ -292,18 +274,82 @@ function renderUniversities() {
   } else {
     universities.card.append(empty(query.length ? "لا توجد جامعات تطابق البحث." : "لا توجد جامعات في هذا العرض."));
   }
-  const log = panel("سجل تفعيل الجامعات", "متى تفعّلت كل جامعة ومن فعّلها");
-  log.card.id = "audit";
-  const history = element("div");
-  auditItems(listing.audit || [], history);
-  log.card.append(history);
   const content = $("content");
   const summary = element("details", undefined, "overview-summary");
   summary.open = Boolean($("overview-summary")?.open);
   summary.id = "overview-summary";
   summary.append(element("summary", "إحصاءات المنصة"), totals);
-  content.replaceChildren(choices, universities.card, summary, log.card);
+  content.replaceChildren(choices, universities.card, summary);
   content.hidden = false;
+}
+
+async function showActivationLog() {
+  const title = "سجل تفعيل الجامعات";
+  $("title").textContent = title;
+  $("description").textContent = "آخر ٥٠ إجراءً على حالة الجامعات ومسؤوليها، من الأحدث إلى الأقدم.";
+  navigation(globalNav, title);
+  $("page-actions").append(link("العودة إلى لوحة الإدارة", "admin.html", "button"));
+  const { card } = panel("الإجراءات المسجّلة");
+  const content = $("content");
+  content.replaceChildren(card);
+  content.hidden = false;
+  const results = element("div");
+  card.append(results);
+
+  async function load() {
+    showNotice("جارٍ تحميل سجل التفعيل…");
+    results.replaceChildren();
+    card.setAttribute("aria-busy", "true");
+    try {
+      const { items } = await api(adminRoot + "/audit");
+      showNotice();
+      if (!items.length) {
+        results.append(empty("لا توجد إجراءات مسجّلة بعد."));
+        return;
+      }
+      const form = element("div", undefined, "form");
+      const search = element("input");
+      search.type = "search";
+      search.placeholder = "ابحث باسم الجامعة أو منفّذ الإجراء";
+      const state = element("select");
+      state.append(new Option("كل الحالات", ""));
+      for (const key of new Set(items.map(entry => entry.state))) {
+        state.append(new Option(labels[key] || key, key));
+      }
+      form.append(field("البحث في السجل", search), field("الحالة بعد الإجراء", state));
+      const count = element("p", undefined, "muted");
+      count.setAttribute("role", "status");
+      const rows = element("div");
+      function render() {
+        const terms = normalized(search.value).trim().split(/\s+/).filter(Boolean);
+        const matches = items.filter(entry => {
+          const text = normalized([entry.university, entry.actor].join(" "));
+          return (!state.value || state.value === entry.state) && terms.every(term => text.includes(term));
+        });
+        count.textContent = number(matches.length) + " من " + number(items.length) + " إجراء";
+        rows.replaceChildren(matches.length
+          ? table(["الجامعة", "الإجراء", "الحالة بعد الإجراء", "المنفّذ", "التاريخ والوقت"], matches.map(entry => {
+            const activity = entry.previous_state === entry.state
+              ? (entry.verified_at ? "تحديث التحقق أو المسؤول" : "تحديث المسؤول")
+              : "تغيير الحالة";
+            const status = element("span", labels[entry.state] || entry.state, "status");
+            status.dataset.state = entry.state;
+            return [element("strong", entry.university || "—"), activity, status, entry.actor || "—", date(entry.created_at)];
+          }))
+          : empty("لا توجد إجراءات تطابق البحث والتصفية."));
+      }
+      results.append(form, count, rows);
+      search.addEventListener("input", render);
+      state.addEventListener("change", render);
+      render();
+    } catch (error) {
+      showNotice(error.message, true);
+      results.append(button("إعادة المحاولة", load));
+    } finally {
+      card.removeAttribute("aria-busy");
+    }
+  }
+  await load();
 }
 
 async function showRegistrations() {
@@ -391,18 +437,9 @@ async function loadUniversities() {
     if (request !== listVersion) return;
     const overviewData = await api(adminRoot + "/overview").catch(() => null);
     if (request !== listVersion) return;
-    listing = { ...data, audit: listing?.audit || [], overview: overviewData || listing?.overview };
+    listing = { ...data, overview: overviewData || listing?.overview };
     renderUniversities();
     showNotice();
-    const log = $("audit").lastElementChild;
-    try {
-      const audit = await api(adminRoot + "/audit");
-      if (request !== listVersion) return;
-      listing.audit = audit.items;
-      auditItems(audit.items, $("audit").lastElementChild);
-    } catch {
-      if (request === listVersion && log.isConnected) log.replaceChildren(empty("تعذّر تحميل سجل النشاط."));
-    }
   } catch (error) {
     if (request !== listVersion) return;
     listing = undefined;
@@ -469,7 +506,7 @@ const globalNavGroups = [
   ["التنظيم الأكاديمي", [["الجامعات", "admin.html#universities"], ["طلبات تفعيل الجامعات", "activation-requests.html"], ["تنظيم أقسام «المرحلة»", "fix-departments.html"]]],
   ["الأشخاص والصلاحيات", [["تعيين الممثلين", "manage.html"], ["المستخدمون", "admin-tools.html#users"], ["روابط الدعوة", "invites.html"]]],
   ["المحتوى والتواصل", [["مركز الرفع", "upload-center.html"], ["الملفات والبلاغات", "admin-tools.html#files"], ["التبليغات العامة", "announce.html"]]],
-  ["المتابعة", [["التسجيلات الأخيرة", "admin.html?view=registrations"], ["تحليل النمو", "admin.html?view=growth"]]]
+  ["المتابعة", [["التسجيلات الأخيرة", "admin.html?view=registrations"], ["سجل تفعيل الجامعات", "admin.html?view=activation-log"], ["تحليل النمو", "admin.html?view=growth"]]]
 ];
 const globalNav = globalNavGroups.flatMap(([, links]) => links);
 
@@ -478,6 +515,7 @@ function showGlobal() {
   $("role").textContent = me.owner ? "مالك المنصة" : "مدير عام";
   $("scope-label").textContent = "جميع الجامعات";
   if (view === "registrations" || (!view && location.hash === "#joins")) return showRegistrations();
+  if (view === "activation-log" || (!view && location.hash === "#audit")) return showActivationLog();
   if (view === "growth") return showGrowth();
   $("title").textContent = "لوحة الإدارة العامة";
   $("description").textContent = "نظرة سريعة على الطلاب والجامعات والملفات.";
