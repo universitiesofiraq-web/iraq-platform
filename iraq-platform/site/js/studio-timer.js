@@ -56,7 +56,9 @@
 
   /* ---------------- sound ---------------- */
   let ac = null;
-  const unlock = () => { try { if (!ac) { const A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } if (ac && ac.state === 'suspended') ac.resume(); } catch {} };
+  /* the audio context is created only while a timer session with sound exists: creating it on every first touch cost
+     the first pen stroke a hitch on iPad and is not needed otherwise (2026-11-19) */
+  const unlock = () => { if (!state.sound || !state.s) return; try { if (!ac) { const A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } if (ac && ac.state === 'suspended') ac.resume(); } catch {} };
   addEventListener('pointerdown', unlock, { passive: true, capture: true });
   function beep(freqs) {
     if (!state.sound || document.hidden || !ac) return;
