@@ -211,9 +211,17 @@ async function serveFile(id, method, deps, req) {
     "content-disposition": `inline; filename="lecture.pdf"; filename*=UTF-8''${encodeURIComponent(entry.filename || "lecture.pdf")}`,
     "content-length": String(entry.size),
     "cache-control": publicFile ? "public, max-age=0, must-revalidate" : "private, no-store",
-    "x-content-type-options": "nosniff"
+    "x-content-type-options": "nosniff",
+    /* المحتوى لا يتغيّر لنفس المعرّف (الاستبدال = حذف ثم رفع بمعرّف جديد): بصمة ثابتة تسمح للجهاز بأن يسأل
+       «هل تغيّر؟» فيأتيه 304 بلا تنزيل الملف ولا قراءة أجزائه من التخزين (2026-11-19) */
+    etag: `"${id}-${entry.size}"`
   };
   if (method === "HEAD") return new Response(null, { status: 200, headers });
+  const inm = (req && req.headers.get("if-none-match")) || "";
+  if (inm && inm.split(",").some((t) => t.trim().replace(/^W\//, "") === headers.etag)) {
+    const { "content-length": _len, ...rest } = headers;
+    return new Response(null, { status: 304, headers: rest });
+  }
 
   let i = 0;
   const stream = new ReadableStream({

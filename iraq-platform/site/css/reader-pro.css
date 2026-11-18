@@ -116,3 +116,17 @@ body.st-pro.medixa-dark :is(.st-note-b, .st-empty), html body.st-pro.medixa-dark
 /* ---- قائمة مفتوحة تعلو دائماً على لوحتي الصفحات والملاحظات (كانت ورقة الإعدادات تختفي خلف لوحة الصفحات) ---- */
 body.st-pro.st-compact #studio-toolbar:has(.st-pop:not([hidden]), .st-toolset:not([hidden])),
 body.st-pro.st-compact > header:has(.st-pop:not([hidden])){ z-index: 20; }
+
+/* ---- بطاقة فتح الملف: تقدّم التحميل بدل صفحة فارغة ---- */
+#st-loading{ display: grid; justify-items: center; gap: var(--ds-s3); width: min(360px, calc(100% - 32px)); margin: 18vh auto 0; padding: var(--ds-s5);
+  border-radius: var(--ds-r-lg); background: var(--ds-surface); color: var(--ds-ink); box-shadow: var(--ds-shadow); font-family: var(--ds-font); text-align: center; }
+#st-loading p{ margin: 0; }
+#st-loading .st-ld-t{ font-weight: var(--ds-w-bold); }
+#st-loading .st-ld-n{ min-height: 1.4em; color: var(--ds-ink-2); font-size: var(--ds-fs-sm); }
+#st-loading .st-ld-ring{ width: 40px; height: 40px; border-radius: 50%; border: 4px solid var(--ds-accent-soft); border-top-color: var(--ds-accent); animation: st-ld-spin .8s linear infinite; }
+#st-loading .st-ld-bar{ width: 100%; height: 6px; overflow: hidden; border-radius: var(--ds-r-pill); background: var(--ds-surface-2); }
+#st-loading .st-ld-bar i{ display: block; height: 100%; background: var(--ds-accent); transform: scaleX(0); transform-origin: right; transition: transform .15s linear; }
+#st-loading:not(.st-ld-known) .st-ld-bar i{ width: 30%; transform: none; animation: st-ld-slide 1.1s ease-in-out infinite; }
+@keyframes st-ld-spin{ to{ transform: rotate(360deg); } }
+@keyframes st-ld-slide{ from{ margin-inline-start: -30%; } to{ margin-inline-start: 100%; } }
+@media (prefers-reduced-motion: reduce){ #st-loading .st-ld-ring, #st-loading .st-ld-bar i{ animation: none !important; } }

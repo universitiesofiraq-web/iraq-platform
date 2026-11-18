@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v57";
+var V = "ms-v58";
 var FILES = "ms-files-public";
 var SHELL = ["platform.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {
@@ -30,7 +30,20 @@ self.addEventListener("fetch", function (e) {
     }));
 });
 function fetchAndStore(req, cache, uploadFile) {
-  return fetch(req, { cache: "no-cache" }).then(function (res) {
+  /* ملف مرفوع محفوظ: نسأل الخادم «هل تغيّر؟» بالبصمة (ETag). الخادم يقرّر الصلاحية في كل مرة كما كان،
+     لكن الرد 304 يعني أن النسخة المحفوظة صالحة فتُفتح فوراً بلا تنزيل الملف كاملاً (2026-11-19). */
+  var saved = uploadFile ? cache.then(function (c) { return c && c.match(req); }).catch(function () {}) : Promise.resolve(null);
+  return saved.then(function (hit) {
+    var tag = hit && hit.headers && hit.headers.get("etag");
+    var ask = req;
+    if (tag) { var h = new Headers(req.headers); h.set("if-none-match", tag); ask = new Request(req.url, { method: "GET", headers: h, credentials: req.credentials || "same-origin" }); }
+    return fetch(ask, { cache: "no-cache" }).then(function (res) {
+      if (tag && res.status === 304) return hit;
+      return store(req, res, cache, uploadFile);
+    });
+  });
+}
+function store(req, res, cache, uploadFile) {
     var directives = res.headers.get("cache-control") || "";
     var cacheable = res.status === 200 && !res.redirected && !/\b(?:private|no-store)\b/i.test(directives);
     if (cacheable && (!uploadFile || /\bpublic\b/i.test(directives))) {
@@ -41,5 +54,4 @@ function fetchAndStore(req, cache, uploadFile) {
       caches.open(FILES).then(function (c) { return c.delete(req); }).catch(function () {});
     }
     return res;
-  });
 }
