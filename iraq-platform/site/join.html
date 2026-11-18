@@ -2,23 +2,20 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><script src="js/theme.js?v=3"></script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <title>سجّل جامعتك | دفعتنا</title>
   <link rel="icon" type="image/png" href="assets/favicon-48.png">
   <meta name="theme-color" content="#0A1C4E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/iq.css?v=11">
-  <script src="js/iq-theme.js?v=1"></script><link rel="stylesheet" href="css/dfa.css?v=3">
+  <link rel="stylesheet" href="css/iq.css?v=ds1"><link rel="stylesheet" href="css/dfa.css?v=7">
   <style>
-    .jn-steps{display:flex;gap:6px;margin:4px 0 14px;flex-wrap:wrap}
-    .jn-steps span{flex:1;min-width:64px;text-align:center;padding:8px 6px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;color:var(--ink2)}
-    .jn-steps span.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
-    .jn-steps span.done{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
-    .jn-steps span.done::before{content:"\2713\00a0"}
+    .jn-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 14px}
+    .jn-steps>button{min-height:44px;padding:0 6px;border-radius:var(--ds-r-sm);border:1px solid var(--ds-line);background:var(--ds-surface);font:inherit;font-size:var(--ds-fs-sm);font-weight:700;color:var(--ds-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .jn-steps>button:disabled{cursor:default;opacity:1}
+    .jn-steps>button.on{background:var(--ds-accent);border-color:var(--ds-accent);color:var(--ds-on-accent)}
+    .jn-steps>button.done{background:var(--ds-gold-soft);border-color:var(--ds-gold);color:var(--ds-gold-ink);cursor:pointer}
+    .jn-steps>button.done::before{content:"\2713\00a0"}
     .jn-stages{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(min-width:640px){.jn-stages{grid-template-columns:repeat(4,1fr)}}
-    .jn-stages button{min-height:56px;padding:14px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+    .jn-stages button{min-height:56px;padding:14px 0;border-radius:var(--ds-r);border:1px solid var(--ds-line);background:var(--ds-surface);color:var(--ds-ink);font:inherit;font-weight:700;cursor:pointer}
     .jn-stages button:hover{border-color:var(--accent)}
     .jn-lead{color:var(--ink2);margin:-4px 0 12px}
     .jn-hit small{display:block;color:var(--ink2);font-size:.82rem}
@@ -35,7 +32,7 @@
   <main class="cg">
     <h1 id="title">سجّل جامعتك</h1>
     <p class="jn-lead" id="lead">اختر جامعتك ثم كليتك وقسمك ومرحلتك، وتدخل مباشرة إلى مواد قسمك.</p>
-    <div class="jn-steps" id="steps"><span>الجامعة</span><span>الكلية</span><span>القسم</span><span>المرحلة</span></div>
+    <div class="jn-steps" id="steps" aria-label="خطوات التسجيل"><button type="button" disabled>الجامعة</button><button type="button" disabled>الكلية</button><button type="button" disabled>القسم</button><button type="button" disabled>المرحلة</button></div>
     <nav class="cg-path" id="path" aria-label="المسار"></nav>
     <input id="qf" type="search" class="cg-q" placeholder="ابحث عن جامعتك أو قسمك…" aria-label="بحث" autocomplete="off">
     <div class="cg-list" id="list"></div>
@@ -102,7 +99,12 @@
     });
 
     function renderSteps() {
-      [].forEach.call($("steps").children, function (s, i) { s.className = i < stack.length ? "done" : i === stack.length ? "on" : ""; });
+      [].forEach.call($("steps").children, function (s, i) {
+        s.className = i < stack.length ? "done" : i === stack.length ? "on" : "";
+        s.disabled = !(i < stack.length); /* الخطوة المنجزة زر يرجع إليها ويعيد ضبط ما بعدها */
+        if (i === stack.length) s.setAttribute("aria-current", "step"); else s.removeAttribute("aria-current");
+        s.onclick = i < stack.length ? function () { stack = stack.slice(0, i); load(); } : null;
+      });
       var p = $("path"); p.innerHTML = "";
       stack.forEach(function (s, i) {
         if (i) p.appendChild(document.createTextNode(" / "));

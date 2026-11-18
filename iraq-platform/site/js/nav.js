@@ -149,8 +149,10 @@
     var top = el("div", "sb-top");
     var brand = el("a", "brand");
     brand.href = "platform.html";
-    brand.innerHTML = '<svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>';
-    var bt = el("span"); bt.setAttribute("data-site-title", ""); brand.appendChild(bt);
+    /* شعار دفعتنا واسمها كما في كل الصفحات (عنوان القسم يظهر في رأس الصفحة لا هنا) */
+    var mk = document.createElement("img"); mk.className = "dfa-mark"; mk.src = "assets/brand.svg"; mk.width = 32; mk.height = 32; mk.alt = "";
+    brand.appendChild(mk);
+    var bt = el("span"); bt.textContent = "دفعتنا"; brand.appendChild(bt);
     top.appendChild(brand);
     var col = el("button", "sb-btn sb-collapse"); col.type = "button"; col.id = "sbCollapse";
     col.appendChild(MS.icon("chevrons", 20));

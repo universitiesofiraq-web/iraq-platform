@@ -1,8 +1,4 @@
 .rp-page [hidden] { display: none !important; }
-.rp-page .iq-top { flex-wrap: wrap; }
-.rp-page .iq-top nav { flex-wrap: wrap; }
-.rp-page .iq-top nav a { display: inline-flex; }
-.rp-page .iq-top [aria-current] { background: rgba(255, 255, 255, .13); }
 .rp-skip { position: absolute; z-index: 1; inset-inline-start: 1rem; inset-block-start: .5rem; padding: .6rem 1rem; background: var(--surface); transform: translateY(-150%); }
 .rp-skip:focus { transform: none; }
 .rp-wrap { width: min(100% - 2rem, 67rem); margin-inline: auto; padding-block: 1.5rem 3rem; }

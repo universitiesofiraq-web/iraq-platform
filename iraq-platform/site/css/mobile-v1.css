@@ -1,8 +1,8 @@
 /* css/mobile-v1.css — واجهة الهاتف (Mobile UI V1). طبقة عرض فقط: لا تغيّر منطق الصفحة ولا الصلاحيات ولا الـAPI.
-   تعمل تحت 760px فقط؛ الحاسوب كما هو. تعتمد متغيرات style.css (فاتح/داكن). الهاتف يبدأ داكناً إن لم يختر الطالب مظهراً (mobile-v1.js). */
+   صارت الأساس لكل العروض (الهاتف أولاً)، مع تكييف للآيباد واللابتوب في آخر الملف. تعتمد متغيرات style.css (فاتح/داكن). الهاتف يبدأ داكناً إن لم يختر الطالب مظهراً (mobile-v1.js). */
 .mv-nav, .mv-sheet, .mv-sheet-scrim, .mv-home, .mv-title, .mv-more { display: none; }
 
-@media (max-width: 760px) {
+/* ===== الأساس (كل العروض) ===== */
   :root { --mv-nav-h: 64px; --mv-safe: env(safe-area-inset-bottom, 0px); }
   body.mv { padding-bottom: calc(var(--mv-nav-h) + var(--mv-safe) + var(--space-4)); overflow-x: hidden; }
   body.mv.mv-kb { padding-bottom: var(--space-4); }
@@ -10,7 +10,7 @@
   /* ---- M3: شريط عنوان مختصر ---- */
   body.mv .site-header { --header-h: 56px; }
   body.mv .header-inner { gap: var(--space-2); padding-inline: var(--space-3); }
-  body.mv .header-actions, body.mv .hero-brand, body.mv .semester-brand { display: none; }
+  body.mv .hero-brand, body.mv .semester-brand { display: none; }
   body.mv .mv-title { display: block; flex: 1; min-width: 0; text-align: center; font-weight: 700; font-size: var(--text-md); color: var(--color-heading); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.mv .search-pill { flex: none; width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: var(--radius-pill); }
   body.mv .search-pill > span:not(.ico) { display: none; }
@@ -108,15 +108,6 @@
   .mv-nav [aria-current="page"] { color: var(--color-secondary-ink); background: var(--color-secondary-soft); font-weight: 700; }
   .mv-nav .ico svg { width: 22px; height: 22px; }
 
-  /* ---- M5: عارض الملفات على الهاتف ---- */
-  body.mv .viewer { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
-  body.mv .viewer-bar { flex-wrap: wrap; padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3) var(--space-2); }
-  body.mv .viewer-title { order: 1; flex: 1 1 0; }
-  body.mv .viewer .icon-btn { order: 2; min-width: 44px; min-height: 44px; }
-  body.mv .viewer-bar .btn { order: 3; flex: 1 1 0; min-height: 44px; justify-content: center; padding-inline: var(--space-2); font-size: var(--text-sm); text-align: center; }
-  body.mv #annotateLink { order: 3; }
-  body.mv .viewer-note { padding-bottom: calc(var(--space-2) + var(--mv-safe)); }
-
   /* ---- حسابي: ورقة سفلية ---- */
   .mv-acct { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
   .mv-av { flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; font-size: var(--text-xl); font-weight: 800; background: var(--color-secondary-soft); color: var(--color-secondary-ink); }
@@ -139,7 +130,7 @@
   .mv-sheet .mv-who { margin: 0 0 var(--space-3); color: var(--color-muted); font-size: var(--text-sm); }
   .mv-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 48px; padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); color: var(--color-text); text-decoration: none; font: inherit; background: none; border-inline: 0; border-top: 0; width: 100%; text-align: start; cursor: pointer; }
   .mv-row select { min-height: 44px; }
-}
+
 
 @media (max-width: 359px) {
   .mv-tile { gap: var(--space-2); padding: var(--space-2); min-height: 60px; }
@@ -148,7 +139,7 @@
   .mv-tx strong { white-space: normal; font-size: var(--text-xs); }
   .mv-tx small:not(.mv-soon) { display: none; }
 }
-@media (min-width: 420px) and (max-width: 760px) {
+@media (min-width: 420px) {
   .mv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mv-tile { flex-direction: column; justify-content: center; min-height: 92px; padding: var(--space-2); text-align: center; gap: var(--space-1); }
   .mv-tx { justify-items: center; }
@@ -156,3 +147,32 @@
   .mv-tx strong { font-size: var(--text-xs); white-space: normal; }
 }
 @media (prefers-reduced-motion: reduce) { .mv-tile { transition: none; } }
+
+/* ===== الهاتف فقط ===== */
+@media (max-width: 760px) {
+  body.mv .header-actions { display: none; }
+  /* ---- M5: عارض الملفات على الهاتف ---- */
+  body.mv .viewer { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
+  body.mv .viewer-bar { flex-wrap: wrap; padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-3) var(--space-2); }
+  body.mv .viewer-title { order: 1; flex: 1 1 0; }
+  body.mv .viewer .icon-btn { order: 2; min-width: 44px; min-height: 44px; }
+  body.mv .viewer-bar .btn { order: 3; flex: 1 1 0; min-height: 44px; justify-content: center; padding-inline: var(--space-2); font-size: var(--text-sm); text-align: center; }
+  body.mv #annotateLink { order: 3; }
+  body.mv .viewer-note { padding-bottom: calc(var(--space-2) + var(--mv-safe)); }
+
+}
+
+/* ===== الآيباد واللابتوب: نفس ترتيب الهاتف بعرض مريح ===== */
+@media (min-width: 761px) {
+  body.mv main > .section > .container, body.mv .mv-home, body.mv .hero .container { max-width: 920px; margin-inline: auto; }
+  body.mv .mv-title { text-align: start; }
+  .mv-tile { min-height: 76px; }
+  .mv-tx small:not(.mv-soon) { display: block; }
+  .mv-sheet { inset-inline: 0; margin-inline: auto; max-width: 520px; bottom: var(--space-5); border-radius: var(--radius-lg); }
+}
+/* اللابتوب: القائمة الجانبية ظاهرة، فلا شريط سفلي */
+@media (min-width: 1081px) {
+  .mv-nav { display: none; }
+  body.mv { padding-bottom: var(--space-6); }
+  body.mv .footer { display: block; }
+}

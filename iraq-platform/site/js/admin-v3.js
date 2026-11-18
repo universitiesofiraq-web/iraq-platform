@@ -46,12 +46,24 @@ function button(text, action, className = "") {
   return node;
 }
 
+const inFlight = new Set();
 async function api(path, body) {
-  const response = await fetch(path, body === undefined ? { cache: "no-store" } : {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  if (body === undefined) return finish(await fetch(path, { cache: "no-store" }));
+  /* منع تكرار الإرسال: الطلب نفسه لا يُرسل مرتين، والزر الذي أطلقه معطّل حتى الرد */
+  const key = path + "|" + JSON.stringify(body);
+  if (inFlight.has(key)) { const e = new Error("الطلب قيد التنفيذ…"); e.code = "busy"; throw e; }
+  const active = typeof document !== "undefined" && document.activeElement;
+  const btn = active && active.tagName === "BUTTON" && !active.disabled ? active : null;
+  inFlight.add(key);
+  if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); }
+  try {
+    return finish(await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+  } finally {
+    inFlight.delete(key);
+    if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+  }
+}
+async function finish(response) {
   const data = await response.json().catch(() => null);
   if (!response.ok || !data?.ok) {
     const code = data?.error;
@@ -792,19 +804,15 @@ async function showScoped(type, id) {
 
 function setupChrome() {
   const theme = $("theme");
-  function apply(dark) {
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
+  /* الوضع موحّد مع كل الصفحات (js/theme.js، المفتاح ms.theme) */
+  function paint() {
+    const dark = window.DSTheme ? DSTheme.get() === "dark" : document.documentElement.dataset.theme === "dark";
     theme.setAttribute("aria-pressed", String(dark));
     theme.textContent = dark ? "الوضع الفاتح" : "الوضع الداكن";
   }
-  let dark = false;
-  try { dark = localStorage.getItem("admin-theme") === "dark"; } catch {}
-  apply(dark);
-  theme.addEventListener("click", () => {
-    dark = !dark;
-    apply(dark);
-    try { localStorage.setItem("admin-theme", dark ? "dark" : "light"); } catch {}
-  });
+  paint();
+  if (typeof document.addEventListener === "function") document.addEventListener("ds:theme", paint);
+  theme.addEventListener("click", () => { if (window.DSTheme) DSTheme.toggle(); paint(); });
   $("nav-toggle").addEventListener("click", () => {
     const open = document.querySelector(".sidebar").toggleAttribute("data-menu-open");
     $("nav-toggle").setAttribute("aria-expanded", String(open));

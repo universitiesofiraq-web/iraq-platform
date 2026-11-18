@@ -16,7 +16,7 @@
   --wait-ink: #864700;
   --bad-bg: #ffebeb;
   --bad-ink: #9d3333;
-  font-family: "Readex Pro", Tahoma, Arial, sans-serif;
+  font-family: var(--ds-font);
   font-size: 15px;
 }
 :root[data-theme="dark"] {
@@ -83,8 +83,8 @@ button:disabled { opacity: .6; cursor: wait; }
 .brand strong { line-height: 1.45; }
 .brand small, .sidebar-account small { display: block; margin-block-start: .2rem; color: #b0c8d6; }
 .sidebar nav { display: grid; gap: .3rem; }
-.sidebar nav a { padding: .75rem .65rem; border-radius: .65rem; color: var(--sidebar-text); text-decoration: none; min-height: 44px; }
-.sidebar nav a:hover, .sidebar nav a[aria-current] { background: #2459D6; color: #fff; }
+.sidebar nav a, .sidebar .side-link { display: flex; align-items: center; padding: .75rem .65rem; border-radius: .65rem; color: var(--sidebar-text); text-decoration: none; min-height: 44px; }
+.sidebar nav a:hover, .sidebar nav a[aria-current], .sidebar .side-link:hover { background: var(--ds-accent); color: var(--ds-on-accent); }
 .sidebar-account { border-block-start: 1px solid #23407F; margin-block-start: auto; padding-block-start: 1rem; }
 #nav-toggle { display: none; }
 .surface { min-width: 0; }
