@@ -303,3 +303,106 @@ summary { min-height: var(--ds-control); padding-block: 10px; cursor: pointer; }
   .dfa-load .dfa-ring::before, .dfa-load .dfa-ring img, .btn[aria-busy="true"]::after { animation: none; }
   .btn, .cg-item { transition: none; }
 }
+
+/* Campus identity shared by the entry, directory and upload screens. */
+:root {
+  --ds-header-bg: linear-gradient(105deg, #102748, #102c50 65%, #174363);
+  --ds-r: 16px;
+  --ds-r-lg: 22px;
+  --campus-width: 48rem;
+  --campus-pad: clamp(16px, 4vw, 32px);
+}
+:root[data-theme="dark"] {
+  --ds-bg: #0c1523;
+  --ds-surface: #142234;
+  --ds-surface-2: #1b2d42;
+  --ds-line: #304156;
+  --ds-line-strong: #4a6079;
+  --ds-header-bg: linear-gradient(105deg, #0e1d32, #183552);
+}
+.iq-top { border-bottom: 1px solid #ffffff24; }
+.entry, main.cg:has(.campus-banner), main.uc2 {
+  width: min(calc(100% - 24px), var(--campus-width));
+  margin: clamp(16px, 4vw, 44px) auto 64px;
+  padding: 0;
+}
+main.entry { grid-template-columns: minmax(0, 1fr); gap: var(--ds-s6); }
+.entry .login { position: static; padding: var(--campus-pad); }
+main.cg:has(.campus-banner), .entry .intro {
+  padding: var(--campus-pad);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-r-lg);
+  box-shadow: var(--ds-shadow);
+}
+.campus-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  align-content: end;
+  min-height: clamp(110px, 17vw, 148px);
+  margin: calc(-1 * var(--campus-pad)) calc(-1 * var(--campus-pad)) var(--ds-s5);
+  padding: var(--campus-pad);
+  padding-inline-end: 24%;
+  border-radius: var(--ds-r-lg) var(--ds-r-lg) 0 0;
+  background: linear-gradient(115deg, #276275, #193b58 48%, #132c49);
+}
+.campus-banner::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 33%;
+  background: repeating-radial-gradient(ellipse at 50% 117%, transparent 0 9%, #e8c98599 9.4% 10%, transparent 10.4% 15%);
+  mask-image: linear-gradient(to top, #000, #000b);
+}
+.campus-banner h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 4vw, 2.35rem);
+  color: #fff;
+  text-wrap: balance;
+}
+.login .campus-banner h1 span { color: #ffde98; }
+.login .campus-banner .university { color: #dcf1ef; }
+.cg .campus-banner h1 { margin: 0; color: #fff; font-size: clamp(1.65rem, 4vw, 2.35rem); }
+.entry .login .actions > button { min-height: 54px; }
+.cg:has(.campus-banner) .cg-q { background: var(--ds-surface-2); }
+.cg:has(.campus-banner) .cg-item { border-inline-start: 3px solid var(--ds-line-strong); }
+.cg:has(.campus-banner) .cg-item:hover { border-inline-start-color: var(--ds-accent); }
+.uc2 .uc2-panel { border-radius: var(--ds-r-lg); }
+.uc2 .uc2-head { background: var(--ds-surface-2); }
+@keyframes campus-engrave {
+  from { clip-path: inset(100% 0 0); }
+  to { clip-path: inset(0); }
+}
+@keyframes campus-enter {
+  from { opacity: .75; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .campus-banner::before { animation: campus-engrave 650ms cubic-bezier(.2,.7,.25,1) both; }
+  .cg-list > .cg-item:nth-child(-n+4), .uc2-head { animation: campus-enter 200ms ease-out; }
+  .login .actions > button, .intro .feature { transition: transform 160ms ease-out, border-color 160ms, background-color 160ms; }
+  .login .actions > button:active, .intro .feature:active { transform: translateY(2px); }
+}
+
+/* Dashboard hierarchy and student shortcuts. */
+.layout .surface .heading {
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid var(--ds-line);
+  border-inline-start: 4px solid var(--ds-gold);
+  border-radius: var(--ds-r-lg);
+  background: linear-gradient(115deg, var(--ds-surface-2), var(--ds-surface) 65%);
+}
+.layout .stats .stat {
+  border-radius: var(--ds-r);
+  box-shadow: var(--ds-shadow-sm);
+}
+.layout .stat strong { font-variant-numeric: tabular-nums; }
+.quick .quick-item { border-radius: var(--ds-r); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .quick a.quick-item { transition: transform 180ms ease-out, box-shadow 180ms ease-out; }
+  .quick a.quick-item:hover { transform: translateY(-2px); box-shadow: var(--ds-shadow); }
+}
