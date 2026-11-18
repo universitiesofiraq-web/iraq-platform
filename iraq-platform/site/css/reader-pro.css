@@ -130,3 +130,24 @@ body.st-pro.st-compact > header:has(.st-pop:not([hidden])){ z-index: 20; }
 @keyframes st-ld-spin{ to{ transform: rotate(360deg); } }
 @keyframes st-ld-slide{ from{ margin-inline-start: -30%; } to{ margin-inline-start: 100%; } }
 @media (prefers-reduced-motion: reduce){ #st-loading .st-ld-ring, #st-loading .st-ld-bar i{ animation: none !important; } }
+
+/* ---- لوحات الدراسة القديمة (مساحة الدراسة v85، الأدوات السريعة v86، المؤقت v83، إخفاء الإجابات v90، أزرار «أدوات أخرى»)
+   على رموز المنصة في الوضعين (2026-11-19). المحتوى والأزرار نفسها لم تتغيّر. ---- */
+body.st-pro :is(#medixa-suite, #mx86-panel){ background: var(--ds-surface) !important; color: var(--ds-ink) !important; font-family: var(--ds-font);
+  border: 1px solid var(--ds-line); box-shadow: var(--ds-shadow); }
+body.st-pro #medixa-suite .suite-head b{ font-size: var(--ds-fs-md); font-weight: var(--ds-w-black); }
+body.st-pro :is(#medixa-suite, #mx86-panel) button{ min-height: 40px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-sm);
+  background: var(--ds-surface-2); color: var(--ds-ink); font: var(--ds-w-medium) var(--ds-fs-sm) var(--ds-font); cursor: pointer; }
+body.st-pro #suite-nav button{ border-radius: var(--ds-r-pill); background: var(--ds-surface); }
+body.st-pro #suite-nav button.active{ background: var(--ds-accent-soft); color: var(--ds-accent-ink); border-color: transparent; }
+body.st-pro :is(#suite-content, #mx86-panel) :is(input, textarea, select){ background: var(--ds-surface-2); color: var(--ds-ink); border: 1px solid var(--ds-line); border-radius: var(--ds-r-sm); }
+body.st-pro .suite-stats div{ background: var(--ds-surface-2); border-radius: var(--ds-r); }
+body.st-pro .suite-stats b{ color: var(--ds-accent-ink); }
+body.st-pro .suite-stats small, body.st-pro .suite-muted, body.st-pro .suite-quiz small{ color: var(--ds-ink-2); }
+body.st-pro :is(.suite-quiz, .suite-result){ background: var(--ds-surface); border-color: var(--ds-line); }
+body.st-pro #medixa-suite-toggle{ background: var(--ds-accent-soft); color: var(--ds-accent-ink); }
+html body.st-pro #mx-dock > :is(#mx86-open, #mx87-backup, #mx-ink-toggle, #mx-save-state){ background: var(--ds-surface-2) !important; color: var(--ds-ink) !important; border-color: var(--ds-line) !important; }
+html body.st-pro #mx-occlusion{ background: var(--ds-surface-2) !important; color: var(--ds-ink) !important; border-color: var(--ds-line) !important; }
+html body.st-pro #mx-occlusion strong{ color: var(--ds-ink-2); font-family: var(--ds-font); }
+html body.st-pro #mx-occlusion button{ background: var(--ds-surface) !important; color: var(--ds-ink) !important; border-color: var(--ds-line) !important; font-family: var(--ds-font); }
+@media (hover: hover){ html body.st-pro #mx-dock > :is(#mx86-open, #mx87-backup, #mx-ink-toggle):hover, html body.st-pro #mx-occlusion button:hover{ background: var(--ds-accent-soft) !important; } }
