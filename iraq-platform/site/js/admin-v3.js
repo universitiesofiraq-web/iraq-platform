@@ -46,12 +46,24 @@ function button(text, action, className = "") {
   return node;
 }
 
+const inFlight = new Set();
 async function api(path, body) {
-  const response = await fetch(path, body === undefined ? { cache: "no-store" } : {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  if (body === undefined) return finish(await fetch(path, { cache: "no-store" }));
+  /* منع تكرار الإرسال: الطلب نفسه لا يُرسل مرتين، والزر الذي أطلقه معطّل حتى الرد */
+  const key = path + "|" + JSON.stringify(body);
+  if (inFlight.has(key)) { const e = new Error("الطلب قيد التنفيذ…"); e.code = "busy"; throw e; }
+  const active = typeof document !== "undefined" && document.activeElement;
+  const btn = active && active.tagName === "BUTTON" && !active.disabled ? active : null;
+  inFlight.add(key);
+  if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); }
+  try {
+    return finish(await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+  } finally {
+    inFlight.delete(key);
+    if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); }
+  }
+}
+async function finish(response) {
   const data = await response.json().catch(() => null);
   if (!response.ok || !data?.ok) {
     const code = data?.error;

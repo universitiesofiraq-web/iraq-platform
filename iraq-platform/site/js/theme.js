@@ -55,4 +55,22 @@
     paint(); nav.appendChild(b);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addToggle); else addToggle();
+
+  /* منع تكرار الإرسال في كل الصفحات: أي طلب يغيّر بيانات (غير GET) يعطّل الزر الذي أطلقه
+     ويعلّمه aria-busy حتى يصل الرد، فلا يُرسل الطلب مرتين بالضغط المتكرر. */
+  if (window.fetch && !window.fetch.__dsGuard) {
+    var raw = window.fetch;
+    var guarded = function (input, init) {
+      var method = (init && init.method || (input && input.method) || "GET").toUpperCase();
+      var a = document.activeElement;
+      var btn = method !== "GET" && method !== "HEAD" && a && a.tagName === "BUTTON" && !a.disabled ? a : null;
+      if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); }
+      var done = function () { if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); } };
+      var p = raw.apply(this, arguments);
+      p.then(done, done);
+      return p;
+    };
+    guarded.__dsGuard = true;
+    window.fetch = guarded;
+  }
 })();

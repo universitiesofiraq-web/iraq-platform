@@ -1,8 +1,6 @@
 /* css/upload.css — صفحة رفع المحاضرات (للمشرفين فقط)
    كل القيم من متغيرات style.css؛ لا ألوان ولا مسافات مباشرة. */
 
-.up-top { background: var(--band-bg); border-bottom: 1px solid var(--band-line); }
-.up-top-in { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--header-h); }
 
 .up-main { max-width: 860px; padding-block: var(--space-6) var(--space-8); }
 .up-title { font-size: var(--text-xl); font-weight: 800; }
