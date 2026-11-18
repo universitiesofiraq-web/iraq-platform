@@ -61,6 +61,25 @@
   }
   .mv-home .mv-tile.mv-app .mv-ic { color: #ffe1a4; background: #ffffff1f; width: 48px; height: 48px; }
   .mv-home .mv-tile.mv-app small { color: #d6e8ed; }
+  /* مجلدات المواد: اسم المادة ثم أسماء محاضراتها عند الفتح */
+  .subj-list { display: grid; gap: 10px; }
+  .subj-folder { background: var(--ds-surface); border: 1px solid var(--ds-line, #e2e8f0); border-radius: 16px; box-shadow: var(--ds-shadow-sm); overflow: hidden; }
+  .subj-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; }
+  .subj-head::-webkit-details-marker { display: none; }
+  .subj-head::after { content: "‹"; margin-inline-start: auto; color: var(--ds-muted, #64748b); font-size: 1.3rem; transition: transform .2s ease; }
+  .subj-folder[open] > .subj-head::after { transform: rotate(-90deg); }
+  .subj-ico { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--ds-accent-soft); color: var(--ds-accent); flex: none; }
+  .subj-tx { display: grid; gap: 2px; min-width: 0; }
+  .subj-tx strong { font-size: 1rem; }
+  .subj-tx small { color: var(--ds-muted, #64748b); }
+  .subj-lectures { border-top: 1px solid var(--ds-line, #e2e8f0); padding: 6px 0; }
+  .subj-lec { display: flex; align-items: center; gap: 12px; padding: 10px 16px; text-decoration: none; color: inherit; }
+  .subj-lec + .subj-lec { border-top: 1px dashed var(--ds-line, #e2e8f0); }
+  .subj-lec:hover { background: var(--ds-accent-soft); }
+  .subj-num { display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 9px; background: var(--ds-accent-soft); color: var(--ds-accent); font-weight: 700; font-size: .85rem; flex: none; }
+  .subj-lt { display: grid; gap: 2px; min-width: 0; }
+  .subj-pron, .subj-none { color: var(--ds-muted, #64748b); font-size: .85rem; }
+  .subj-none { padding: 10px 16px; margin: 0; }
   body.mv[data-mv="home"] :is(#announcements,#latest) h2 {
     padding-inline-start: 10px; border-inline-start: 3px solid var(--ds-gold);
   }
@@ -634,6 +653,32 @@
       }
       renderSemesters();
 
+      /* مجلد المادة: اسم المادة وعدد محاضراتها، وعند الفتح قائمة أسماء المحاضرات (تروابط إلى المادة) */
+      function subjectFolder(c) {
+        var d = el("details", "subj-folder");
+        var s = el("summary", "subj-head");
+        var ic = el("span", "subj-ico"); ic.setAttribute("aria-hidden", "true"); ic.appendChild(MS.icon(c.icon || "book", 22)); s.appendChild(ic);
+        var tx = el("span", "subj-tx");
+        tx.appendChild(el("strong", "en", c.name));
+        tx.appendChild(el("small", "", MS.lecturesLabel(c.lectures.length, true)));
+        s.appendChild(tx);
+        d.appendChild(s);
+        var body = el("div", "subj-lectures");
+        if (!c.lectures.length) body.appendChild(el("p", "subj-none", "لا توجد محاضرات بعد"));
+        c.lectures.forEach(function (l) {
+          var a = el("a", "subj-lec");
+          a.href = href(c) + "#lec-" + l.number;
+          a.appendChild(el("span", "subj-num", String(l.number)));
+          var t = el("span", "subj-lt");
+          t.appendChild(el("span", "en", l.title));
+          if (l.pron) t.appendChild(el("span", "subj-pron", l.pron));
+          a.appendChild(t);
+          body.appendChild(a);
+        });
+        d.appendChild(body);
+        return d;
+      }
+
       function renderGroups() {
         var root = $("groups");
         root.textContent = "";
@@ -668,8 +713,9 @@
           head.appendChild(el("h3", "group-title", cat.name));
           head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
           sec.appendChild(head);
-          var grid = el("div", "course-grid");
-          list.forEach(function (c) { grid.appendChild(makeCard(c)); });
+          /* كل مادة مجلد باسمها، وعند فتحه تظهر أسماء محاضراتها (بطلب محمد) */
+          var grid = el("div", "subj-list");
+          list.forEach(function (c) { grid.appendChild(subjectFolder(c)); });
           sec.appendChild(grid);
           root.appendChild(sec);
         });
