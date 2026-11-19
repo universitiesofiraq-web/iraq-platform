@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v60";
+var V = "ms-v62";
 var FILES = "ms-files-public";
 var SHELL = ["platform.html", "dafter.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {
