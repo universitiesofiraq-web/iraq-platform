@@ -1,0 +1,18 @@
+#pages .lecture-position-area {
+  position: absolute; left: var(--pa-l); top: var(--pa-t);
+  width: var(--pa-w); height: var(--pa-h); z-index: 50;
+  pointer-events: none; padding: 0; border: 0; background: transparent;
+}
+#pages .lecture-position-target { pointer-events: auto; cursor: crosshair; touch-action: pan-x pan-y; }
+.lecture-position-dot {
+  position: absolute; width: 1.4rem; height: 1.4rem; box-sizing: border-box;
+  border: 3px solid #fff; border-radius: 50%; background: #007b78;
+  box-shadow: 0 0 0 3px #063d4c; transform: translate(-50%, -50%);
+}
+.lecture-position-notice:not([hidden]) {
+  display: flex; align-items: center; gap: .75rem; position: fixed; top: 18%;
+  left: 50%; transform: translateX(-50%); width: max-content; max-width: 90vw;
+  padding: .65rem .9rem; z-index: 12000; border-radius: .75rem;
+  color: white; background: #174850; box-shadow: 0 3px 14px #0003;
+}
+.lecture-position-notice button { color: inherit; background: transparent; border: 1px solid currentColor; border-radius: .4rem; padding: .4rem; }
