@@ -58,6 +58,8 @@ button,input,select{font:inherit}
 .iq-sec .hint{margin:0 0 16px;color:var(--ink2);font-size:.92rem}
 .iq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .iq-u{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);text-decoration:none;min-height:64px;background:var(--surface);transition:border-color .15s,transform .15s}
+.iq-u:has(>img){display:grid;grid-template-columns:44px 1fr;column-gap:12px;align-content:center}
+.iq-u>img{grid-row:span 2;align-self:center;object-fit:contain;background:white;border-radius:6px}
 .iq-u:hover{border-color:var(--tile);transform:translateY(-2px)}
 .iq-u b{font-weight:600}
 .iq-u small{color:var(--ink2)}

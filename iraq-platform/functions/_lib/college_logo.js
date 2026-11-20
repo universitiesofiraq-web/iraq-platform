@@ -9,6 +9,10 @@ import { isGlobalAdmin } from "./scope.js";
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const fail = (error, status) => json({ ok: false, error }, status);
 const MAX_B64 = 140000; // نحو 100KB بعد فك الترميز
+const officialLogos = new Map([
+  ["university-of-basrah", "basrah.png"],
+  ["up9x7wf", "almaaqal.png"],
+]);
 const MAGIC = { "image/png": [0x89, 0x50, 0x4e], "image/jpeg": [0xff, 0xd8, 0xff], "image/webp": [0x52, 0x49, 0x46] };
 
 async function managesUniversity(env, user, uniId) {
@@ -35,6 +39,13 @@ export async function handleCollegeLogo(req, env, opts = {}) {
   try {
     if (req.method === "GET") {
       const row = await env.DB.prepare(`SELECT mime, data, updated_at FROM ${T} WHERE ${K}=?`).bind(id).first();
+      if (!row && uni) {
+        const university = await env.DB.prepare("SELECT slug FROM universities WHERE id=?").bind(id).first();
+        const asset = officialLogos.get(university?.slug);
+        if (asset) return new Response(null, { status: 302, headers: {
+          location: "/assets/universities/" + asset, "cache-control": "public, max-age=300"
+        } });
+      }
       if (!row) return new Response("", { status: 404, headers: { "cache-control": "public, max-age=300" } });
       const bin = Uint8Array.from(atob(row.data), (c) => c.charCodeAt(0));
       return new Response(bin, { headers: { "content-type": row.mime, "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff", etag: '"' + row.updated_at + '"' } });
