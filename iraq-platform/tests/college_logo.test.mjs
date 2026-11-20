@@ -36,3 +36,16 @@ test("شعار الجامعة: المشرف يرفع، الطالب يُرفض،
   assert.equal((await post(1, { remove: true })).status, 200);
   assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM university_logos").get().n, 0);
 });
+
+test("official university artwork follows the slug and uploaded artwork takes priority", async () => {
+  const { sql, env } = fx();
+  const get = () => handleCollegeLogo(new Request("https://example.test/api/university-logo/1"), env);
+  for (const [slug, file] of [["university-of-basrah", "basrah"], ["up9x7wf", "almaaqal"]]) {
+    sql.prepare("UPDATE universities SET slug=? WHERE id=1").run(slug);
+    const response = await get();
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get("location"), "/assets/universities/" + file + ".png");
+  }
+  await handleCollegeLogo(signedRequest(sql, "/api/university-logo/1", 1, {image: PNG}), env);
+  assert.equal((await get()).headers.get("content-type"), "image/png");
+});
