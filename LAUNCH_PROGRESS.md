@@ -114,3 +114,8 @@
 - الملفات: `site/pdf-notes.html`، `site/js/lecture-position.js`، `site/css/lecture-position.css`، `tests/browser/lecture_position.py` داخل `iraq-platform/`.
 - نجح اختبار Chromium من شاشة حاسوب إلى جلسة جديدة بعرض هاتف، بما فيه نسخ الرابط وفتح الموضع وتحديث الصفحة ورفض ملف محظور. نجحت اختبارات Node البالغ عددها 109. تستخدم تجربة المتصفح ملف الاختبار الموجود في المستودع.
 - المتابعة بعد الدمج: التحقق من وصول ملفات الميزة إلى نطاق الإنتاج.
+
+## 2026-11-20 — الشعارات الرسمية للجامعات المفعلة
+- التزام الميزة `c691e3e2ee1e213686c0a411ee72c98cd1ea9b9f`. أضيفت صورتان من الموقعين الرسميين إلى `site/assets/universities/`، ووصلت بطاقات الصفحة الرئيسية بمسار شعار الجامعة. تُعرض الصورة المرفوعة من الإدارة بالأولوية. السجلان التجريبيان بلا شعار رسمي.
+- المصدران: https://uobasrah.edu.iq/assets/images/uobwhitelogo.png و https://almaaqal.edu.iq/wp-content/uploads/2022/11/logo-almaaqal.png
+- تغيرت ملفات `functions/_lib/college_logo.js` و`site/index.html` و`site/css/iq.css` و`tests/college_logo.test.mjs` داخل `iraq-platform/`. نجحت اختبارات Node الـ110. المتابعة: التحقق من الصورتين على نطاق الإنتاج بعد الدمج.
