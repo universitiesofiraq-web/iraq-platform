@@ -17,6 +17,20 @@ export async function onRequest({ request, env, next }) {
 async function route({ request, env, next }) {
   // ترحيل قاعدة البيانات تلقائياً عند أول طلب API بعد النشر (لا يعطّل الموقع إن فشل)
   if (env.DB && new URL(request.url).pathname.startsWith("/api/")) await ensureSchema(env).catch(() => {});
+  const path = new URL(request.url).pathname;
+  if (request.method === "GET" && /^\/(?:pdf-notes|dafter)(?:\.html)?\/?$/.test(path)) {
+    const user = await currentUser(request, env);
+    if (user || env.REQUIRE_LOGIN !== "1" || !env.DB) {
+      const response = await next();
+      if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return response;
+      const owner = user ? String(user.id) : "guest";
+      const page = new HTMLRewriter().on("html", {
+        element(el) { el.setAttribute("data-reader-owner", owner); }
+      }).transform(response);
+      page.headers.set("Cache-Control", "private, no-store");
+      return page;
+    }
+  }
   if (env.REQUIRE_LOGIN !== "1" || !env.DB) return await next();
   const url = new URL(request.url);
   if (OPEN.some((re) => re.test(url.pathname))) return await next();
