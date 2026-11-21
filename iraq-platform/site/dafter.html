@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script src="js/reader-storage.js"></script>
   <script src="js/theme.js?v=3"></script>
   <title>دفتري | دفعتنا</title>
   <meta name="description" content="دفتري: محاضراتك ودفاترك في مكان واحد، تكتب وتظلّل عليها.">
@@ -212,7 +213,7 @@
       if (window.MS) MS.initShared();
 
       var COURSES_ = (window.COURSES || []).slice();
-      var NBKEY = "medixa.notebooks.v1";
+      var NBKEY = ReaderStorage.name("medixa.notebooks.v1");
       var HUES = [["#2d4f8a", "#24324a", "#141b28"], ["#6b3fa0", "#33264d", "#1b1428"], ["#a0522d", "#4a2a1a", "#24150d"], ["#1f7a55", "#173d2f", "#0d2119"], ["#9b2f55", "#4a1a2e", "#260d18"], ["#2f6f9b", "#173a57", "#0c1f2e"]];
       function hue(id) { var i = 0; for (var k = 0; k < String(id).length; k++) i += String(id).charCodeAt(k); return HUES[i % HUES.length]; }
       function lastAdded(l) { return (l.files || []).reduce(function (m, f) { return (f.added || "") > m ? f.added : m; }, ""); }
@@ -243,7 +244,7 @@
           if (dbp) return dbp;
           dbp = new Promise(function (res) {
             try {
-              var r = indexedDB.open("dafter-thumbs", 1);
+              var r = indexedDB.open(ReaderStorage.name("dafter-thumbs"), 1);
               r.onupgradeneeded = function () { r.result.createObjectStore("img"); };
               r.onsuccess = function () { res(r.result); };
               r.onerror = function () { res(null); };

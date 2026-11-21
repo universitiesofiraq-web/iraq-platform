@@ -8,7 +8,16 @@
   'use strict';
   const Core = window.MedixaPdfSyncCore;
   const src = new URLSearchParams(location.search).get('file');
-  if (!Core || !src) return;
+  if (!Core || !src || !ReaderStorage.verified || ReaderStorage.owner === 'guest') return;
+  const ownerHeader = { 'X-Reader-Owner': ReaderStorage.owner };
+  function checkSession(response) {
+    if (response.status === 401 || response.status === 403) {
+      document.documentElement.style.visibility = 'hidden';
+      location.reload();
+      throw new Error('Reader session changed');
+    }
+    return response;
+  }
 
   let abs, doc;
   try {
@@ -31,8 +40,8 @@
 
   /* ---------- الشبكة ---------- */
   function call(method, path, body, keepalive) {
-    return fetch(path, { method, credentials: 'same-origin', cache: 'no-store', keepalive: !!keepalive, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
-      .then(r => r.json().catch(() => ({})).then(d => { d.__status = r.status; return d; }), () => ({ __status: 0 }));
+    return fetch(path, { method, credentials: 'same-origin', cache: 'no-store', keepalive: !!keepalive, headers: body ? { ...ownerHeader, 'content-type': 'application/json' } : ownerHeader, body: body ? JSON.stringify(body) : undefined })
+      .then(checkSession).then(r => r.json().catch(() => ({})).then(d => { d.__status = r.status; return d; }), () => ({ __status: 0 }));
   }
 
   /* ---------- شارة الحالة في الرأس ---------- */
@@ -117,7 +126,7 @@
         if (!got) { hold.add(r.k); problem = problem || 'asset_held'; continue; }
         let res;
         try {
-          res = await fetch('api/pdfnotes/asset?id=' + id, { method: 'PUT', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': got.type }, body: got.bytes });
+          res = await fetch('api/pdfnotes/asset?id=' + id, { method: 'PUT', credentials: 'same-origin', cache: 'no-store', headers: { ...ownerHeader, 'content-type': got.type }, body: got.bytes }).then(checkSession);
         } catch (e) { res = { status: 0 }; }
         const st = res.status;
         if (st === 200) { state.assets[id] = true; continue; }
@@ -141,7 +150,7 @@
         let has = false; try { has = await A.has(id); } catch (e) { has = false; }
         if (has) continue;
         try {
-          const res = await fetch('api/pdfnotes/asset?id=' + id, { credentials: 'same-origin', cache: 'no-store' });
+          const res = await fetch('api/pdfnotes/asset?id=' + id, { credentials: 'same-origin', cache: 'no-store', headers: ownerHeader }).then(checkSession);
           if (res.status !== 200) { missing = true; continue; }
           const u = new Uint8Array(await res.arrayBuffer());
           await A.putRaw(id, u, (res.headers.get('content-type') || 'image/jpeg').split(';')[0]);

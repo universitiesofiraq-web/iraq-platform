@@ -9,15 +9,20 @@ const ok = (c, m) => { n++; if (!c) { fails++; console.log("FAIL", m); } };
 
 function setup(dbOpts) {
   const env = { DB: createMockD1(dbOpts), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: "boss@x.com" };
+  const owners = new Map();
   let clock = Date.now();
   const call = async (method, path, body, cookie, extra = {}) => {
-    const headers = { "content-type": "application/json", ...(cookie ? { cookie } : {}), ...extra };
+    const headers = { "content-type": "application/json", ...(cookie ? { cookie } : {}), ...(owners.has(cookie) ? { "X-Reader-Owner": owners.get(cookie) } : {}), ...extra };
     const req = new Request("https://medixa.test" + path, { method, headers, body: body ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined });
     const res = /^\/api\/(auth|sync)/.test(path) ? await handleAuth(req, env, { fetch: fakeFetch }) : await handlePdfNotes(req, env, { now: () => clock });
     const sc = res && res.headers.get("set-cookie");
     return { status: res.status, body: await res.json().catch(() => ({})), cookie: sc ? sc.split(";")[0] : null };
   };
-  const login = async (claims) => (await call("POST", "/api/auth/google", { credential: await mint(claims) })).cookie;
+  const login = async (claims) => {
+    const result = await call("POST", "/api/auth/google", { credential: await mint(claims) });
+    owners.set(result.cookie, String(result.body.user.id));
+    return result.cookie;
+  };
   return { env, call, login, tick: (ms) => { clock += ms; } };
 }
 
@@ -32,6 +37,9 @@ ok(!keyKind("ink:01") && !keyKind("ink:10000") && !keyKind("ink:") && !keyKind("
   const a = await login({ sub: "a", email: "a@x.com", name: "A" });
   const b = await login({ sub: "b", email: "b@x.com", name: "B" });
   const put = (cookie, rows, doc = DOC, extra) => call("PUT", "/api/pdfnotes", { doc, rows }, cookie, extra);
+
+  ok((await put(b, [{ k: "study", d: "{}" }], DOC, { "X-Reader-Owner": "stale" })).status === 403, "reject a stale reader before writing");
+  ok((await call("GET", "/api/pdfnotes?doc=" + DOC, null, b, { "X-Reader-Owner": "" })).status === 403, "legacy reader must refresh");
 
   // 1. الصلاحيات
   ok((await call("GET", "/api/pdfnotes?doc=" + DOC)).status === 401, "guest cannot read");

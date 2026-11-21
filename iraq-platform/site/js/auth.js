@@ -11,7 +11,11 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* لا شيء */ } }
+  function notifyReaderTabs() {
+    lsSet("iq.reader.session-change", Date.now() + ":" + Math.random());
+  }
   function clearAccountData() {
+    notifyReaderTabs();
     SYNC.concat([TKEY, "iq.dept", "iq.stage"]).forEach(lsDel);
     user = null;
   }
@@ -122,7 +126,7 @@
     me: function () {
       return api("GET", "auth/me").then(function (r) { user = r.status === 200 ? r.data.user : null; return user; });
     },
-    afterLogin: function (u) { user = u; },
+    afterLogin: function (u) { user = u; notifyReaderTabs(); },
     deleteAccount: function () {
       return api("POST", "auth/delete", { confirm: "DELETE" }).then(function (r) {
         if (r.status !== 200) throw new Error(r.data.error || "delete_failed");

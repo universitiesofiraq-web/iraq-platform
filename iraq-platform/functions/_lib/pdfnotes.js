@@ -109,7 +109,7 @@ async function getAsset(env, me, url) {
   const rows = ((await env.DB.prepare("SELECT part, type, d FROM pdf_assets WHERE user_id = ? AND id = ? ORDER BY part").bind(me.id, id).all()).results) || [];
   if (!rows.length) return fail("not_found", 404);
   const u = u8of(rows.map((r) => r.d).join(""));
-  return new Response(u, { status: 200, headers: { "content-type": rows[0].type, "cache-control": "private, max-age=31536000, immutable" } });
+  return new Response(u, { status: 200, headers: { "content-type": rows[0].type, "cache-control": "private, no-store" } });
 }
 
 export async function handlePdfNotes(req, env, opts = {}) {
@@ -120,6 +120,7 @@ export async function handlePdfNotes(req, env, opts = {}) {
   const now = (opts.now || Date.now)();
   const me = await currentUser(req, env, now);
   if (!me) return fail("unauthorized", 401);
+  if (req.headers.get("X-Reader-Owner") !== String(me.id)) return fail("reader_session_changed", 403);
   try {
     if (p === "/api/pdfnotes/asset") {
       if (req.method === "GET") return await getAsset(env, me, url);

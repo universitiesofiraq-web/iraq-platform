@@ -1,7 +1,7 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v62";
+var V = "ms-v63";
 var FILES = "ms-files-public";
-var SHELL = ["platform.html", "dafter.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
+var SHELL = ["platform.html", "course.html", "semester.html", "study.html", "catalog.html", "assets/logo.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }).then(function () { return self.skipWaiting(); }));
 });
@@ -15,6 +15,7 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET" || req.cache === "no-store" || req.headers.has("range")) return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  if (/^\/(?:dafter|pdf-notes)(?:\.html)?\/?$/.test(url.pathname)) return;
   var uploadFile = /^\/api\/file\/[^/]+$/.test(url.pathname);
   if (/^\/api(?:\/|$)/.test(url.pathname) && !uploadFile) return;
   var isPdf = !uploadFile && /\.pdf$/i.test(url.pathname);
