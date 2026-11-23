@@ -1,0 +1,11 @@
+# كل تغيير يحتاج موافقة المالك. فعّل «Require review from Code Owners» في حماية الفرع main.
+*                                   @universitiesofiraq-web
+
+# ملفات حساسة: الدخول والصلاحيات والدرجات وقاعدة البيانات والنشر.
+# (السطر الأول يغطيها، وتكرارها هنا يوضّح للفريق أنها لا تُدمج دون مراجعة دقيقة.)
+/iraq-platform/functions/           @universitiesofiraq-web
+/iraq-platform/migrations/          @universitiesofiraq-web
+/iraq-platform/netlify/lib/         @universitiesofiraq-web
+/iraq-platform/site/sw.js           @universitiesofiraq-web
+/iraq-platform/site/_headers        @universitiesofiraq-web
+/.github/                           @universitiesofiraq-web

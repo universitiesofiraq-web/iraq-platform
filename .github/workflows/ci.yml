@@ -1,0 +1,67 @@
+# فحوص المنصة: تعمل على كل طلب دمج وعلى كل دفع إلى main.
+# اجعل الوظيفتين «unit» و«browser» شرطاً للدمج من إعدادات حماية الفرع main.
+name: الفحوص
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: فحوص الخادم والمنطق
+        working-directory: iraq-platform
+        run: node --test tests/*.test.mjs
+      - name: فحص الممثلين
+        run: node --test tests/representatives-v2.test.cjs
+      - name: صياغة ملفات JavaScript
+        working-directory: iraq-platform
+        run: |
+          fail=0
+          for f in site/js/*.js site/sw.js functions/_lib/*.js; do
+            node --check "$f" || { echo "::error file=iraq-platform/$f::خطأ صياغة"; fail=1; }
+          done
+          exit $fail
+
+  browser:
+    name: browser
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: تثبيت Playwright وChromium
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "playwright==1.63.0"
+          python -m playwright install --with-deps chromium
+      - name: فحوص المتصفح
+        working-directory: iraq-platform
+        # فحوص تنجح الآن على main. أضف هنا كل فحص متصفح جديد بعد أن ينجح.
+        # reader_pro وlecture_position وmobile_v1_smoke تفشل على main حالياً وتحتاج إصلاحاً قبل إضافتها.
+        run: |
+          fail=0
+          for t in journeys invites_page upload_center upload_simple; do
+            echo "::group::$t"
+            python -I "tests/browser/$t.py" || { echo "::error::فشل فحص المتصفح $t"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit $fail
