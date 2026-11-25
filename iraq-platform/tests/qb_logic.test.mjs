@@ -41,3 +41,18 @@ test("العميل يطابق الخادم على 2000 حالة عشوائية",
     assert.deepEqual([...computeVisible(items, rules, answers, { disabled })].sort(), [...client.computeVisible(items, rules, answers, { disabled })].sort(), JSON.stringify({ rules, answers }));
   }
 });
+
+test("خلط الأسئلة: يعمل داخل القسم، ويُعطَّل مع القواعد الشرطية", async () => {
+  const { buildSnapshot } = await import("../functions/_lib/qb.js");
+  const qs = {}; for (let i = 1; i <= 12; i++) qs[i] = { q: { id: String(i), type: "tf", text: "س" + i, points: 1, correct: true }, meta: {} };
+  const its = Array.from({ length: 12 }, (_, i) => ({ id: "i" + (i + 1), kind: "question", qid: i + 1 }));
+  const order = (s) => s.items.map((x) => x.qid).join(",");
+  const base = { quiz: null, kind: "quiz", mode: "practice", sections: [], items: its, questions: qs, seed: "seed1" };
+  const plain = buildSnapshot({ ...base, settings: {} });
+  const shuffled = buildSnapshot({ ...base, settings: { shuffleQuestions: true } });
+  assert.notEqual(order(shuffled), order(plain), "الخلط لم يغيّر الترتيب");
+  assert.equal(order(shuffled), order(buildSnapshot({ ...base, settings: { shuffleQuestions: true } })), "الخلط غير حتمي لنفس البذرة");
+  assert.equal([...shuffled.items.map((x) => x.qid)].sort().join(), [...plain.items.map((x) => x.qid)].sort().join(), "فُقد عنصر");
+  const withRule = buildSnapshot({ ...base, settings: { shuffleQuestions: true }, rules: [{ kind: "show_if", source: "i1", op: "answered", value: null, target: "i5" }] });
+  assert.equal(order(withRule), order(plain), "مع القواعد يجب أن يبقى الترتيب ثابتاً");
+});

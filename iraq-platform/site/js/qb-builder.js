@@ -7,7 +7,7 @@
   var DISPLAY = [["section", "قسم", "§"], ["heading", "عنوان", "H"], ["text", "نص / وصف", "¶"], ["image", "صورة", "▣"], ["video", "فيديو", "▶"], ["divider", "فاصل", "—"], ["pagebreak", "فاصل صفحة", "⇥"]];
   var KIND_NAME = { section: "قسم", heading: "عنوان", text: "نص", image: "صورة", video: "فيديو", divider: "فاصل", pagebreak: "فاصل صفحة", question: "سؤال" };
   var OPS = [["eq", "تساوي"], ["ne", "لا تساوي"], ["in", "إحدى القيم"], ["answered", "أُجيب عنه"], ["notanswered", "لم يُجب عنه"]];
-  var SETS = [["shuffleOptions", "خلط الخيارات"], ["shuffleQuestions", "خلط الأسئلة (قريباً)", true], ["allowBack", "السماح بالرجوع للأسئلة السابقة"], ["showResults", "إظهار النتيجة بعد التسليم"], ["allowReview", "السماح بمراجعة الإجابات"], ["showExplanations", "إظهار الشرح في المراجعة"], ["official", "امتحان رسمي (يعطّل المنطق الشرطي)"]];
+  var SETS = [["shuffleOptions", "خلط الخيارات"], ["shuffleQuestions", "خلط ترتيب الأسئلة داخل كل قسم (لا يعمل مع الشروط/القفزات)"], ["allowBack", "السماح بالرجوع للأسئلة السابقة"], ["showResults", "إظهار النتيجة بعد التسليم"], ["allowReview", "السماح بمراجعة الإجابات"], ["showExplanations", "إظهار الشرح في المراجعة"], ["official", "امتحان رسمي (يعطّل المنطق الشرطي)"]];
 
   /* S: السياق {id, review, lectures, categories, cases}; quizId؛ host: عنصر الحاوية؛ onExit() */
   B.open = function (host, S, quizId, onExit) {

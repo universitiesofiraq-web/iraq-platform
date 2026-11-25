@@ -33,7 +33,7 @@ export const quizSettings = (row) => ({ allowBack: true, showResults: true, allo
 export function buildSnapshot({ quiz, kind, mode, settings, sections = [], items, rules = [], questions, cases = {}, seed }) {
   const official = logicDisabled(settings, mode);
   let list = items.map((it, i) => ({ ...it, position: i + 1 }));
-  if (settings.shuffleQuestions) {
+  if (settings.shuffleQuestions && (official || !rules.length)) { // مع القواعد الشرطية يبقى الترتيب ثابتاً كي لا يسبق الهدفُ المصدرَ
     // نخلط الأسئلة داخل كل قسم ونثبّت بقية العناصر
     const groups = new Map();
     list.forEach((it) => { const k = it.section || "_"; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); });
