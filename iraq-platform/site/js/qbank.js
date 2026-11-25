@@ -355,4 +355,9 @@
   }
 
   route();
+  // رابط الإدارة يظهر فقط لمن يملك صلاحية على مادة (الخادم يفرض الصلاحية في كل حال)
+  api("GET", "admin/me").then(function (r) {
+    if (!r.subjects || !r.subjects.length) return;
+    var top = document.querySelector(".qb-top"); if (top) top.appendChild(h("a", { class: "qb-btn qb-btn-sm", href: "qbank-admin.html", text: "الإدارة" }));
+  }).catch(function () {});
 })();

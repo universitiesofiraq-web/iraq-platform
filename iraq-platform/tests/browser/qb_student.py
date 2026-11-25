@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from playwright.sync_api import sync_playwright
 from qb_harness import server
 _srv = server(); BASE = _srv.__enter__()
-SHOTS = os.environ.get("QB_SHOTS", "/tmp/qbshots")
+SHOTS = os.environ.get("QB_SHOTS", "/tmp/qbshots"); os.makedirs(SHOTS, exist_ok=True)
 fails = []
 def check(cond, msg):
     print(("ok   " if cond else "FAIL ") + msg)

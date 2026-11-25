@@ -64,7 +64,7 @@ jobs:
         # reader_pro وlecture_position وmobile_v1_smoke تفشل على main حالياً وتحتاج إصلاحاً قبل إضافتها.
         run: |
           fail=0
-          for t in journeys invites_page upload_center upload_simple; do
+          for t in journeys invites_page upload_center upload_simple qb_student qb_admin; do
             echo "::group::$t"
             python -I "tests/browser/$t.py" || { echo "::error::فشل فحص المتصفح $t"; fail=1; }
             echo "::endgroup::"
