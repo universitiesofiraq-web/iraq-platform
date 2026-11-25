@@ -29,6 +29,11 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: فحص الممثلين
         run: node --test tests/representatives-v2.test.cjs
+      - name: ملف ترحيلات بنك الأسئلة المولَّد محدّث
+        working-directory: iraq-platform
+        run: |
+          node scripts/gen-qb-migrations.mjs --check
+          node scripts/gen-migrations.mjs --check
       - name: صياغة ملفات JavaScript
         working-directory: iraq-platform
         run: |
