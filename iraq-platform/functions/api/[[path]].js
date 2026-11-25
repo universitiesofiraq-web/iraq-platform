@@ -19,10 +19,13 @@ import { handleDeptStats } from "../_lib/dept_stats.js";
 import { handleExams } from "../_lib/exams.js";
 import { handleCollegeLogo } from "../_lib/college_logo.js";
 import { handleDm } from "../_lib/dm.js";
+import { handleQb } from "../_lib/qb.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
   if (authRes) return authRes;
+  const qbRes = await handleQb(request, env, { currentUser }); // بنك الأسئلة: خامل ما لم يكن QB_ENABLED=1
+  if (qbRes) return qbRes;
   const leagueRes = await handleLeague(request, env);
   if (leagueRes) return leagueRes;
   const onboardingRes = await handleOnboarding(request, env);
